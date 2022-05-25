@@ -9,6 +9,7 @@ GAGESii catchment characteristics
 
 # File descriptions:
 Python:
+	
 	DAYMET_Download_Methods.docx: A few notes on methods used to download DAYMET data
 
 	Scripts:
@@ -27,6 +28,7 @@ Python:
 			Note that core of this code is also in GAGESii_Class.py
 
 R:
+	
 	MarkdownOutput:
 		GAGESii_Analysis2_Presentable.html:
 			Some early output from PCA and clustering efforts
