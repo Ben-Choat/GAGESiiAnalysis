@@ -1,0 +1,158 @@
+---
+title: "Daymet_AnnualWY_Scratch"
+author: "Ben Choat"
+date: "4/20/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Load libraries and functions
+
+```{r r_libraries}
+if(!require(pacman)){install.packages("pacman")}
+library(pacman)
+
+pacman::p_load(
+  renv, # dependency/environment management
+  data.table, # data wrangling
+  reticulate, # python interface
+  ggplot2, # plotting
+  plotly, # for plotting
+  car, # for levene test (homescedasity of residuals)
+  corrplot, # for correlogram
+  Hmisc, # for easier correlation analysis
+  mltools # for some data manipulation (e.g., one-hot encoding)
+)
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+```
+
+```{python py_libraries}
+import numpy as np # for multi-dimensional array handling
+import pandas as pd # for data.frame type structures
+from sklearn.preprocessing import StandardScaler # for scaling data
+from sklearn.pipeline import make_pipeline # for combing functions into one
+from sklearn.linear_model import LinearRegression # for regression
+```
+
+### Read in data
+```{r ReadData}
+# annual water yield 
+# training
+dt_annWY_train <- data.table::fread(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_train.csv"
+         , keepLeadingZeros = TRUE
+      )
+
+# validate in
+dt_annWY_valin <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_in.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# validate nit
+dt_annWY_valnit <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_nit.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# static watershed characteristics
+# training
+dt_static_train <- data.table::fread(
+  "C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )[
+    STAID %chin% dt_annWY_train$site_no,
+  ]
+
+# validate in training gages
+dt_static_valin <- data.table::fread(
+  "C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )[
+    STAID %chin% dt_annWY_valin$site_no,
+  ]
+
+# validate not in training gages
+dt_static_valnit <- data.table::fread(
+  "C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )[
+    STAID %chin% dt_annWY_valnit$site_no,
+  ]
+
+# ID variables
+dt_ID <- data.table::fread(
+  "C:/R/GAGESii_R/Data_out/GAGES_idVars.csv",
+  keepLeadingZeros = TRUE)
+
+# Daymet mean annual values
+# All
+# dt_dmet_an <- data.table::fread(
+#   "D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Annual.csv",
+#   keepLeadingZeros = TRUE
+# )
+
+# training
+dt_dmet_an_train <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Annual.csv",
+  keepLeadingZeros = TRUE
+)[
+  site_no %chin% dt_annWY_train$site_no,
+]
+
+# validate in testing sites
+dt_dmet_an_valin <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Annual.csv",
+  keepLeadingZeros = TRUE
+)[
+  site_no %chin% dt_annWY_valin$site_no,
+]
+
+# validate not in testing sites
+dt_dmet_an_valnit <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Annual.csv",
+  keepLeadingZeros = TRUE
+)[
+  site_no %chin% dt_annWY_valnit$site_no,
+]
+
+
+# GAGES time-series data
+# training
+dt_ts_train <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+  keepLeadingZeros = TRUE
+)[
+  STAID %chin% dt_annWY_train$site_no,
+]
+
+# validation in training
+dt_ts_valin <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+  keepLeadingZeros = TRUE
+)[
+  STAID %chin% dt_annWY_valin$site_no,
+]
+
+# validatin not in training gages
+dt_ts_valnit <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+  keepLeadingZeros = TRUE
+)[
+  STAID %chin% dt_annWY_valnit$site_no,
+]
+
+```
+
+
+
+

@@ -1,0 +1,1089 @@
+---
+title: "GAGESii_Analysis"
+author: "Ben Choat"
+date: "2/4/2022"
+output: html_document
+---
+
+
+
+### Load packages and define any functions used
+
+```{r PackagesAndFunctions, echo=FALSE, warning=FALSE}
+# use renv for R and R-package version control
+
+#if(!require(renv))(install.pacakges("renv"))
+#options for the renv package
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+
+# pacman as a package loader
+if(!require(pacman))(install.packages("pacman"))
+
+# renv for dependency management
+# data.table for data wrangling
+# dplyr for some data wrangling
+# readxl for reading excel files
+# ggplot for visualization
+# plotly for interactive plots
+# corrplot for correlation and plots
+# factoextra for PCA visualization
+# Hmisc for caculating correlation matrix with p-values
+# htmlwidgets for writing interactive html plots
+# parallel for parallelized lapply families
+# foreach for parallel execution on linux and osx
+# doMC for parallel execution (only for linux and osx)
+# doParallel for foreach support
+# pacman::p_load(renv, data.table, dplyr, openxlsx, ggplot2, plotly, 
+#                parallel, doParallel) #foreach, 
+pacman::p_load(renv, data.table, dplyr, ggplot2, plotly, corrplot, factoextra,
+               Hmisc, htmlwidgets, parallel, foreach) 
+#install.packages('bit64')
+```
+
+### Read in GAGIESii time series and static data, combine and prep for analysis.
+
+```{r DataIn, echo=FALSE, warning=FALSE}
+
+####################
+
+# read in previously created data.tables with filtered and organized GAGESii data
+
+# long
+# dt_nrst <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGESts_NearestYrs.csv",
+#                  keepLeadingZeros = TRUE)
+# dt_srndg <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGESts_SurroundingYrs.csv",
+#                  keepLeadingZeros = TRUE)
+# dt_interp <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGESts_InterpYrs.csv",
+#                  keepLeadingZeros = TRUE)
+
+# wide
+dt_nrst_wide <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGESts_NearestYrs_Wide.csv",
+                  keepLeadingZeros = TRUE)
+dt_srndg_wide <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGESts_SurroundingYrs_Wide.csv",
+                    keepLeadingZeros = TRUE)
+dt_interp_wide <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGESts_InterpYrs_Wide.csv",
+                    keepLeadingZeros = TRUE)
+
+
+dt_static <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv",
+                 keepLeadingZeros = TRUE)
+
+dt_idvars <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_idVars.csv",
+                 keepLeadingZeros = TRUE)
+
+# # delete this once GAGES_Static_Filtered.csv is re-written (2/4/2022)
+# dt_static[STAID == "06900050", HGVAR := 0]
+
+
+# Long
+
+# # combine dt_nrst and static
+# dt_nrst_all <- merge(
+#   dt_nrst,
+#   dt_static,
+#   by = c("STAID")
+# )
+# # combine dt_srndg and static
+# dt_srndg_all <- merge(
+#   dt_srndg,
+#   dt_static,
+#   by = c("STAID")
+# )
+# # combine dt_interp and static
+# dt_interp_all <- merge(
+#   dt_interp,
+#   dt_static,
+#   by = c("STAID")
+# )
+
+# Wide
+
+# combine dt_nrst and static
+dt_nrstw_all <- merge(
+  dt_nrst_wide,
+  dt_static,
+  by = c("STAID")
+)
+# combine dt_srndg and static
+dt_srndgw_all <- merge(
+  dt_srndg_wide,
+  dt_static,
+  by = c("STAID")
+)
+# combine dt_interp and static
+dt_intw_all <- merge(
+  dt_interp_wide,
+  dt_static,
+  by = c("STAID")
+)
+
+
+
+# separate character and numeric vars
+
+# # long --------- maybe delete this
+# dt_srndg_chr <- Filter(is.character, dt_srndg_all)
+# dt_srndg_nmr <- Filter(is.numeric, dt_srndg_all)[
+#   , STAID := dt_srndg_all$STAID
+# ]
+# 
+# dt_nrst_chr <- Filter(is.character, dt_nrst_all)
+# dt_nrst_nmr <- Filter(is.numeric, dt_nrst_all)[
+#   , STAID := dt_nrst_all$STAID
+# ]
+# --------------
+
+
+# wide
+dt_srndgw_chr <- Filter(is.character, dt_srndgw_all)
+dt_srndgw_nmr <- Filter(is.numeric, dt_srndgw_all)[
+  , STAID := dt_srndgw_all$STAID
+]
+
+dt_nrstw_chr <- Filter(is.character, dt_nrstw_all)
+dt_nrstw_nmr <- Filter(is.numeric, dt_nrstw_all)[
+  , STAID := dt_nrstw_all$STAID
+]
+
+dt_intw_chr <- Filter(is.character, dt_intw_all)
+dt_intw_nmr <- Filter(is.numeric, dt_intw_all)[
+  , STAID := dt_intw_all$STAID
+]
+
+
+
+
+##########
+# convert categorical explanatory vars to numerical and combine all explanatory
+# vars into a single table
+
+# nearest
+tmp_nrst_chr_nmr <- as.data.table(
+  sapply(dt_nrstw_chr[
+  , .(STAID,
+      Class = as.factor(CLASS),
+      GEOL_REEDBUSH_DOM = as.factor(GEOL_REEDBUSH_DOM),
+      GEOL_HUNT_DOM_CODE = as.factor(GEOL_HUNT_DOM_CODE))
+  ], unclass
+  )
+)
+
+dt_nrst_allexp <- copy(dt_nrstw_nmr)[,
+                         ':=' (
+                         STAID = NULL,
+                         year = NULL,
+                         Class = as.numeric(tmp_nrst_chr_nmr$Class),
+                         GEOL_REEDBUSH_DOM = as.numeric(tmp_nrst_chr_nmr$GEOL_REEDBUSH_DOM),
+                         GEOL_HUNT_DOM_CODE = as.numeric(tmp_nrst_chr_nmr$GEOL_HUNT_DOM_CODE)
+                          )
+]
+
+# surrounding
+tmp_srndg_chr_nmr <- as.data.table(
+  sapply(dt_srndgw_chr[
+  , .(STAID,
+      Class = as.factor(CLASS),
+      GEOL_REEDBUSH_DOM = as.factor(GEOL_REEDBUSH_DOM),
+      GEOL_HUNT_DOM_CODE = as.factor(GEOL_HUNT_DOM_CODE))
+  ], unclass
+  )
+)
+
+dt_srndg_allexp <- copy(dt_srndgw_nmr)[,
+                         ':=' (
+                         STAID = NULL,
+                         year = NULL,
+                         Class = as.numeric(tmp_srndg_chr_nmr$Class),
+                         GEOL_REEDBUSH_DOM = as.numeric(tmp_srndg_chr_nmr$GEOL_REEDBUSH_DOM),
+                         GEOL_HUNT_DOM_CODE = as.numeric(tmp_srndg_chr_nmr$GEOL_HUNT_DOM_CODE)
+                          )
+]
+
+# interpolated
+tmp_int_chr_nmr <- as.data.table(
+  sapply(dt_intw_chr[
+  , .(STAID,
+      Class = as.factor(CLASS),
+      GEOL_REEDBUSH_DOM = as.factor(GEOL_REEDBUSH_DOM),
+      GEOL_HUNT_DOM_CODE = as.factor(GEOL_HUNT_DOM_CODE))
+  ], unclass
+  )
+)
+
+dt_int_allexp <- copy(dt_intw_nmr)[,
+                         ':=' (
+                         STAID = NULL,
+                         year = NULL,
+                         Class = as.numeric(tmp_int_chr_nmr$Class),
+                         GEOL_REEDBUSH_DOM = as.numeric(tmp_int_chr_nmr$GEOL_REEDBUSH_DOM),
+                         GEOL_HUNT_DOM_CODE = as.numeric(tmp_int_chr_nmr$GEOL_HUNT_DOM_CODE)
+                          )
+]
+
+# static data only
+tmp_stat_chr_nmr <- data.table(
+  sapply(dt_static[
+  , .(STAID,
+      CLASS = as.factor(CLASS),
+      GEOL_REEDBUSH_DOM = as.factor(GEOL_REEDBUSH_DOM),
+      GEOL_HUNT_DOM_CODE = as.factor(GEOL_HUNT_DOM_CODE))
+  ], unclass
+  )
+)
+
+dt_stat_nmr <- copy(dt_static)[,
+                          ':='(
+                           STAID = NULL,
+                           CLASS = as.numeric(tmp_stat_chr_nmr$CLASS),
+                         GEOL_REEDBUSH_DOM = as.numeric(tmp_stat_chr_nmr$GEOL_REEDBUSH_DOM),
+                         GEOL_HUNT_DOM_CODE = as.numeric(tmp_stat_chr_nmr$GEOL_HUNT_DOM_CODE)
+                                                         )
+                         ]
+
+
+###########
+# normalize data
+
+# nearest
+tmp_means <- apply(
+  dt_nrst_allexp, 2,
+  mean
+)
+
+tmp_sds <- apply(
+  dt_nrst_allexp, 2,
+  sd
+)
+
+dt_nrst_allexp_norm <- as.data.table(
+  scale(dt_nrst_allexp[,], 
+    center = tmp_means,
+    scale = tmp_sds)
+  )
+
+dt_nrst_allexp_norm$STAID <- tmp_nrst_chr_nmr$STAID
+dt_nrst_allexp$STAID <- tmp_nrst_chr_nmr$STAID
+
+# surrounding
+tmp_means <- apply(
+  dt_srndg_allexp, 2,
+  mean
+)
+
+tmp_sds <- apply(
+  dt_srndg_allexp, 2,
+  sd
+)
+
+dt_srndg_allexp_norm <- as.data.table(
+  scale(dt_srndg_allexp, 
+    center = tmp_means,
+    scale = tmp_sds)
+)
+
+dt_srndg_allexp_norm$STAID <- tmp_srndg_chr_nmr$STAID
+dt_srndg_allexp$STAID <- tmp_srndg_chr_nmr$STAID
+
+# interpolated
+tmp_means <- apply(
+ dt_int_allexp, 2,
+ mean
+)
+tmp_sds <- apply(
+ dt_int_allexp, 2,
+ sd
+)
+dt_int_allexp_norm <- as.data.table(
+  scale(dt_int_allexp,
+    center = tmp_means,
+    scale = tmp_sds)
+)
+dt_int_allexp_norm$STAID <- tmp_int_chr_nmr$STAID
+dt_int_allexp$STAID <- tmp_int_chr_nmr$STAID
+
+# static
+tmp_means <- apply(
+  dt_stat_nmr, 2,
+  mean
+)
+
+tmp_sds <- apply(
+  dt_stat_nmr, 2,
+  sd
+)
+
+dt_stat_allexp_norm <- as.data.table(
+  scale(dt_stat_nmr, 
+    center = tmp_means,
+    scale = tmp_sds)
+)
+
+dt_stat_allexp_norm$STAID <- tmp_stat_chr_nmr$STAID
+dt_stat_nmr$STAID <- tmp_stat_chr_nmr$STAID
+
+
+rm(dt_nrst, dt_srndg)
+rm(list = ls(pattern = "tmp"))
+gc()
+```
+
+### Perform analysis of the GAGESii data.
+Exploring use of:
+Correlation
+PCA
+UMAP
+K-means clustering
+K-medoids clustering
+
+### Correlation
+```{r correlation, echo=FALSE, warning=FALSE}
+######
+# correlation
+
+# create function for plotting correlograms
+
+fun_cor_plot <- function(data_in, 
+                         p_thresh=0.1, 
+                         r_thresh=0.7, 
+                         type_in="spearman",
+                         tl_cex = 0.7) {
+  # data_in should be data.frame or data.table type object
+  # set p threshold (only p's <= threshold will be plotted)
+  # similar for r threshold
+  # type_in can be "pearson" or "spearman"
+  # tl_cex controls size of variable labels
+  
+  cor_main <- Hmisc::rcorr(as.matrix(data_in), type = type_in)
+  # p-vales
+  corP_in <- cor_main$P
+  # replace NA's along diagonal of p-matrix with 0
+  diag(corP_in) <- 0
+  corP_in <- corP_in[apply(corP_in, 1, function(x){any(x<=p_thresh)}), ]
+
+  corR_in <- cor_main$r
+  corR_in <- corR_in[apply(corP_in, 1, function(x){any(x<=p_thresh)}), ]
+
+  # replace values lower than R-thresh with NAs
+  corP_in[which(corR_in < r_thresh)] <- NA
+  corR_in[which(corR_in < r_thresh)] <- NA
+  
+  # plot
+  corrplot::corrplot(corR_in,
+         method = 'ellipse', 
+         type = "lower",
+         p.mat = corP_in, 
+         sig.level = c(0.1),
+         insig = "blank", #insig = "label_sig"#,
+         tl.cex = tl_cex,
+         tl.srt = 0.0001,
+         na.label = "."
+         )
+  
+} # end correlogram function
+
+
+# nearest
+tmp_in <- dt_nrst_allexp[, c(1:29)]
+
+# png(filename = "D:/Projects/GAGESii_ANNstuff/Figures/Cor_Nrst_TS_p_1_r_7.png",
+#     width =8, height = 8, units = "in", res = 300)
+
+fun_cor_plot(tmp_in)
+
+# dev.off()
+
+# surrounding
+tmp_in <- dt_srndg_allexp[, c(1:29)]
+
+# png(filename = "D:/Projects/GAGESii_ANNstuff/Figures/Cor_srndg_TS_p_1_r7.png",
+#     width =8, height = 8, units = "in", res = 300)
+
+fun_cor_plot(tmp_in)
+
+# dev.off()
+
+
+# interpolated
+tmp_in <- dt_int_allexp[, -c("STAID")]
+# tmp_in <- dt_int_allexp[, c(1:29)]
+
+# png(filename = "D:/Projects/GAGESii_ANNstuff/Figures/Cor_int_All_p_1_r7.png",
+#     width =8, height = 8, units = "in", res = 300)
+
+fun_cor_plot(tmp_in, tl_cex = 0.5)
+
+# dev.off()
+
+
+# static
+tmp_in <- dt_stat_nmr[, -c("STAID")]
+
+# png(filename = "D:/Projects/GAGESii_ANNstuff/Figures/Cor_stat_All_p_1_r7.png",
+#     width =8, height = 8, units = "in", res = 300)
+
+fun_cor_plot(tmp_in, tl_cex = 0.5)
+
+# dev.off()
+
+```
+
+### Dimension Reduction
+```{r PCA, echo=FALSE, warning=FALSE}
+###### PCA
+
+# output from prcomp:
+# sdev - StDev of principal components
+# rotation- matrix of variable loadings (columns are eigenvectors)
+# x - coordinates of individuals on the principal components
+
+# Write function for plotting PCA results
+fun_pca_plot <- function(pca_in,
+                         group_in,
+                         dimensions = 2,
+                         title_in = "PCA",
+                         text_in = "",
+                         html_out = FALSE,
+                         out_name = "PCA_Out") {
+  # pca_in is an object created by prcomp
+  # group_in is a vector for the points to be colored by
+  #   must be same length as the number of rows in pca_in$x
+  # set dimensions to be plotted to 2 or 3
+  # title_in is the title for the graph itself
+  # text_in: specify what data should be used for popup point labels
+  #    this was added with STAID in mind
+  # html_out can be set to TRUE or FALSE. If TRUE, then an html widget with the out_name as a file
+  #   name will be output. If FALSE, a plot will be output in the Rstudio session.
+  
+  df_out <- as.data.frame(pca_in$x)
+  df_out$group <- group_in
+  
+  # percentages
+  percentage <- round(pca_in$sdev^2 / sum((pca_in$sdev)^2) * 100, 2)
+  percentage <- paste0(colnames(df_out), "(", as.character(percentage), "%)")
+  
+  if(dimensions == 2) {
+      p <- ggplot(df_out, aes(x = PC1, y = PC2, color = group)) +
+        geom_point() +
+        xlab(percentage[1]) + ylab(percentage[2])
+      
+      plotly::ggplotly(p)
+  } else if(dimensions == 3){
+      p <- plotly::plot_ly(
+        x = df_out$PC1,
+        y = df_out$PC2,
+        z = df_out$PC3,
+        type = "scatter3d",
+        mode = "markers",
+        color = df_out$group,
+        size = 1,
+        text = text_in
+      ) %>% 
+      layout(
+        title = title_in,
+        scene = list(
+        xaxis = list(title = percentage[1]),
+        yaxis =  list(title = percentage[2]),
+        zaxis = list(title = percentage[3]))
+        )
+  }
+  
+  if(html_out) {
+    htmlwidgets::saveWidget(
+      p, 
+      paste0(
+        "D:/Projects/GAGESii_ANNstuff/Figures/", out_name, ".html"
+        )
+    )
+  } else {p}
+  
+  } # close function
+
+# data has already been centered and normalized above
+# nearest - TS
+PCA_nrst <- prcomp(dt_nrst_allexp_norm[,1:29],
+                   center = FALSE,
+                   scale. = FALSE)
+
+summary(PCA_nrst)
+
+tmp_in <- merge(
+  dt_nrst_allexp_norm,
+  dt_idvars,
+  by = c("STAID"),
+)
+
+fun_pca_plot(PCA_nrst, 
+             group_in = tmp_in$Class.y, # as.factor(tmp_in$ECO3_Site), tmp_in$USDA_LRR_Site, #tmp_in$AggEcoregion, #  
+             dimensions = 3,
+             title_in = "Nearest TS",
+             text_in = tmp_in$STAID,
+             html_out = FALSE,
+             out_name = "PCA_Nrst_TS_Class"
+)
+
+# nearest - All
+PCA_nrst <- prcomp(dt_nrst_allexp_norm[,-c("STAID", "Class")],
+                   center = FALSE,
+                   scale. = FALSE)
+
+summary(PCA_nrst)
+
+tmp_in <- merge(
+  dt_nrst_allexp_norm,
+  dt_idvars,
+  by = c("STAID"),
+)
+
+fun_pca_plot(PCA_nrst, 
+             group_in = tmp_in$Class.y, # as.factor(tmp_in$ECO3_Site), tmp_in$USDA_LRR_Site, #tmp_in$AggEcoregion, # , 
+             dimensions = 3,
+             title_in = "Nearest All",
+             html_out = TRUE,
+             out_name = "PCA_Nrst_All_Class")
+
+# surrounding - TS
+PCA_srndg <- prcomp(dt_srndg_allexp_norm[, 1:29], #[,-c("STAID", "Class")],
+                   center = FALSE,
+                   scale. = FALSE)
+
+summary(PCA_srndg)
+
+tmp_in <- merge(
+  dt_srndg_allexp_norm,
+  dt_idvars,
+  by = c("STAID"),
+)
+
+fun_pca_plot(PCA_srndg, 
+             group_in = tmp_in$AggEcoregion, # tmp_in$Class.y, # as.factor(tmp_in$ECO3_Site), tmp_in$USDA_LRR_Site, #, 
+             dimensions = 3,
+             title_in = "Surrounding TS",
+             html_out = TRUE,
+             out_name = "PCA_Srndg_TS_AggEco")
+
+# surrounding - ALL
+PCA_srndg <- prcomp(dt_srndg_allexp_norm[,-c("STAID", "Class")],
+                   center = FALSE,
+                   scale. = FALSE)
+
+summary(PCA_srndg)
+
+tmp_in <- merge(
+  dt_srndg_allexp_norm,
+  dt_idvars,
+  by = c("STAID"),
+)
+
+fun_pca_plot(PCA_srndg, 
+             group_in = tmp_in$AggEcoregion, # tmp_in$Class.y, # as.factor(tmp_in$ECO3_Site), tmp_in$USDA_LRR_Site, #, 
+             dimensions = 3,
+             title_in = "Surrounding All",
+             html_out = TRUE,
+             out_name = "PCA_Srndg_All_AggEco")
+
+
+# interpolated
+PCA_int <- prcomp(dt_int_allexp_norm[,-c("STAID", "Class")],#dt_int_allexp_norm[,1:29],
+                   center = FALSE,
+                   scale. = FALSE)
+
+summary(PCA_int)
+
+tmp_in <- merge(
+  dt_int_allexp_norm,
+  dt_idvars,
+  by = c("STAID"),
+)
+
+fun_pca_plot(PCA_int, 
+             group_in =  as.factor(tmp_in$ECO3_Site), #tmp_in$AggEcoregion, #tmp_in$Class.y, # tmp_in$USDA_LRR_Site, # 
+             dimensions = 3,
+             title_in = "Interpolated All",
+             html_out = TRUE,
+             out_name = "PCA_Interp_All_ECO3")
+
+# static
+PCA_stat <- prcomp(
+  dt_stat_allexp_norm[,-c("STAID", "CLASS")],
+  center = FALSE,
+  scale. = FALSE)
+
+summary(PCA_stat)
+
+tmp_in <- merge(
+  dt_stat_allexp_norm,
+  dt_idvars,
+  by = c("STAID"),
+)
+
+fun_pca_plot(PCA_stat, 
+             group_in = as.factor(tmp_in$ECO3_Site),#tmp_in$Class, #, #tmp_in$AggEcoregion, tmp_in$USDA_LRR_Site, ###
+             dimensions = 3,
+             title_in = "Static",
+             html_out = TRUE,
+             out_name = "PCA_Static_ECO3")
+
+cat("PCA revealed no components that alone explain a notable portion of 
+    variability observed in the data. \n\n Greater than 25 components, at 
+    minimum are needed to explain 90% of the variability for cases.
+    \n\nGenerally, the time series data seems to better identify if a station
+    is a reference or non-reference station and the static data does a better 
+    job capturing the AggEcoregion, ECO3, and USDA classes.")
+
+gc()
+##### 
+```
+
+
+
+
+
+### Clustering
+```{r clustering, warning=FALSE, echo=FALSE}
+pacman::p_load(cluster)
+
+# data has already been centered and normalized above
+# interp - TS
+PCA_in <- prcomp(dt_int_allexp_norm[,1:29],
+                   center = FALSE,
+                   scale. = FALSE)
+summary(PCA_in)
+
+tmp_in <- merge(
+  dt_int_allexp_norm,
+  dt_idvars,
+  by = c("STAID"),
+)
+
+df_out <- as.data.table(PCA_in$x)
+df_out$group <- tmp_in$AggEcoregion
+df_out$STAID <- tmp_in$STAID
+
+  # percentages
+  percentage <- round(PCA_in$sdev^2 / sum((PCA_in$sdev)^2) * 100, 2)
+  percentage <- paste0(colnames(df_out), "(", as.character(percentage), "%)")
+
+tmp_km <- kmeans(df_out[, -c("STAID", "group")][,1:14], centers = 9)
+tmp_km <- kmeans(dt_int_allexp_norm[, 1:29], centers = 9)
+
+tmp_km_id <- cbind(dt_idvars, "cluster" = tmp_km$cluster)
+
+tmp_pam <- cluster::pam(dt_int_allexp_norm[, 1:29], k = 9)
+
+
+
+# plot
+fun_pca_plot(PCA_in, 
+             group_in = as.character(tmp_km_id$cluster), # as.factor(tmp_in$ECO3_Site), tmp_in$USDA_LRR_Site, #tmp_in$AggEcoregion, #  
+             dimensions = 3,
+             title_in = "Interp K-Means TS",
+             text_in = tmp_km_id$STAID,
+             html_out = TRUE,
+             out_name = "Kmeans_int_TS"
+)
+
+
+# PAM
+tmp_pam <- cluster::pam(dt_stat_allexp_norm[,-c("STAID", "CLASS")], k = 9)
+#plot(cluster::silhouette(tmp_pam))
+```
+
+
+### TRYING UMAP and/or t-sne
+```{r umap, warning=FALSE, echo=FALSE}
+####TRYING UMAP and/or t-sne
+# https://stackoverflow.com/questions/58593213/is-there-any-way-to-draw-umap-or-t-sne-plot-for-data-table
+# https://jtr13.github.io/cc21fall1/efficient-dimension-reduction-with-umap.html
+# https://cran.r-project.org/web/packages/umap/vignettes/umap.html
+# https://pair-code.github.io/understanding-umap/
+#   (for understanding parameters)
+
+pacman::p_load(umap, Rtsne)
+
+##### UMAP
+
+# write function to plot umap results
+fun_umap_plot <- function(umap_in,
+                          group_in,
+                          dimensions = 3,
+                          title_in = "UMAP",
+                          text_in = "",
+                          out_name = "plot_out",
+                          html_out = FALSE) {
+  # umap_in is a umap object
+  # group_in is a vector for the points to be colored by
+  #   must be same length as the number of rows in pca_in$x
+  # dimensions(set dimensions to be calculated and plotted to 2 or 3)
+  # title_in: title for the plot itself
+  # text_in: specify what data should be used for popup point labels
+  #    this was added with STAID in mind
+  # html_out: TRUE then writes to html widget, FALSE then prints in R session
+  # out_name: A name to be used for html widget file
+  
+
+  if(dimensions == 2){
+  # 2D
+    if(!is.data.frame(umap_in)) {
+    assign(paste0("df_", out_name), 
+           data.frame(x = umap_in$layout[,1],
+                      y = umap_in$layout[,2],
+                      Reference = group_in,
+                      text_in = text_in
+                      ),
+           envir = .GlobalEnv
+    ) # close assign
+    
+        df_tmp <- get(paste0("df_", out_name))
+        x_in <- df_tmp$x
+        y_in <- df_tmp$y
+        col_in <- df_tmp$Reference
+        txt_in <- df_tmp$text_in
+    
+    } else {
+        df_tmp <- umap_in
+        x_in <- df_tmp$x
+        y_in <- df_tmp$y
+        col_in <- group_in
+        txt_in <- df_tmp$STAID
+    }
+    
+    p <- plotly::plot_ly(
+      x = x_in,
+      y = y_in,
+      type = "scatter",
+      mode = "markers",
+      color = col_in,
+      size = 1,
+      text = txt_in
+    ) %>%  
+      layout(
+        title = title_in
+      )
+    
+
+     } else if(dimensions == 3) {
+    # 3D
+    if(!is.data.frame(umap_in)) {
+      assign(paste0("df_", out_name),
+             data.frame(x = umap_in$layout[,1],
+                        y = umap_in$layout[,2],
+                        z = umap_in$layout[,3],
+                        Reference = group_in,
+                        text_in = text_in
+                        ),
+             envir = .GlobalEnv
+      )
+    
+       df_tmp <- get(paste0("df_", out_name))
+        x_in <- df_tmp$x
+        y_in <- df_tmp$y
+        z_in <- df_tmp$z
+        col_in <- df_tmp$Reference
+        txt_in <- df_tmp$text_in
+    
+    } else {
+        df_tmp <- umap_in
+        x_in <- df_tmp$x
+        y_in <- df_tmp$y
+        z_in <- df_tmp$z
+        col_in <- group_in
+        txt_in <- df_tmp$STAID
+    }
+
+            
+    p <- plotly::plot_ly(
+      x = x_in,
+      y = y_in,
+      z = z_in,
+      type = "scatter3d",
+      mode = "markers",
+      color = col_in,
+      size = 1,
+      text = txt_in
+    ) %>%  
+      layout(
+        title = title_in
+      )
+    
+    } # close else if
+  if(html_out){
+    htmlwidgets::saveWidget(
+      p, 
+      paste0(
+        "D:/Projects/GAGESii_ANNstuff/Figures/", out_name, ".html"
+        )
+    )
+    } else {p}# close if
+}
+
+###### 
+
+# investigate effect of different parameters
+
+
+# ##########
+# # create table of UMAP parameters to try
+# tmp_vars <- expand.grid(n_neighbors = c(15, 50, 100, 200),
+#                         min_dist = c(0.01, 0.1, 0.4, 0.9))
+# 
+# # Go parallel to investigate various input parameters
+# cl <- parallel::makeCluster(parallel::detectCores()-1) # opens cluster
+#  
+# # # export int_fun and tmp_ref to cluster
+# #clusterExport(cl, c("dt_static", "fun_umap_plot", "tmp_vars", "tmp_id"))
+# doParallel::registerDoParallel(cl)
+# 
+# #parallel::clusterMap(cl, 
+# foreach(i = 1:nrow(tmp_vars), .packages = c("umap", "data.table", "dplyr", "plotly", "ggplot2")) %dopar% (
+# 
+#         fun_umap_plot(
+#           data_in = dt_static[, -c("STAID", "CLASS", "GEOL_REEDBUSH_DOM", "GEOL_HUNT_DOM_CODE")],
+#           group_in = tmp_id$AggEcoregion,
+#           dimensions = 3,
+#           title_in = "UMAP_Static",
+#           n_neighb_in = tmp_vars$n_neighbors[i],
+#           min_dist_in = tmp_vars$min_dist[i],
+#           n_epochs_in = 200
+#         )
+# )
+# 
+# 
+# parallel::stopCluster(cl)
+# gc()
+# ##########
+
+#########
+  # set settings for umap
+  custom.settings <- umap.defaults
+  custom.settings$n_neighbors <- 50
+  custom.settings$n_components <- 3
+  custom.settings$min_dist <- 0.2
+  custom.settings$n_epochs <- 200
+#########
+  
+  
+
+##### Static
+tmp_id <- merge(
+  dt_stat_nmr,
+  dt_idvars,
+  by = "STAID"
+)[, .(Class, AggEcoregion, ECO3 = as.character(ECO3_Site), USDA_LRR_Site,
+  AggEco_Class = paste0(Class, "_", AggEcoregion), STAID)]
+
+umap_tmp <- umap(dt_stat_nmr[, -c("STAID", "CLASS")], custom.settings)
+
+
+
+#system.time({
+fun_umap_plot(
+  umap_in = umap_tmp,
+  group_in = tmp_id$AggEcoregion, #tmp_id$AggEco_Class,#tmp_id$Class,#  tmp_id$USDA_LRR_Site, #
+  dimensions = 3,
+  title_in = "UMAP_Static",
+  text_in = tmp_id$STAID,
+  html_out = FALSE,
+  out_name = "UMAP_static_nn50_md2_e400_AggEco_Class2"
+  )
+#})
+
+tmp_df <- merge(
+  tmp_id,
+  df_UMAP_static_nn50_md2_e400_AggEco_Class2,
+  by.x = c("STAID", "AggEcoregion"),
+  by.y = c("text_in", "Reference")
+)
+
+# data.table::fwrite(tmp_df,
+#                    "D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_static_nn50_md2_e400.csv")
+
+########## Some exploratory plotting/analysis
+tmp_df <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_static_nn50_md2_e400.csv",
+  keepLeadingZeros = TRUE)
+
+df_tmp <- tmp_df[tmp_df$z > 2,]
+
+vct_staid_umap_tght_clstrs <- df_tmp$STAID
+
+p <- plotly::plot_ly(
+      x = df_tmp$x,
+  y = df_tmp$y,
+  z = df_tmp$z,
+  type = "scatter3d",
+  mode = "markers",
+  color = df_tmp$AggEcoregion,
+  size = 1,
+  text = df_tmp$STAID
+) %>%  
+      layout(
+    title = "UMAP Static Filtered"
+  )
+p
+##########
+
+##### Int (time series only)
+# tmp_id <- merge(
+#   dt_int_allexp,
+#   dt_idvars,
+#   by = "STAID"
+# )[, .(Class.y, AggEcoregion, as.character(ECO3_Site), USDA_LRR_Site)]
+# 
+# umap_tmp <- umap(dt_int_allexp[, 1:29], custom.settings)
+# 
+# #system.time({
+# fun_umap_plot(
+#   umap_in = umap_tmp,
+#   group_in = tmp_id$ECO3,#tmp_id$Class,#tmp_id$AggEcoregion, #  tmp_id$USDA_LRR_Site, #
+#   dimensions = 3,
+#   title_in = "UMAP_Static",
+#   html_out = FALSE,
+#   out_name = "UMAP_static_nn50_md2_e400_ECO3"
+#   )
+# #})
+# 
+# 
+# # Int (all data)
+
+
+#########
+  # set settings for umap
+  custom.settings <- umap.defaults
+  custom.settings$n_neighbors <- 5#15
+  custom.settings$n_components <- 3
+  custom.settings$min_dist <- 0.1
+  custom.settings$n_epochs <- 200
+#########
+
+##### Surrounding (time series only)
+
+umap_tmp <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_srndngTS_nn50_md2_ep200.csv",
+  keepLeadingZeros = TRUE)
+  
+umap_tmp <- umap(dt_srndg_allexp[, 1:29], custom.settings)
+
+tmp_id <- merge(
+  dt_srndg_allexp,
+  dt_idvars,
+  by = "STAID"
+)[, .(Class = Class.y, AggEcoregion, ECO3_SITE = as.character(ECO3_Site), 
+      USDA_LRR_Site, AggEco_Class = paste0(Class.y, "_", AggEcoregion), STAID,
+      year = dt_srndgw_all$year, 
+      STAID_year = paste0(STAID, "_", dt_srndgw_all$year))]
+
+
+fun_umap_plot(
+  umap_in = umap_tmp,
+  group_in = tmp_id$AggEcoregion, #tmp_id$USDA_LRR_Site, #as.factor(tmp_id$ECO3_Site#tmp_id$Class#
+  dimensions = 3,
+  title_in = "UMAP_Srndg_TS",
+  text_in = tmp_id$STAID_year,
+  html_out = TRUE,
+  out_name = "UMAP_srndngTS_nn5_md1_AggEco"
+  )
+
+# Calculate number of samples in each aggroecoregion
+as.data.table(tmp_id)[, lapply(.SD, length), by = AggEcoregion][,1:2]
+
+df_UMAP_srndngTS_nn5_md1_Class$year = dt_srndgw_all$year
+
+tmp_df <- merge(
+  tmp_id,
+  df_UMAP_srndngTS_nn5_md1_Class,
+  by.x = c("STAID", "AggEcoregion", "year"),
+  by.y = c("text_in", "Reference", "year")
+)
+
+data.table::fwrite(tmp_df,
+                   "D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_srndngTS_nn5_md1_ep200.csv")
+
+
+##### Surrounding (all explanatory vars)
+umap_tmp <- umap(dt_srndg_allexp[, -c("STAID", "Class")], custom.settings)
+
+tmp_id <- merge(
+  dt_srndg_allexp,
+  dt_idvars,
+  by = "STAID"
+)[, .(Class = Class.y, AggEcoregion, ECO3_SITE = as.character(ECO3_Site), 
+      USDA_LRR_Site, AggEco_Class = paste0(Class.y, "_", AggEcoregion), STAID,
+      year = dt_srndgw_all$year, 
+      STAID_year = paste0(STAID, "_", dt_srndgw_all$year))]
+
+
+fun_umap_plot(
+  umap_in = umap_tmp,
+  group_in = tmp_id$AggEcoregion, #  USDA_LRR_Site #as.factor(tmp_id$ECO3_Site#tmp_id$Class,#
+  dimensions = 3,
+  title_in = "UMAP_Srndg_All",
+  text_in = tmp_id$STAID_year,
+  html_out = TRUE,
+  out_name = "UMAP_srndngAll_nn200_md1_ep200_AggEco"
+  )
+
+df_UMAP_srndngAll_nn15_md1_ep200_Class$year = dt_srndgw_all$year
+
+tmp_df <- merge(
+  tmp_id,
+  df_UMAP_srndngAll_nn15_md1_ep200_Class,
+  by.x = c("STAID", "AggEcoregion", "year"),
+  by.y = c("text_in", "Reference", "year")
+)
+
+data.table::fwrite(tmp_df,
+                   "D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_srndngAll_nn15_md1_ep200.csv")
+
+
+#### Examples 
+# # iris umap example
+# iris.umap = umap(iris[!duplicated(iris),1:4])
+# iris.umap
+# head(iris.umap$layout)
+# 
+# df <- data.frame(x = iris.umap$layout[, 1],
+#                  y = iris.umap$layout[, 2],
+#                  Species = iris[!duplicated(iris),5])
+# 
+# ggplot(df, aes(x, y, color = Species)) +
+#   geom_point()
+# 
+# # iris t-sne example
+# tsne <- Rtsne(iris[!duplicated(iris), -5])
+# 
+# df <- data.frame(x = tsne$Y[,1],
+#                  y = tsne$Y[,2],
+#                  Species = iris[!duplicated(iris), 5])
+# 
+# ggplot(df, aes(x, y, color = Species)) +
+#   geom_point()
+#### End Examples 
+```
+
+
+
+
+
+
+### The Code
+```{r ref.label="PackagesAndFunctions", echo=FALSE, warning=FALSE}
+```
+
+```{r ref.label="DataIn", echo=FALSE, warning=FALSE}
+```
+
+```{r ref.label="correlation", echo=FALSE, warning=FALSE}
+```
+
+```{r ref.label="PCA", echo=FALSE, warning=FALSE}
+```
+
+```{r ref.label="umap", echo=FALSE, warning=FALSE}
+```
+
+```{r ref.label="clustering", warning=FALSE, echo=FALSE}
+```

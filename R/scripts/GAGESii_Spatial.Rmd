@@ -1,0 +1,117 @@
+---
+title: "GAGESii_Spatial"
+author: "Ben Choat"
+date: "3/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Libraries and functions
+
+```{r PackagesAndFunctions, echo=FALSE, warning=FALSE}
+# use renv for R and R-package version control
+
+#if(!require(renv))(install.pacakges("renv"))
+#options for the renv package
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+
+# pacman as a package loader
+if(!require(pacman))(install.packages("pacman"))
+
+# renv for dependency management
+# data.table for data wrangling
+# ggplot for visualization
+# ggiraph for interactive ggplots
+# plotly for interactive plots
+# corrplot for correlation and plots
+# factoextra for PCA visualization
+# Hmisc for caculating correlation matrix with p-values
+# cluster for PAM and Gower space
+# caret for splitting data into training, validating, and testing partitions
+#   and other ML methods
+# terra and sf for spatial
+# tmap for spatial mapping
+# USAboundaries for spatial boundaries
+pacman::p_load(renv, data.table, ggplot2, ggiraph, plotly, 
+               sf, terra, tmap, USAboundaries) 
+
+
+```
+
+```{r ReadData, warning=FALSE, echo=FALSE}
+# read in gages data
+# East highlands non-reference gages
+esthghlnds_nonref <- sf::st_read(
+  dsn = "D:/DataWorking/GAGESii/boundaries-shapefiles-by-aggeco",
+  layer = "bas_nonref_EastHghlnds"
+) %>% 
+  sf::st_transform("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 
+                   +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 
+                   +units=m +no_defs") %>% 
+  dplyr::filter(GAGE_ID %chin% c("01646502", "01646502"))
+
+```
+
+```{r Plot, warning=FALSE, echo=FALSE}
+#Plot east highlands gages
+#get state and city boundaries
+st_brdrs <- USAboundaries::us_states(
+  resolution = "low",
+  states = us_states()$state_name[
+    !us_states()$state_name %chin% c("Hawaii", "Puerto Rico", "Alaska")
+  ]
+) %>% 
+  sf::st_transform("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 
+                   +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 
+                   +units=m +no_defs")
+
+# ::tm_shape(st_brdrs) + tm_polygons()
+# wndw <- st_bbox(esthghlnds_nonref)
+esthglnd_map <- tmap::tm_shape(st_brdrs) +#st_as_sf(wndw)) +
+  tm_polygons(alpha = 0) +
+  tm_shape(esthghlnds_nonref$geometry) +
+  tm_polygons() +
+  # tm_shape(st.brdrs) +
+  # tm_polygons() +
+  # tm_shape(sp.sprb) +
+  # tm_polygons(col = "white", border.col = "black") +
+  # tm_shape(brghtn) +
+  # tm_polygons(col = "blue") +
+  # tm_shape(grly) +
+  # tm_polygons(col = "yellow") +
+  # tm_shape(thrntn) +
+  # tm_polygons(col = "red") +
+  #tm_shape(city.brdrs.aois) +
+  #tm_dots(col = "red", size = 0.25) +
+  #tm_text("city", bg.color = "white", bg.alpha = 0.25, just = c("right", "bottom")) +
+  #tm_add_legend(type = "fill", labels = c("Thornton-NP", "Greeley-LREG", "Brighton-SPRC"),
+  #              col = c("red", "yellow", "blue")) +
+  #tm_layout(legend.position = c("0.72", "0.1"), legend.text.size = 0.9) +
+  tm_compass(position = c("right", "bottom")) +
+  tm_scale_bar(position = c("right", "bottom"))
+
+
+esthglnd_map
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

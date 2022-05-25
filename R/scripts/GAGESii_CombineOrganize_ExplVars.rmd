@@ -1,0 +1,357 @@
+---
+title: "Combine_GAGESii_TS_Static"
+author: "Ben Choat"
+date: "4/21/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Load libraries and functions
+
+```{r r_libraries}
+if(!require(pacman)){install.packages("pacman")}
+library(pacman)
+
+pacman::p_load(
+  renv, # dependency/environment management
+  data.table, # data wrangling
+  mltools # for some data manipulation (e.g., one-hot encoding)
+)
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+```
+
+
+### Read in and filter explanatory data
+```{r ReadData}
+# annual water yield 
+# training
+dt_annWY_train <- data.table::fread(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_train.csv"
+         , keepLeadingZeros = TRUE
+      )
+
+# validate in
+dt_annWY_valin <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_in.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# validate nit
+dt_annWY_valnit <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_nit.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# test in
+dt_annWY_testin <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_test_in.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# validate nit
+dt_annWY_testnit <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_test_nit.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+
+#####
+# static watershed characteristics
+#####
+# training
+dt_static_train <- data.table::fread(
+  #"C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )[
+    STAID %chin% dt_annWY_train$site_no,
+  ]
+
+# validate in training gages
+dt_static_valin <- data.table::fread(
+  # "C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )[
+    STAID %chin% dt_annWY_valin$site_no,
+  ]
+
+# validate not in training gages
+dt_static_valnit <- data.table::fread(
+  # "C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )[
+    STAID %chin% dt_annWY_valnit$site_no,
+  ]
+
+# test data in training gages
+dt_static_testin <- data.table::fread(
+  # "C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )[
+    STAID %chin% dt_annWY_testin$site_no,
+  ]
+
+# test data not in training gages
+dt_static_testnit <- data.table::fread(
+  # "C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )[
+    STAID %chin% dt_annWY_testnit$site_no,
+  ]
+
+#####
+# GAGES time-series data
+#####
+# training
+dt_ts_train <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+  keepLeadingZeros = TRUE
+)[
+  STAID %chin% dt_annWY_train$site_no & year %in% seq(1998, 2007, 1),
+]
+
+# remove NWALT variables
+dt_ts_train[, grep("NWALT", colnames(dt_ts_train)) := NULL]
+
+
+# validation in training
+dt_ts_valin <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+  keepLeadingZeros = TRUE
+)[
+  STAID %chin% dt_annWY_valin$site_no & year %in% seq(2008, 2012, 1),
+]
+
+# remove NWALT variables
+dt_ts_valin[, grep("NWALT", colnames(dt_ts_valin)) := NULL]
+
+
+# validatin not in training gages
+dt_ts_valnit <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+  keepLeadingZeros = TRUE
+)[
+  STAID %chin% dt_annWY_valnit$site_no,
+]
+
+# remove NWALT variables
+dt_ts_valnit[, grep("NWALT", colnames(dt_ts_valnit)) := NULL]
+
+
+# validation in training
+dt_ts_testin <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+  keepLeadingZeros = TRUE
+)[
+  STAID %chin% dt_annWY_testin$site_no & year %in% seq(1998, 2012, 1),
+]
+
+# remove NWALT variables
+dt_ts_testin[, grep("NWALT", colnames(dt_ts_testin)) := NULL]
+
+
+# test data not in training gages
+dt_ts_testnit <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+  keepLeadingZeros = TRUE
+)[
+  STAID %chin% dt_annWY_testnit$site_no,
+]
+
+# remove NWALT variables
+dt_ts_testnit[, grep("NWALT", colnames(dt_ts_testnit)) := NULL]
+```
+
+### Merge all data into master training, validation, and testing data sets
+### Write merged explanatory variable table to csv for quicker reference
+### in the future
+
+```{r mergeDataWrite}
+#####
+# Training
+#####
+
+# generate one-hot encded vars for GEOL_REEDBUSH_DOM
+geol_ohe <- mltools::one_hot(dt = dt_static_train[
+  , GEOL_REEDBUSH_DOM := as.factor(GEOL_REEDBUSH_DOM)
+  ],
+                             cols = "GEOL_REEDBUSH_DOM",
+                             dropCols = TRUE)
+
+# Merge static and ts training expl. vars
+dt_all_expl_train <- merge(
+  geol_ohe,
+  dt_ts_train[year > 1997 & year < 2008, ],
+  by = "STAID"
+)[
+  , ':=' (
+    GEOL_HUNT_DOM_CODE = NULL,
+    HYDRO_DISTURB_INDX = NULL,
+    RUNAVE7100 = NULL,
+    BFI_AVE = NULL,
+    CLASS = NULL,
+    RRMEAN = NULL,
+    WB5100_ANN_MM = NULL
+  )
+]
+
+data.table::fwrite(
+  x = dt_all_expl_train,
+  file = "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv"
+)
+
+
+#####
+# Validation data where gages are in training data
+#####
+
+# generate one-hot encded vars for GEOL_REEDBUSH_DOM
+geol_ohe <- mltools::one_hot(dt = dt_static_valin[
+  , GEOL_REEDBUSH_DOM := as.factor(GEOL_REEDBUSH_DOM)
+  ],
+                             cols = "GEOL_REEDBUSH_DOM",
+                             dropCols = TRUE)
+
+# Merge static and ts training expl. vars
+dt_all_expl_valin <- merge(
+  geol_ohe,
+  dt_ts_valin[year > 2007, ],
+  by = "STAID"
+)[
+  , ':=' (
+    GEOL_HUNT_DOM_CODE = NULL,
+    HYDRO_DISTURB_INDX = NULL,
+    RUNAVE7100 = NULL,
+    BFI_AVE = NULL,
+    CLASS = NULL,
+    RRMEAN = NULL,
+    WB5100_ANN_MM = NULL
+  )
+]
+
+data.table::fwrite(
+  x = dt_all_expl_valin,
+  file = "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_ValIn_Interp_98_12.csv"
+)
+
+
+#####
+# Validation data where gages are not in training data
+#####
+
+# generate one-hot encded vars for GEOL_REEDBUSH_DOM
+geol_ohe <- mltools::one_hot(dt = dt_static_valnit[
+  , GEOL_REEDBUSH_DOM := as.factor(GEOL_REEDBUSH_DOM)
+  ],
+                             cols = "GEOL_REEDBUSH_DOM",
+                             dropCols = TRUE)
+
+# Merge static and ts training expl. vars
+dt_all_expl_valnit <- merge(
+  geol_ohe,
+  dt_ts_valnit,
+  by = "STAID"
+)[
+  , ':=' (
+    GEOL_HUNT_DOM_CODE = NULL,
+    HYDRO_DISTURB_INDX = NULL,
+    RUNAVE7100 = NULL,
+    BFI_AVE = NULL,
+    CLASS = NULL,
+    RRMEAN = NULL,
+    WB5100_ANN_MM = NULL
+  )
+]
+
+data.table::fwrite(
+  x = dt_all_expl_valnit,
+  file = "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_ValNIT_Interp_98_12.csv"
+)
+
+
+#####
+# Test data where gages are in training data
+#####
+
+# generate one-hot encded vars for GEOL_REEDBUSH_DOM
+geol_ohe <- mltools::one_hot(dt = dt_static_testin[
+  , GEOL_REEDBUSH_DOM := as.factor(GEOL_REEDBUSH_DOM)
+  ],
+                             cols = "GEOL_REEDBUSH_DOM",
+                             dropCols = TRUE)
+
+# Merge static and ts training expl. vars
+dt_all_expl_testin <- merge(
+  geol_ohe,
+  dt_ts_testin[year > 1997 & year < 2013, ],
+  by = "STAID"
+)[
+  , ':=' (
+    GEOL_HUNT_DOM_CODE = NULL,
+    HYDRO_DISTURB_INDX = NULL,
+    RUNAVE7100 = NULL,
+    BFI_AVE = NULL,
+    CLASS = NULL,
+    RRMEAN = NULL,
+    WB5100_ANN_MM = NULL
+  )
+]
+
+data.table::fwrite(
+  x = dt_all_expl_testin,
+  file = "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_TestIn_Interp_98_12.csv"
+)
+
+
+#####
+# Test data where gages are not in training data
+#####
+
+# generate one-hot encded vars for GEOL_REEDBUSH_DOM
+geol_ohe <- mltools::one_hot(dt = dt_static_testnit[
+  , GEOL_REEDBUSH_DOM := as.factor(GEOL_REEDBUSH_DOM)
+  ],
+                             cols = "GEOL_REEDBUSH_DOM",
+                             dropCols = TRUE)
+
+# Merge static and ts training expl. vars
+dt_all_expl_testnit <- merge(
+  geol_ohe,
+  dt_ts_testnit,
+  by = "STAID"
+)[
+  , ':=' (
+    GEOL_HUNT_DOM_CODE = NULL,
+    HYDRO_DISTURB_INDX = NULL,
+    RUNAVE7100 = NULL,
+    BFI_AVE = NULL,
+    CLASS = NULL,
+    RRMEAN = NULL,
+    WB5100_ANN_MM = NULL
+  )
+]
+
+data.table::fwrite(
+  x = dt_all_expl_testnit,
+  file = "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_TestNIT_Interp_98_12.csv"
+)
+
+
+```
+
+

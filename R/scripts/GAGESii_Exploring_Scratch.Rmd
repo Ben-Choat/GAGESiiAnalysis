@@ -1,0 +1,142 @@
+---
+title: "GAGESiiExploring"
+author: "Ben Choat"
+date: "5/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Intro
+This code is being written to work with and to explore GAGES ii data. 
+Data exploration is focused around asking how the data can be used to predict 
+daily, monthly, and annual water yield based on relevant characteristics in 
+developed catchments and meteorological forcings using statistics and/or ML.
+
+## Code
+
+### Define functions and Load libraries
+```{r}
+if(!require(pacman))(install.packages("pacman"))
+if(!require(devtools))(install.packages("devtools"))
+if(!require(FedData))(devtools::install_github("ropensci/FedData"))
+
+#data wrangling:
+#data.table, tidyr, dplyr, dtplyr
+
+#geospatial:
+#sf: vectors and such
+#terra: rasters and such
+#USAboundaries and USAboundairesData: data and boundaires and such
+#FedData: Data downloads
+
+#Visualization and others:
+#beepr: alarm when script is complete
+#ggplot2: visualization
+#tmap: geospatial visualization 
+#readxl: read from excel .xls, .xlsx
+pacman::p_load(data.table, tidyr, dplyr, dtplyr,
+               sf, terra, USAboundaries, FedData,
+               beepr, ggplot2, tmap, readxl)
+```
+
+### Define variables
+```{r}
+#working directory
+wrk.dir <- "D:/"
+```
+
+
+### Load data
+```{r}
+#gages ii shapefile
+ggs.shp <- sf::st_read(
+  dsn = paste0(wrk.dir, "DataWorking/GAGESii/gagesII_9322_point_shapefile"), 
+  layer = "gagesII_9322_sept30_2011")
+#gages ii variable descriptions
+ggs.var.disc <- data.table::data.table(readxl::read_excel(paste0(
+  wrk.dir, "Projects/GAGESii_ANNstuff/gagesII_sept30_2011_var_desc_Exploring.xlsx"
+    )
+  )
+)
+#unique VARIABLE_TYPE gives tabs available in conterminous excel file
+ggs.cont.tabs <- unique(ggs.var.disc$VARIABLE_TYPE)
+
+#gages ii for conterminous U.S.
+#filename; STAID is common key
+ggs.cont.xcl <- paste0(
+      wrk.dir, "DataWorking/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx"
+      )
+
+#use variable descriptions and tabs to select what data to read in
+#e.g.,
+#ggs.var.disc[which(ggs.var.disc$VARIABLE_TYPE == "Bound_QA"), ][c(2,3,4)]
+
+#Add the tabs you want to read in to the ggs.cont.tabs vector
+ggs.cont.tabs <- c("BasinID", #lat, long, drainage area, HUC02, etc.
+                   "Bas_Classif", #AGGECOREGION, HYDRO_DISTURB_INDX, comments, etc.
+                   "Bas_Morph", #BAS_COPMACTNESS, LAT_CENT, LONG_CENT
+                   "Bound_QA" #Confidence of basin boundary, drainage area
+                   )
+#Read in files as data.frames in a list, data.list
+data.list <- lapply(ggs.cont.tabs, 
+                    function(x){
+                      readxl::read_excel(path = ggs.cont.xcl,
+                     sheet = x)
+                      }
+                    )
+
+#save as data.table
+ggs.mstr <- data.table(Reduce(merge, data.list))
+#subset to remove "poor" HUC10_CHECK"
+ggs.rsnbl <- ggs.mstr[HUC10_CHECK %in% c("good", "reasonable")]
+ggs.cnfdnc <- ggs.mstr$BASIN_BOUNDARY_CONFIDENCE
+```
+
+### Visualize
+```{r}
+#get state and city boundaries
+st.brdrs.ggs <- USAboundaries::us_states(resolution = "low") %>% 
+    filter(!state_abbr %in% c("HI", "PR", "AK"))
+
+#plot gagesii stream gauge locations
+ggs.map <- tmap::tm_shape(st.brdrs.ggs) +
+  tm_polygons(col = "white") +
+  tm_shape(ggs.shp) + 
+  tm_dots(size = 0.01, col = "CLASS", palette = c("red", "blue"),
+          legend.show = FALSE) +
+  tm_add_legend(type = "symbol", title = "Class", 
+                labels = c("Non-Ref (n = 7,265)", "Ref (n = 2,057)"), 
+                col = c("red", "blue"), size = 1) +
+  tm_layout(legend.text.size = 1, legend.position = c("left", "0.1")) +
+  tm_compass(position = c("0.3", "bottom")) +
+  tm_scale_bar(position = c("0", "bottom"))
+
+ggs.map
+
+# tmap::tmap_save(ggs.map, 
+#                 filename = "E:/Projects/GAGESii_ANNstuff/outputs_visuals_andsuch/ggsii_cntgs.png")
+  
+```
+
+### Some data exploration
+
+```{r}
+#unique variable types
+unique(ggs.var.disc$VARIABLE_TYPE)
+
+# return subset tables of variable descriptions
+#var.types <- c("Climate_Ppt_Annual", "Climate_Tmp_Annual") #"Climate"
+var.types <- c("Climate")
+var.discr <- unique(
+  ggs.var.disc[
+    VARIABLE_TYPE %in% var.types,  
+    .(VARIABLE_NAME, EXTENT, DESCRIPTION)
+    ]
+  )[
+    order(rank(EXTENT))
+    ]
+```
+
+

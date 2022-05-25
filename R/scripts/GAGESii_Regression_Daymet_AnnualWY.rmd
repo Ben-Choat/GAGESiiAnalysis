@@ -1,0 +1,165 @@
+---
+title: "Daymet_AnnualWY_Scratch"
+author: "Ben Choat"
+date: "4/20/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Load libraries and functions
+
+```{r r_libraries}
+if(!require(pacman)){install.packages("pacman")}
+library(pacman)
+
+pacman::p_load(
+  renv, # dependency/environment management
+  data.table, # data wrangling
+  reticulate, # python interface
+  ggplot2, # plotting
+  plotly, # for plotting
+  car, # for levene test (homescedasity of residuals)
+  corrplot, # for correlogram
+  Hmisc, # for easier correlation analysis
+  mltools # for some data manipulation (e.g., one-hot encoding)
+)
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+```
+
+```{python py_libraries}
+import numpy as np # for multi-dimensional array handling
+import pandas as pd # for data.frame type structures
+from sklearn.preprocessing import StandardScaler # for scaling data
+from sklearn.pipeline import make_pipeline # for combing functions into one
+from sklearn.linear_model import LinearRegression # for regression
+```
+
+### Read in data
+```{r ReadData}
+#####
+# annual water yield 
+#####
+
+# training
+dt_annWY_train <- data.table::fread(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_train.csv"
+         , keepLeadingZeros = TRUE
+      )
+
+# validate in
+dt_annWY_valin <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_in.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# # validate nit
+# dt_annWY_valnit <- data.table::fread(
+#         paste0(
+#         "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_nit.csv"
+#         ) , keepLeadingZeros = TRUE
+#       )
+
+
+
+#####
+# Daymet mean annual values
+#####
+
+# training
+dt_dmet_an_train <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Annual.csv",
+  keepLeadingZeros = TRUE
+)[
+  site_no %chin% dt_annWY_train$site_no &
+    year <= 2007,
+]
+
+# validate in testing sites
+dt_dmet_an_valin <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Annual.csv",
+  keepLeadingZeros = TRUE
+)[
+  site_no %chin% dt_annWY_valin$site_no &
+    year > 2007,
+]
+
+# # validate not in testing sites
+# dt_dmet_an_valnit <- data.table::fread(
+#   "D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Annual.csv",
+#   keepLeadingZeros = TRUE
+# )[
+#   site_no %chin% dt_annWY_valnit$site_no,
+# ]
+
+
+#####
+# GAGESii explanatory variables
+#####
+
+# training
+dt_expl_train <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv",
+  keepLeadingZeros = TRUE
+)
+
+# validation - gages in training gages
+dt_expl_valin <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_ValIn_Interp_98_12.csv",
+  keepLeadingZeros = TRUE
+)
+
+# # validation - gages not in training gages
+# dt_expl_valnit <- data.table::fread(
+#   "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_ValNIT_Interp_98_12.csv",
+#   keepLeadingZeros = TRUE
+# )
+
+# merge daymet with gagesii for training and valin data
+dt_dmexpl_train <- cbind(
+  dt_dmet_an_train[order(site_no)],
+  dt_expl_train[order(STAID)]
+)[
+  , STAID := NULL
+]
+
+dt_dmexpl_valin <- cbind(
+  dt_dmet_an_valin[order(site_no)],
+  dt_expl_valin[order(STAID)]
+)[
+  , STAID := NULL
+]
+
+rm(list = ls(pattern = "dt_dmet"))
+rm(list = ls(pattern = "dt_expl"))
+
+
+#####
+# ID variables (e.g., Ecoregion)
+#####
+
+dt_ID <- data.table::fread(
+  "C:/R/GAGESii_R/Data_out/GAGES_idVars.csv",
+  keepLeadingZeros = TRUE)[
+    STAID %chin% dt_dmexpl_train$site_no |
+      STAID %chin% dt_dmexpl_valin$site_no,
+  ]
+```
+
+
+### Explore regression
+
+```{r}
+
+```
+
+
+
+
