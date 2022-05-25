@@ -70,3 +70,12 @@ R:
 			will use this file as basis
 		ReadMe.txt:
 			Mostly a repetition of information found in this file regarding R scripts
+
+	GAGESii_ANNstuff.Rproj:
+		R file holding project information
+	.Rprofile:
+		holds info about R profile and is used to activat renv. 
+		Of note - you define which python interpreter to use with reticulate
+		in this file, if reticulate is being used.
+	renv.lock:
+		lock file describing the state of the projec's library at some point in time.
