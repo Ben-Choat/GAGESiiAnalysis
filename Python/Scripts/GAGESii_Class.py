@@ -39,7 +39,6 @@ dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
 dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out'
 # dir_expl = 'E:/GAGES_Work/ExplVars_Model_In'
 
-
 # Annual Water yield
 df_train_anWY = pd.read_csv(
     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_train.csv',
@@ -65,6 +64,15 @@ df_train_expl = pd.read_csv(
 df_train_mnexpl = df_train_expl.groupby(
     'STAID', as_index = False
 ).mean().drop(columns = ['year'])
+
+# vars to color plots with (e.g., ecoregion)
+df_ID = pd.read_csv(
+    f'{dir_expl}/GAGES_idVars.csv',
+    dtype = {'STAID': 'string'}
+)
+
+df_train_ID = df_ID[df_ID.STAID.isin(df_train_expl.STAID)]
+
 
 # %% define clustering class
 
@@ -341,7 +349,7 @@ class Clusterer:
 
         plot_out = (
             p9.ggplot(data = self.sil_datain_) +
-            p9.geom_bar(p9.aes(x ='number', y =  'Sil_score', color = 'k'),
+            p9.geom_bar(p9.aes(x ='number', y =  'Sil_score'),
                 stat = 'identity') +
             p9.geom_hline(p9.aes(yintercept = np.array(silhouette_vals).mean()),
                 linetype = 'dashed', color = 'red') +
@@ -357,23 +365,47 @@ class Clusterer:
 
     def hdbscanner(self,
         min_clustsize = 20,
+        # min_sample = 20
         gm_spantree = True,
+        metric_in = 'euclidean',
+        # clust_seleps = 0,
         clustsel_meth = 'leaf'):
 
         """
         Parameters
         -------------
         min_clustsize: integer
-            minimum cluster size allowed
+            Primary parameter to effect the resulting clustering.
+            The minimum number of samples in a cluster
+        min_sample: integer
+            Provides measure of how conservative you want your clustering to be.
+            Larger the value, the more conservative the clustering - more points
+            will be declared as noise and clusters will be restricted to progressively
+            more dense areas.
+            If not specified (commented out), then defaults to same value as min_clustize
+        metric_in: string 'euclidean' or 'manhattan'
         gm_spantree: boolean
             CHECK WHAT THIS PARAM DOES
+        clust_seleps: float between 0 and 1
+            default value is 0. E.g., if set to 0.5 then DBSCAN clusters will be extracted
+            for epsilon = 0.5, and clusters that emereved at distances greater than 0.5 will
+            be untouched
         clustsel_meth: string
-            'leaf' or 'CHECK OTHER OPTION'
+            'leaf' or 'eom'
             which cluster method to use
+
+        Attributes
+        --------------
+        hd_clusterer_: the clusterer object
+            this object holds outputs produced and can be used for further clustering
+        
+
         """    
 
         hd_clusterer = hdbscan.HDBSCAN(min_cluster_size = min_clustsize,
                                 gen_min_span_tree = gm_spantree,
+                                metric = 'euclidean', # 'manhatten'
+                                # cluster_selection_epsilon = clust_seleps,
                                 cluster_selection_method = clustsel_meth)
 
 
@@ -381,24 +413,50 @@ class Clusterer:
         try:
             hd_clusterer.fit(self.clust_vars_tr_)
         except:
-            hd_clusterer.fit(self.clust_vars_tr_)
+            hd_clusterer.fit(self.clust_vars)
+
+        # plot condensed tree
+        plot2 = hd_clusterer.condensed_tree_.plot(select_clusters = True,
+                                       selection_palette = sns.color_palette())
+        print(plot2)
+
+
+        # Print number of catchments in each cluster
+        clst_lbls = np.unique(hd_clusterer.labels_)
+
+        for i in clst_lbls:
+            temp_sum = sum(hd_clusterer.labels_ == i)
+            print(f'cluster {i}: sum(clst_lbls == {temp_sum})')
+
+        # assign clusterer object to self
+        self.hd_clusterer_ = hd_clusterer
+
+        # create dataframe with:
+            # cluster labels
+            # probabilities (confidence that each point is in the most appropriate cluster)
+            # outlier scores (the higher the score, the more likely the point
+            # is to be an outlier)
+
+        self.hd_out_ = pd.DataFrame({
+            'labels': hd_clusterer.labels_,
+            'probabilities': hd_clusterer.probabilities_,
+            'outlier_scores': hd_clusterer.outlier_scores_
+        })
+    
+        # Other potential plots of interest
 
         # plot the spanning tree
-        plot1 = hd_clusterer.minimum_spanning_tree_.plot(edge_cmap = 'viridis',
-                                             edge_alpha = 0.6,
-                                             node_size = 1,
-                                             edge_linewidth = 0.1)
-        print(plot1)
+        # plot1 = hd_clusterer.minimum_spanning_tree_.plot(edge_cmap = 'viridis',
+        #                                      edge_alpha = 0.6,
+        #                                      node_size = 1,
+        #                                      edge_linewidth = 0.1)
+        # print(plot1)
 
         # plot cluster heirarchy
         #clusterer.single_linkage_tree_.plot(cmap = 'viridis',
         #                                    colorbar = True)
         # condensed tree
         # clusterer.condensed_tree_.plot()
-        plot2 = hd_clusterer.condensed_tree_.plot(select_clusters = True,
-                                       selection_palette = sns.color_palette())
-        print(plot2)
-
         # look at outliers
         # sns.distplot(clusterer.outlier_scores_,
         #             rug = True)
@@ -406,17 +464,12 @@ class Clusterer:
         # get 90th quantile of outlier scores
         # pd.Series(clusterer.outlier_scores_).quantile(0.9)
 
-        clst_lbls = np.unique(hd_clusterer.labels_)
-
-        for i in clst_lbls:
-            temp_sum = sum(hd_clusterer.labels_ == i)
-            print(f'cluster {i}: sum(clst_lbls == {temp_sum})')
 
         # histogram of cluster probabilities (how strongly staid fits into cluster)
-        plot3 = sns.distplot(hd_clusterer.probabilities_,
-                     rug = True)
+        # plot3 = sns.distplot(hd_clusterer.probabilities_,
+        #              rug = True)
 
-        print(plot3)
+        # print(plot3)
 
 
         
@@ -424,7 +477,8 @@ class Clusterer:
         nn = 3, 
         mind = 0.1,
         sprd = 1,
-        nc = 3):
+        nc = 3,
+        color_in = 'blue'):
         
         """
         Parameters
@@ -478,7 +532,7 @@ class Clusterer:
             'Emb1': embedding[:, 0],
             'Emb2': embedding[:, 1],
             'Emb3': embedding[:, 2],
-            #'Ecoregion': df_train_id['AggEcoregion'],
+            'Color': color_in,
             'ColSize' : np.repeat(0.1, len(embedding[:, 0]))
             }).reset_index().drop(columns = ["index"])
 
@@ -490,7 +544,7 @@ class Clusterer:
                             x = 'Emb1',
                             y = 'Emb2',
                             z = 'Emb3',
-                            #color = col_vars,
+                            color = 'Color',
                             size = 'ColSize',
                             size_max = 10,
                             title = f"nn: {nn}",
@@ -517,8 +571,8 @@ not_tr_in = ['GEOL_REEDBUSH_DOM_anorthositic', 'GEOL_REEDBUSH_DOM_gneiss',
 test = Clusterer(clust_vars = df_train_mnexpl.drop(columns = ['STAID']),
     id_vars = df_train_mnexpl['STAID'])
 
-test.stand_norm(method = 'standardize', 
-    not_tr = not_tr_in) # 'normalize'
+test.stand_norm(method = 'standardize', # 'normalize'
+    not_tr = not_tr_in) 
 
 test.k_clust(ki = 2, kf = 20, 
     method = 'kmeans', 
@@ -536,12 +590,14 @@ test.umap_reducer(
     nn = 100,
     mind = 0.01,
     sprd = 1,
-    nc = 10)
+    nc = 10,
+    color_in = df_train_ID['AggEcoregion'])
 
 test.hdbscanner(
     min_clustsize = 20,
     gm_spantree = True,
-    clustsel_meth = 'leaf'
+    metric_in =  'manhatten', # 'euclidean', #
+    clustsel_meth = 'leaf' #'eom' #
 )
 
 for i in range(2, 11):
