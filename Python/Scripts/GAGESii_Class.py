@@ -14,7 +14,7 @@ from sklearn.preprocessing import MinMaxScaler # normalizing data (0 to 1)
 from sklearn.cluster import KMeans # kmeans
 from sklearn.metrics import silhouette_samples
 from sklearn_extra.cluster import KMedoids
-# import matplotlib.pyplot as plt # plotting
+import matplotlib.pyplot as plt # plotting
 # from matplotlib import cm
 import plotnine as p9
 import umap # for umap training and projection
@@ -172,12 +172,12 @@ class Clusterer:
 
         Attributes
         -------------
-        self.distortions_: distortion scores used in elbow plot
-        self.ks_predicted_: list of arrays with the labels of which
+        distortions_: distortion scores used in elbow plot
+        ks_predicted_: list of arrays with the labels of which
             group, k, in which each catchment was placed
-        self.silhouette_mean_: mean silhouette score for each number of
+        silhouette_mean_: mean silhouette score for each number of
             k groups between ki and kf
-        self.silhouette_k_mean_: individual silhoueete scores for each
+        silhouette_k_mean_: individual silhoueete scores for each
             group, k, for each number of k groups between ki and kf
 
         """
@@ -217,7 +217,7 @@ class Clusterer:
 
                 # calc individual silhouette scores
                 silhouette_vals = silhouette_samples(
-                    self.clust_vars, km.fit.labels_, metric = 'euclidean'
+                    self.clust_vars, km_fit.labels_, metric = 'euclidean'
                 )
 
             # calc silhouette scores
@@ -315,16 +315,14 @@ class Clusterer:
                         max_iter = 300,
                         random_state = 100)
         try:
-            cluster_labels = np.unique(self.clust_vars_tr_)
             km_fit = km.fit(self.clust_vars_tr_)
             # calc individual silhouette scores
             silhouette_vals = silhouette_samples(
                 self.clust_vars_tr_, km_fit.labels_, metric = 'euclidean'
             )
             
-        except AttributeError:
-            cluster_labels = np.unique(self.clust_vars)
-            km_fit = km.fit_predict(self.clust_vars)
+        except:
+            km_fit = km.fit(self.clust_vars)
             # calc individual silhouette scores
             silhouette_vals = silhouette_samples(
                 self.clust_vars, km_fit.labels_, metric = 'euclidean'
@@ -349,7 +347,7 @@ class Clusterer:
 
         plot_out = (
             p9.ggplot(data = self.sil_datain_) +
-            p9.geom_bar(p9.aes(x ='number', y =  'Sil_score'),
+            p9.geom_bar(p9.aes(x ='number', y =  'Sil_score', color = 'k'),
                 stat = 'identity') +
             p9.geom_hline(p9.aes(yintercept = np.array(silhouette_vals).mean()),
                 linetype = 'dashed', color = 'red') +
@@ -385,7 +383,8 @@ class Clusterer:
             If not specified (commented out), then defaults to same value as min_clustize
         metric_in: string 'euclidean' or 'manhattan'
         gm_spantree: boolean
-            CHECK WHAT THIS PARAM DOES
+            Whether to generate the minimum spanning tree with regard to mutual reachability
+            distance for later analysis
         clust_seleps: float between 0 and 1
             default value is 0. E.g., if set to 0.5 then DBSCAN clusters will be extracted
             for epsilon = 0.5, and clusters that emereved at distances greater than 0.5 will
@@ -399,15 +398,20 @@ class Clusterer:
         hd_clusterer_: the clusterer object
             this object holds outputs produced and can be used for further clustering
         
+        hd_out_: dataframe with:
+            cluster labels
+            probabilities (confidence that each point is in the most appropriate cluster)
+            outlier scores (the higher the score, the more likely the point
+                is to be an outlier)
 
         """    
 
         hd_clusterer = hdbscan.HDBSCAN(min_cluster_size = min_clustsize,
+                                # min_samples = 20, 
                                 gen_min_span_tree = gm_spantree,
-                                metric = 'euclidean', # 'manhatten'
+                                metric = metric_in,
                                 # cluster_selection_epsilon = clust_seleps,
                                 cluster_selection_method = clustsel_meth)
-
 
         # cluster data
         try:
@@ -416,6 +420,7 @@ class Clusterer:
             hd_clusterer.fit(self.clust_vars)
 
         # plot condensed tree
+        plt.figure()
         plot2 = hd_clusterer.condensed_tree_.plot(select_clusters = True,
                                        selection_palette = sns.color_palette())
         print(plot2)
@@ -438,6 +443,7 @@ class Clusterer:
             # is to be an outlier)
 
         self.hd_out_ = pd.DataFrame({
+            'ID': self.id_vars,
             'labels': hd_clusterer.labels_,
             'probabilities': hd_clusterer.probabilities_,
             'outlier_scores': hd_clusterer.outlier_scores_
@@ -446,11 +452,13 @@ class Clusterer:
         # Other potential plots of interest
 
         # plot the spanning tree
-        # plot1 = hd_clusterer.minimum_spanning_tree_.plot(edge_cmap = 'viridis',
-        #                                      edge_alpha = 0.6,
-        #                                      node_size = 1,
-        #                                      edge_linewidth = 0.1)
-        # print(plot1)
+        plt.figure()
+        plot1 = hd_clusterer.minimum_spanning_tree_.plot(edge_cmap = 'viridis',
+                                             edge_alpha = 0.6,
+                                             node_size = 1,
+                                             edge_linewidth = 0.1)
+        print(plot1)
+        # plot1.show()
 
         # plot cluster heirarchy
         #clusterer.single_linkage_tree_.plot(cmap = 'viridis',
@@ -526,24 +534,22 @@ class Clusterer:
         # train reducer
         embedding = reducer.fit_transform(data_in)
 
-        # save as dataframe
+        # save embeddings as dataframe
         self.df_embedding_ = pd.DataFrame.from_dict({
-            #'STAID': df_train_Exst['STAID'],
-            'Emb1': embedding[:, 0],
-            'Emb2': embedding[:, 1],
-            'Emb3': embedding[:, 2],
             'Color': color_in,
             'ColSize' : np.repeat(0.1, len(embedding[:, 0]))
             }).reset_index().drop(columns = ["index"])
 
         self.df_embedding_['STAID'] = self.id_vars
+        for i in range(0, nc):
+            self.df_embedding_[f'Emb{i}'] = embedding[:, i]
 
         # Plot embedding
 
         fig = px.scatter_3d(self.df_embedding_,
-                            x = 'Emb1',
-                            y = 'Emb2',
-                            z = 'Emb3',
+                            x = 'Emb0',
+                            y = 'Emb1',
+                            z = 'Emb2',
                             color = 'Color',
                             size = 'ColSize',
                             size_max = 10,
@@ -559,6 +565,8 @@ class Clusterer:
 
         print(fig.show())
         return f'Embedding shape: {embedding.shape}'
+
+
 # %%
 # define list of columns not to transform
 # these columns are OHE so already either 0 or 1. 
@@ -568,7 +576,7 @@ not_tr_in = ['GEOL_REEDBUSH_DOM_anorthositic', 'GEOL_REEDBUSH_DOM_gneiss',
        'GEOL_REEDBUSH_DOM_sedimentary', 'GEOL_REEDBUSH_DOM_ultramafic',
        'GEOL_REEDBUSH_DOM_volcanic']
 
-test = Clusterer(clust_vars = df_train_mnexpl.drop(columns = ['STAID']),
+test = Clusterer(clust_vars = df_train_mnexpl.drop(columns = ['STAID', 'LAT_GAGE', 'LNG_GAGE']),
     id_vars = df_train_mnexpl['STAID'])
 
 test.stand_norm(method = 'standardize', # 'normalize'
@@ -586,20 +594,63 @@ test.k_clust(
     plot_distortion = True,
     kmed_method = 'alternate')
 
+for i in range(2, 11):
+    test.plot_silhouette_vals(k = i)
+
+test.hdbscanner(
+    min_clustsize = 20,
+    gm_spantree = True,
+    metric_in =   'manhattan', #'euclidean', #
+    clustsel_meth = 'leaf') #'eom') #
+
 test.umap_reducer(
     nn = 100,
     mind = 0.01,
     sprd = 1,
     nc = 10,
-    color_in = df_train_ID['AggEcoregion'])
+    color_in = pd.Series(test2.hd_out_.labels, dtype = 'category')) #df_train_ID['AggEcoregion'])
+    # df_train_ID['USDA_LRR_Site'])
+    # pd.Series(df_train_ID['ECO3_Site'], dtype = "category"))# df_train_ID['Class'])
 
-test.hdbscanner(
+##### 
+
+# new clusetering on umap reduced data
+test2 = Clusterer(clust_vars = test.df_embedding_.drop(columns = ['STAID', 'Color', 'ColSize']),
+    id_vars = df_train_mnexpl['STAID'])
+
+test2.k_clust(ki = 2, kf = 9, 
+    method = 'kmeans', 
+    plot_mean_sil = True, 
+    plot_distortion = True)
+
+for i in range(2, 9):
+    test2.plot_silhouette_vals(k = i)
+    
+test2.k_clust(
+    ki = 2, kf = 9, 
+    method = 'kmedoids', 
+    plot_mean_sil = True, 
+    plot_distortion = True,
+    kmed_method = 'alternate')
+
+for i in range(2, 9):
+    test2.plot_silhouette_vals(k = i,
+        method = 'kmedoids',
+        kmed_method = 'alternate')
+
+test2.hdbscanner(
     min_clustsize = 20,
     gm_spantree = True,
-    metric_in =  'manhatten', # 'euclidean', #
-    clustsel_meth = 'leaf' #'eom' #
-)
+    metric_in =   'euclidean', #'manhattan', #
+    clustsel_meth = 'eom') #'leaf') #
 
-for i in range(2, 11):
-    test.plot_silhouette_vals(k = i)
+test2.umap_reducer(
+    nn = 100,
+    mind = 0.01,
+    sprd = 1,
+    nc = 3,
+    color_in = df_train_ID['AggEcoregion'])
+    # df_train_ID['USDA_LRR_Site'])
+    # pd.Series(df_train_ID['ECO3_Site'], dtype = "category"))# df_train_ID['Class'])
+
 # %%
