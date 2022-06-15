@@ -1,0 +1,5 @@
+"0",""
+"0","# Visualize total quality of representation (cos2) of variables on Dim.1 and Dim.2 "
+"0","factoextra::fviz_cos2(pca_prcomp,choice = ""var"", "
+"0","                      axes = 1:2,"
+"0","                      title = ""All variables - Cos2 of variables Dim-1-2"")"

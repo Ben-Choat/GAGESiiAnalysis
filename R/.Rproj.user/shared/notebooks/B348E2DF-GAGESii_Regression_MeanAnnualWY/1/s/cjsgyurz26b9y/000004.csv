@@ -1,0 +1,14 @@
+"0"," lm_vars <- caret::train(
+    x = dt_wrk_train[, .SD, .SDcols = !c(""STAID"", ""Ann_WY_ft"")],
+    y = dt_wrk_train$Ann_WY_ft,
+    method = ""leapSeq"",
+    tuneGrid = data.frame(nvmax = 1:80),
+    trControl = train.control
+  )
+"
+"1","Reordering variables and trying again:
+"
+"1","Reordering variables and trying again:
+"
+"1","Reordering variables and trying again:
+"

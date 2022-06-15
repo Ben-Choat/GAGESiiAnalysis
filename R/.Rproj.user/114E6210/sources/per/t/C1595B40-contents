@@ -1,0 +1,1050 @@
+---
+title: "GAGESii_Wrangling"
+author: "Ben Choat"
+date: "1/5/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+
+## Working Document for analyzing GAGES ii data for the fourth chapter of my PhD dissertation
+
+### Load packages and define any functions to be used
+
+```{r LoadPackages, echo=FALSE, warning=FALSE}
+# use renv for R and R-package version control
+# see here for information on how to usD: 
+# https://rstudio.github.io/renv/articles/renv.html
+# or herD:
+# https://www.rstudio.com/blog/renv-project-environments-for-r/
+
+#if(!require(renv))(install.pacakges("renv"))
+#options for the renv package
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+
+# pacman as a package loader
+if(!require(pacman))(install.packages("pacman"))
+
+# renv for dependency management
+# data.table for data wrangling
+# dplyr for some data wrangling
+# readxl for reading excel files
+# ggplot for visualization
+# plotly for interactive plots
+# parallel for parallelized lapply families
+# doMC for parallel execution (only for linux and osx)
+# doParallel for foreach support
+pacman::p_load(renv, data.table, dplyr, openxlsx, ggplot2, plotly, 
+               parallel, doParallel) #foreach, 
+
+
+# Editing and repurposing ecdf interpolation function from CIVE622 to interpolate time
+# series data between years available
+
+int_fun <- function(x, dt.name, xcol = "year", ycol = "VOI") {
+  # x = year to get the complimentary value for
+  # dt.name = name of data.table or data.frame
+  # xcol = colummn with x-variables (e.g., discharge)
+  # ycol = column with y-variable (e.g, non-exceedence probability)
+  if(any(
+    sapply(
+      c(x, dt.name[xcol], dt.name[ycol]), is.factor))) {
+    stop("None of the inputs can be a factor")
+  }
+  
+  x = as.numeric(x)
+  
+    if(x %in% as.numeric(dt.name[[xcol]])) {
+      na.omit(dt.name[[ycol]][which(dt.name[[xcol]] == x)])[1]
+  
+      
+    }else if(x < min(as.numeric(dt.name[[xcol]]), na.rm = TRUE)){
+      x1 <- as.numeric(unique(dt.name[[xcol]])[1])
+      x2 <- as.numeric(unique(dt.name[[xcol]])[2])
+      y1 <- as.numeric(na.omit(dt.name[[ycol]])[which(dt.name[[xcol]] == x1)[1]])
+      y2 <- as.numeric(na.omit(dt.name[[ycol]])[which(dt.name[[xcol]] == x2)[1]])
+      
+      y1 + ((x-x1)/(x2-x1))*(y2-y1)
+        
+    }else if(x > max(as.numeric(dt.name[[xcol]]), na.rm = TRUE)) {
+      x1 <- as.numeric(unique(na.omit(dt.name[[xcol]]))[length(unique(na.omit(dt.name[[xcol]])))-1])
+      x2 <- as.numeric(unique(na.omit(dt.name[[xcol]]))[length(unique(na.omit(dt.name[[xcol]])))])
+      y1 <- as.numeric(na.omit(dt.name[[ycol]])[which(dt.name[[xcol]] == x1)[1]])
+      y2 <- as.numeric(na.omit(dt.name[[ycol]])[which(dt.name[[xcol]] == x2)[1]])
+      # y1 <- as.numeric(na.omit(dt.name[[ycol]])[length(dt.name[[xcol]])-1])
+      # y2 <- as.numeric(na.omit(dt.name[[ycol]])[length(dt.name[[xcol]])])
+
+      y1 + ((x-x1)/(x2-x1))*(y2-y1)
+        
+    }else{
+      x1 <- as.numeric(dt.name[[xcol]][max(which(dt.name[[xcol]] <= x), 
+                                           na.rm = TRUE)])
+      x2 <- as.numeric(dt.name[[xcol]][min(which(dt.name[[xcol]] >= x), 
+                                           na.rm = TRUE)])
+      y1 <- as.numeric(dt.name[[ycol]][max(which(dt.name[[xcol]] <= x), 
+                           na.rm = TRUE)])
+      y2 <- as.numeric(dt.name[[ycol]][min(which(dt.name[[xcol]] >= x), 
+                                           na.rm = TRUE)])
+      
+      y1 + ((x-x1)/(x2-x1))*(y2-y1)
+    }
+}
+
+```
+
+### Load data descriptions and data and filter to variables of interest.
+Variables were labeled with a y (yes), p (possibly), or n (no) in the excel 
+DataNotes.xlsx file. 
+
+
+```{r LoadData, echo=FALSE, warning=FALSE}
+# Load variable descriptions only including those that are interest "y", or 
+# possibly of interest "p"
+dt_voi <- as.data.table(openxlsx::read.xlsx(
+  "D:/Projects/GAGESii_ANNstuff/DataNotes.xlsx",
+  sheet = "GAGESii_VarDescription"))[
+    OF_Interest %chin% c("y") #c("y", "p")
+  ]
+
+# Same as above but time-series variables
+dt_voi_ts <- as.data.table(openxlsx::read.xlsx(
+  "D:/Projects/GAGESii_ANNstuff/DataNotes.xlsx",
+  sheet = "GAGESiiTS_VarDescription"))[
+    OF_Interest %chin% c("y") #c("y", "p")
+  ]
+
+
+```
+
+### Load data to be used to filter to basins with high confidence in basin 
+boundary (>7) and with enough consecutive years (4) of data.
+GAGESii-TS water use data is only available from 1985-2010 so starting with
+1980-2010 since water use seems to represent average of previous five years.
+If enough samples are not available, will have to try to expand.
+
+Load basin classifications
+
+```{r IdentifyData, echo=FALSE, warning=FALSE}
+# basin classifications
+dt_basin_classif <- as.data.table(openxlsx::read.xlsx(
+  "D:/DataWorking/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx",
+  sheet = "Bas_Classif"))
+
+# Store initial number of reference and non-reference stations
+ref_init <- nrow(dt_basin_classif[CLASS == "Ref"])
+nonref_init <- nrow(dt_basin_classif[CLASS == "Non-ref"])
+
+# Load quality assurance tab and filter to basins with a basin boundary confidence >= 7
+tmp_BndryCnfdnc <- as.data.table(openxlsx::read.xlsx(
+  "D:/DataWorking/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx",
+  sheet = "Bound_QA"))[
+    BASIN_BOUNDARY_CONFIDENCE >= 7
+    ]
+
+# Load flow record tab from gagesII_sept30_2011_conterm.xlsx file
+# 1 = full record for that year, 0 = not full record for that year
+# Filter flowrec to those basins with boundary confidence >= 7
+tmp_flowrec <- as.data.table(openxlsx::read.xlsx(
+  "D:/DataWorking/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx",
+  sheet = "FlowRec"))[
+    STAID %in% tmp_BndryCnfdnc$STAID
+    ][
+      , c(1, 87:116) # filtering to years 1976 through 2009
+    ]
+
+# output data.table will have values for each year that are integer values
+# representing the number of years from the current through the next four that 
+# have full flow records
+
+dt_contflow <- as.data.table(
+    lapply(
+      seq(4, ncol(tmp_flowrec), 1), 
+      function(i) {
+        if(i == 4) {
+          tmp_flowrec[, 1]
+        } else {
+        rowSums(tmp_flowrec[, (i - 3):i])
+        } #close if-else
+      } #close function
+    ) # close lapply
+  ) # closeas.data.table
+
+
+colnames(dt_contflow) <- colnames(tmp_flowrec)[1:28]
+
+# define vector to hold staid's to keep (kp) with at least 1 group of 4 
+# continuous years.
+tmp_kp <- c()
+
+# loop through rows of dt_contflow and return only rows that contain 4 
+for(i in 1:nrow(dt_contflow)){
+  if(4 %in% dt_contflow[i, 2:ncol(dt_contflow)]) {
+    tmp_kp <- c(tmp_kp, dt_contflow[i, STAID])    
+  }
+}
+
+# return dt_contflow stations that have at least one 4
+dt_contflow <- merge(
+  dt_contflow[STAID %in% tmp_kp],
+  dt_basin_classif[,.(STAID, CLASS)], 
+  by = "STAID"
+   ) # close merge
+  
+
+# Store number of non-reference and reference gauges after filtering to stations
+# with >= 4 consecutive years of flow
+ref_cntyrs <- nrow(dt_contflow[CLASS == "Ref"])
+nonref_cntyrs <- nrow(dt_contflow[CLASS == "Non-ref"])
+
+
+# load in tables to be used in idvars
+# data table of variables to use for labeling in dimension reduction and/or
+# clustering
+tmp_idvars <- as.data.table(openxlsx::read.xlsx(
+  "D:/DataWorking/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx",
+  sheet = "Regions"))[
+    , .(STAID, ECO3_SITE, USDA_LRR_SITE)
+  ]
+
+# create data table of variables to use for labeling in dimension reduction
+# and/or clustering
+tmp_idvars <- data.table(
+  "STAID" = dt_basin_classif$STAID,
+  "Class" = dt_basin_classif$CLASS,
+  "AggEcoregion" = dt_basin_classif$AGGECOREGION,
+  "ECO3_Site" = tmp_idvars$ECO3_SITE,
+  "USDA_LRR_Site" = tmp_idvars$USDA_LRR_SITE
+)
+  
+# data.table::fwrite(tmp_idvars,
+#         file = "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_idVars.csv")
+# remove tmp_flowrec and dt_BndryCnfd
+rm(list = ls(pattern = "tmp_"))
+```
+
+### Read in variables of interest and filter to stations of interest.
+Read in the excel worksheet with the years of interest for each variable.
+Read in the tab names from All_GAGESiiTS.xlsx and remove those that are not
+going to be used - including NLCD data (since the NWALT years of coverage go
+back further in time), the 1974 NWALT tab, the land cover code tabs, and the
+ForestCanopy tab (since it is only available for 2011).
+
+Produce long-version of gagesii_ts data.
+
+Read in tab names from the gagesII_sept30_2011_conterm.xlsx file, which is the
+file that has the explanatory variable data. Then read
+
+```{r LoadExplData, echo=FALSE, warning=FALSE}
+#### GAGESii_TS data
+
+# Read in table with time series years of interest, and the related years for
+# each time series variable of interest using only surrounding years of the 
+# actual year available
+# keep only the years are represented across all variables
+dt_years_ts_srndgyrs <- as.data.table(openxlsx::read.xlsx(
+  "D:/Projects/GAGESii_ANNstuff/DataNotes.xlsx",
+  sheet = "GAGESii_TS_Overlap_SrndgYrs"))[
+    , ':=' (LandUSENWALT_xxxx = NULL,
+             DamRemovals = NULL,
+            # ForestCanopy = NULL,
+             LandUseNLCD_xxxx = NULL,
+             # ImpervNLCD = NULL,
+             Timber = NULL)
+  ]
+
+
+dt_years_ts_srndgyrs <- as.data.table(
+  dt_years_ts_srndgyrs[
+    apply(
+      dt_years_ts_srndgyrs, 1, function(x){
+        !any(is.na(x))
+        }
+      ),
+    ]
+)
+ 
+
+
+# convert to characters
+dt_years_ts_srndgyrs <- as.data.table(
+  apply(
+    dt_years_ts_srndgyrs, 2, as.character
+    )
+  )
+
+# rename columns                                          
+colnames(dt_years_ts_srndgyrs) <- c("year",
+                                    "ag",
+                                    "NWALT",
+                                    "Housing",
+                                    "Population",
+                                    "WaterUse",
+                                    "ForestCanopy",
+                                    "NLCD")
+
+
+
+
+# convert to long format
+dt_years_ts_srndgyrs <- data.table::melt(
+  dt_years_ts_srndgyrs,
+  id.vars = "year",
+  value.name = "year_av",
+  measure.vars = colnames(dt_years_ts_srndgyrs)[2:8]
+)
+
+# Read in table with time series years of interest, and the related years for
+# each time series variable of interest using only the nearest years
+dt_years_ts_nrstyr <- as.data.table(openxlsx::read.xlsx(
+  "D:/Projects/GAGESii_ANNstuff/DataNotes.xlsx",
+  sheet = "GAGESii_TS_Overlap_NrstYr"))[
+    , ':=' (LandUSENWALT_xxxx = NULL,
+             DamRemovals = NULL,
+             # ForestCanopy = NULL,
+             # LandUseNLCD_xxxx = NULL,
+             ImpervNLCD = NULL,
+             Timber = NULL)
+  ]
+    
+# Convert to characters
+dt_years_ts_nrstyr <- as.data.table(
+  apply(
+    dt_years_ts_nrstyr, 2, as.character
+    )
+)
+
+# rename columns                             
+colnames(dt_years_ts_nrstyr) <- c("year",
+                                    "ag",
+                                    "NWALT",
+                                    "Housing",
+                                    "Population",
+                                    "WaterUse", 
+                                    "ForestCanopy",
+                                    "NLCD")
+
+# convert to long format
+dt_years_ts_nrstyr <- data.table::melt(
+  dt_years_ts_nrstyr,
+  id.vars = "year",
+  value.name = "year_av",
+  measure.vars = colnames(dt_years_ts_nrstyr)[2:8]
+)
+
+# same but for time series xlsx sheet
+# further filter land use tabs to the years of interest
+tabnames.ts <- openxlsx::getSheetNames(
+  "D:/DataWorking/GAGESii_TS/All_GAGESiiTS.xlsx"
+)
+tabnames.ts <- tabnames.ts[
+  !tabnames.ts %in% c(
+    # "ForestCanopy",
+    # "ImpervNLCD",
+    # "LandUseNLCD_2001",
+    # "LandUseNLCD_2006",
+    # "LandUseNLCD_2011",
+    "LandUseNLCD_Codes",
+    "LandUseNWALT_1974",
+    #"LandUseNWALT_1982",
+    #"LandUseNWALT_1992",
+    #"LandUseNWALT_2002",
+    #"LandUseNWALT_2012",
+    "LandUseNWALT_82_12",
+    "LandUseNWALT_Codes",
+    "N_P_Fertilizer",
+    "N_P_Manure",
+    "PeakFlow_Codes_Anthrop",
+    "Timber"
+    
+    )
+  ]
+
+# Loop through time series tabnames and read in tabs of GAGESii_ts variables.
+# Filter to the specific variables of listed in tmp_voi_ts  
+# Remove duplicated stations and filter to stations w/continues of years
+# to assign each dt to the global env. uncomment the appropriate lines
+
+# go parallel
+#cl <- parallel::makeCluster(cl)
+# parallel::clusterExport(cl, "dt_contflow")
+# parallel::clusterApply(cl, library(data.table))
+
+
+dt_expl_ts <- Reduce(
+  function(x, y) {
+      merge(x, y, by = "STAID", all = TRUE)
+    }, # close function(x, y)
+      lapply(
+        tabnames.ts, function(z) {
+          # assign(paste0("dt_", z),
+                 data.table::as.data.table(
+                  openxlsx::read.xlsx(
+                  "D:/DataWorking/GAGESii_TS/All_GAGESiiTS.xlsx",
+                  sheet = z) # close read.xlsx
+                  )#[ # close as.data.table
+                  # !duplicated(STAID)
+                  # ][
+                  #   STAID %chin% dt_contflow$STAID
+                  # ]
+          #, envir = .GlobalEnv) # close assign
+          } # close function(z)
+        ) # close lapply
+      #} # function(x, y)
+    )[ # close Reduce
+   !duplicated(STAID) # remove duplicated stations
+    ][
+      STAID %chin% dt_contflow$STAID # keep stations w/>=4yrs cont. flow
+    ]
+
+
+# Read in names of specific vars to be used from GAGESii_ts
+tmp_voi_ts <- unlist(
+  openxlsx::read.xlsx(
+          "D:/Projects/GAGESii_ANNstuff/DataNotes.xlsx",
+          sheet = "GAGESii_TS_list",
+          colNames = FALSE)
+)
+
+
+# define vector of colnames to subset by
+tmp_sbst <- colnames(dt_expl_ts) %in% tmp_voi_ts
+# subset dt_expl_ts 
+dt_expl_ts <- dt_expl_ts[
+  , ..tmp_sbst
+  ]
+
+
+# patterns to match in dt_expl_ts to convert to wide format
+tmp_patterns <- c("NLCD",
+                  "NWALT",
+                  "imperv",
+                  "hcrop",
+                  "irrig",
+                  "wu",
+                  "PDEN",
+                  "HDEN")
+
+dt_expl_ts_long <- data.table::rbindlist(
+  lapply(
+  tmp_patterns, function(x) {
+    if(x == "NWALT") {
+      data.table::melt(
+      dt_expl_ts,
+      id.vars = "STAID",
+      measure.vars = patterns(x),
+      variable.factor = FALSE
+    )[ # close melt
+      , ':=' (year = substr(variable, 6, 7),
+              VOI = substr(variable, 9, nchar(as.vector(variable))),
+              variable = x
+              )
+    ][ # replace two digit years with four digit years
+      year %chin% c("82", "92"), year := paste0("19", year)
+    ][
+      year %chin% c(",02", "12"), year := paste0("20", year)
+    ]
+      } else if(x == "NLCD") {
+      data.table::melt(
+      dt_expl_ts,
+      id.vars = "STAID",
+      measure.vars = patterns(x),
+      variable.factor = FALSE
+    )[ # close melt
+      , ':=' (year = substr(variable, 5, 6),
+              VOI = substr(variable, 8, nchar(as.vector(variable))),
+              variable = x
+              )
+    ][
+      year %chin% c("01", "06", "11"), year := paste0("20", year)
+    ]
+      } else if(x == "hcrop" | x == "irrig") { # close if
+      data.table::melt(
+      dt_expl_ts,
+      id.vars = "STAID",
+      measure.vars = patterns(x),
+      variable.factor = FALSE
+     )[ # close melt
+       , ':=' (year = substr(variable, 6, 9), 
+               VOI = x,
+               variable = "ag"
+               )
+       ]
+      } else if (x == "imperv") {# close else if
+      data.table::melt(
+      dt_expl_ts,
+      id.vars = "STAID",
+      measure.vars = patterns(x),
+      variable.factor = FALSE
+     )[ # close melt
+       , ':=' (year = substr(variable, 7, 10), 
+               VOI = x,
+               variable = ifelse(nchar(as.vector(variable)) > 10, "NWALT", "NLCD")
+               )
+       ]
+        } else if (x == "wu") { # close else if
+        data.table::melt(
+      dt_expl_ts,
+      id.vars = "STAID",
+      measure.vars = patterns(x),
+      variable.factor = FALSE
+     )[ # close melt
+       , ':=' (year = substr(variable, 3, 6), 
+               VOI = x,
+               variable = "WaterUse"
+               )
+       ]
+          } else if (x == "HDEN") {# close else if
+          data.table::melt(
+      dt_expl_ts,
+      id.vars = "STAID",
+      measure.vars = patterns(x),
+      variable.factor = FALSE
+     )[ # close melt
+       , ':=' (year = substr(variable, 6, 9), 
+               VOI = x,
+               variable = "Housing"
+               )
+       ]
+          } else if (x == "PDEN") {# close else if
+          data.table::melt(
+      dt_expl_ts,
+      id.vars = "STAID",
+      measure.vars = patterns(x),
+      variable.factor = FALSE
+     )[ # close melt
+       , ':=' (year = substr(variable, 6, 9), 
+               VOI = x,
+               variable = "Population"
+               )
+       ]
+          }# close else if
+      } # close function
+  ) # close lapply
+)# %>%  # close rbindlist
+# rbind(data.table( # bind damremoval
+#       "STAID" = dt_expl_ts$STAID,
+#       "variable" = "DamRemoval",
+#       "value" = dt_expl_ts$YearDamRemoved,
+#       "year" = dt_expl_ts$YearDamRemoved,
+#       "VOI" = "YearRemoved"
+#       ) # close data.table
+#     ) # close rbind
+
+
+
+#### GAGESii (static) data
+
+# Return tab names from the gagesII_sept30_2011_conterm.xlsx file
+tabnames.stat <- openxlsx::getSheetNames(
+  "D:/DataWorking/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx"
+)
+
+tabnames.stat <- tabnames.stat[
+  !tabnames.stat %in% c(
+    "Bound_QA",
+    "FlowRec",
+    "LC06_Basin",
+    "LC06_Mains100",
+    "LC06_Mains800",
+    "LC06_Rip100",
+    "LC06_Rip800",
+    "LC_Crops",
+    "Nutrient_App",
+    "Pest_App",
+    "Pop_Infrastr",
+    "Prot_Areas",
+    "Regions",
+    "X_Region_Names"
+    )
+  ]
+
+# Loop through tstatic tabnames and read in tabs of GAGESii variables.
+# Filter to the specific variables of listed in tmp.voi  
+# Commented lines related to assign, can be uncommented if you would like
+# each tab to be saved to its own data.table in the the global env.
+
+dt_expl_stat <- Reduce(
+  merge, 
+    lapply(
+    tabnames.stat, function(x) {
+      #assign(
+        #paste0("dt_", x), 
+      as.data.table(
+          openxlsx::read.xlsx(
+          "D:/DataWorking/GAGESii/basinchar_and_report_sept_2011/gagesII_sept30_2011_conterm.xlsx",
+          sheet = x) # close read.xlsx
+        )#, # close as.data.table
+     #) # close assign     envir = .GlobalEnv) # close assign
+    } # close function
+  ) # close lapply
+)[ # close Reduce
+   !duplicated(STAID) # remove duplicated stations
+    ][
+      STAID %in% dt_contflow$STAID # keep stations w/>=4yrs cont. flow
+    ]
+
+
+#### NOTE:
+# STAID 06900050 is missing a value for HGVAR. Replacing with a 0, since the 
+# other soil percentages add to 100% already.
+dt_expl_stat[STAID == "06900050", HGVAR := 0]
+
+# Read in names of specific vars to be used from GAGESii_static
+tmp_voi_stat<- unlist(
+  openxlsx::read.xlsx(
+          "D:/Projects/GAGESii_ANNstuff/DataNotes.xlsx",
+          sheet = "GAGESii_Static_list",
+          colNames = FALSE)
+)
+
+# define vector of colnames to subset by
+tmp_sbst <- (colnames(dt_expl_stat) %in% tmp_voi_stat)
+# subset dt_expl_static 
+dt_expl_stat <- dt_expl_stat[
+  , ..tmp_sbst
+  ]
+
+# # write filtered static vars to a csv
+# fwrite(dt_expl_stat,
+#        file = "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv")
+
+
+rm(list = ls(pattern = "tmp_"))
+```
+
+
+### Investigate time series data and quantify how much values change between
+years of recorded values. Use max - min, variance, and stdev.
+
+```{r ExplVariability, echo=FALSE, warning=FALSE}
+# Calculate variability metrics (excluding dams)
+tmp_ts_change <- dt_expl_ts_long[!variable == "DamRemoval"
+  , .("StDev" = round(sd(value, na.rm = TRUE), 3),
+      "Range" = max(value, na.rm = TRUE) - min(value, na.rm = TRUE),
+      "Prcnt_Change" = 100*(value[length(value)] - (value[1]) + 1e-11)/(value[1] + 1e-11) 
+    ), # close '.' list
+  by = .(STAID, variable, VOI)][
+    Range == -Inf, Range := NA # replace -Inf with NA
+  ]
+
+# summarise change by voi
+tmp_ts_chgsum <- 
+  tmp_ts_change[,
+               .(StDev_Qnt05 = quantile(StDev, 0.05, na.rm = TRUE),
+                 StDev_Qnt25 = quantile(StDev, 0.25, na.rm = TRUE),
+                 StDev_Qnt50 = quantile(StDev, 0.50, na.rm = TRUE),
+                 StDev_Qnt75 = quantile(StDev, 0.75, na.rm = TRUE),
+                 StDev_Qnt90 = quantile(StDev, 0.90, na.rm = TRUE),
+                 StDev_Qnt95 = quantile(StDev, 0.95, na.rm = TRUE),
+                 StDev_Qnt99 = quantile(StDev, 0.99, na.rm = TRUE),
+                 Rng_Qnt05 = quantile(Range, 0.05, na.rm = TRUE),
+                 Rng_Qnt25 = quantile(Range, 0.25, na.rm = TRUE),
+                 Rng_Qnt50 = quantile(Range, 0.50, na.rm = TRUE),
+                 Rng_Qnt75 = quantile(Range, 0.75, na.rm = TRUE),
+                 Rng_Qnt90 = quantile(Range, 0.90, na.rm = TRUE),
+                 Rng_Qnt95 = quantile(Range, 0.95, na.rm = TRUE),
+                 Rng_Qnt99 = quantile(Range, 0.99, na.rm = TRUE),
+                 PrcChng_Qnt25 = quantile(Prcnt_Change, 0.25, na.rm = TRUE),
+                 PrcChng_Qnt50 = quantile(Prcnt_Change, 0.50, na.rm = TRUE),
+                 PrcChng_Qnt75 = quantile(Prcnt_Change, 0.75, na.rm = TRUE),
+                 PrcChng_Qnt90 = quantile(Prcnt_Change, 0.90, na.rm = TRUE),
+                 PrcChng_Qnt95 = quantile(Prcnt_Change, 0.95, na.rm = TRUE),
+                 PrcChng_Qnt99 = quantile(Prcnt_Change, 0.99, na.rm = TRUE)
+                 ),
+               by = VOI]
+
+################# Begin filtering by quantile
+# to switch which quantile is used, just highlight this bit of code then search
+# and replace the current quantile with the one you want
+# e.g., replace 90 with 95
+
+# get STAIDs with those experiencing > the 90th quantile removed
+
+dt_expl_tsf90 <- as.data.table(merge(
+  dt_expl_ts_long, tmp_ts_change, by = c("STAID", "variable", "VOI")#, all.x = TRUE
+) %>%  # close merge
+  merge(
+    ., tmp_ts_chgsum[, .(VOI, StDev_Qnt90, Rng_Qnt90, PrcChng_Qnt90)], by = "VOI"
+    ) # close merge
+)[ # close as.data.table
+      StDev <= StDev_Qnt90 & 
+        Range <= Rng_Qnt90 & 
+        Prcnt_Change <= PrcChng_Qnt90 #|
+        # is.na(value),
+    ] %>% 
+   merge(
+     ., dt_basin_classif[,.(STAID, CLASS)], 
+  by = "STAID"
+   ) # close merge
+
+
+# Find limiting VOI (voi with least number of stations) after filtering, 
+# and filter the rest of the VOI to align with those stations
+tmp_lngth <- dt_expl_tsf90[, length(unique(STAID)), by = VOI]
+tmp_voi_min <- tmp_lngth[which(V1 == min(V1))]$VOI
+
+# Define data.table filtered to quantile of choice (see above) and using the
+# VOI with the fewest values to filter STAIDs
+dt_expl_tsf90min <- #merge(
+  dt_expl_tsf90[
+  STAID %in% dt_expl_tsf90[VOI == tmp_voi_min, STAID]
+  ]
+
+# return number of reference and non-reference gages after filtering based on speficied quantile.
+ref_fq90 <- length(dt_expl_tsf90min[CLASS == "Ref", unique(STAID)])
+nonref_fq90 <- length(dt_expl_tsf90min[CLASS == "Non-ref", unique(STAID)])
+# return total number of gages after filtering
+tot_fq90 <- length(dt_expl_tsf90min[, unique(STAID)])
+
+
+cat("Reference stations removed after filtering to those with >= 4 consecutive years: \n", 
+    ref_init - ref_cntyrs, 
+    "\nNon-reference stations removed after filtering to those with >= 4 consecutive years: \n", 
+    nonref_init - nonref_cntyrs,
+    "\nFurthure reference stations removed after filtering the specified quantile: \n", 
+    ref_cntyrs - ref_fq90, 
+    "\nFurthure non-reference stations removed after filtering the specified quantile: \n", 
+    nonref_cntyrs - nonref_fq90,
+    "\nLeaving the total reference stations at: \n",
+    ref_fq90,
+    "\nand the total non-refernence stations at: \n",
+    nonref_fq90,
+    "\nFor a total of: \n",
+    ref_fq90 + nonref_fq90, "stations"
+    )
+
+################## End filtering based on quantile
+
+
+
+
+rm(list=ls(pattern = "tmp"))
+rm(dt_expl_tsf90)
+
+# 
+# # plot 
+# p <- ggplot2::ggplot(data = na.omit(dt_expl_ts_long[variable == "NWALT"])) +
+#   geom_histogram(aes(y = value)) +
+#   facet_grid(rows = vars(VOI), scales = "free")# +
+#   #lims(y = c(0, 1))
+# 
+# plotly::ggplotly(p)
+
+```
+
+### Expand the GAGESii_TS data to all years of interest using three methods.
+
+1. Fill all years using the nearest year's data
+
+2. Fill only those years with data available for all variables within two years
+  of the year represented, using the surrounding years' data.
+  5 year windows were considered for this method.
+
+3. Fill all years by interpolating on data from 2 nearest years
+
+Final long-form GAGESii_TS data is written to .csv files in this chunk.
+```{r ExpandToAllYears, echo=FALSE, warning=FALSE}
+## Create final long data.tables with all variables and all years using:
+# 1. nearest year's data
+# 2. surrounding years' data
+# 3. interpolated data from 2 nearest years
+
+tmp_expl <- dt_expl_ts_long[
+  STAID %chin% unique(dt_expl_tsf90min$STAID),
+  ]
+
+# editing to add NLCD variables ad-hoc
+# tmp_expl <- tmp_expl[variable == "NLCD", ]
+
+tmp_years <- data.table(
+  "year" = #rep(
+    as.character(seq(1980, 2012))#, 
+    #length(unique(tmp_expl$STAID)) * length(unique(tmp_expl$VOI)))
+  )
+
+# the number of rows needed if every station remaining, had a value for every variable for every
+# year between 1980-2012
+tmp_nrws <- (2012-1979) * length(unique(tmp_expl$STAID)) * length(unique(tmp_expl$VOI))
+
+tmp_tmplt_dt <- merge(
+  data.table(
+    STAID = rep(unique(tmp_expl$STAID), tmp_nrws/length(unique(tmp_expl$STAID))),
+    VOI = rep(unique(tmp_expl$VOI), tmp_nrws/length(unique(tmp_expl$VOI))),
+    year = rep(unlist(tmp_years), tmp_nrws/nrow(tmp_years))
+  ),
+  tmp_expl,
+  by = c("STAID", "VOI", "year"),
+  all.x = TRUE
+)[
+  VOI %chin% unique(dt_expl_ts_long[variable == "NWALT", VOI]),
+  variable := "NWALT"
+    ][
+  VOI %chin% unique(dt_expl_ts_long[variable == "NLCD", VOI]),
+  variable := "NLCD"
+    ][
+  VOI %chin% unique(dt_expl_ts_long[variable == "LandUse", VOI]),
+  variable := "LandUse"
+    ][
+  VOI %chin% unique(dt_expl_ts_long[variable == "ag", VOI]),
+  variable := "ag"
+    ][
+  VOI %chin% unique(dt_expl_ts_long[variable == "WaterUse", VOI]),
+  variable := "WaterUse"
+    ][
+  VOI %chin% unique(dt_expl_ts_long[variable == "Population", VOI]),
+  variable := "Population"
+    ][
+  VOI %chin% unique(dt_expl_ts_long[variable == "Housing", VOI]),
+  variable := "Housing"
+    ]
+
+# 1. nearest year's data
+dt_nrst <- merge(
+  dt_years_ts_nrstyr,
+  tmp_tmplt_dt,
+  by.x = c("year_av", "variable"), by.y = c("year", "variable")
+)
+
+# produce wide format version
+dt_nrst_wide <- data.table::dcast(
+  dt_nrst,
+  STAID + year ~ paste0("TS_", variable, "_", VOI),
+  value.var = "value"
+)
+
+# dt_nrst <- fread("D:/Projects/GAGESii_ANNstuff/Data_Out/GAGESts_NearestYrs.csv")
+
+# 2. surrounding years' data
+
+dt_srndngyrs <- merge(
+  dt_years_ts_srndgyrs,
+  tmp_tmplt_dt,
+  by.y = c("year", "variable"), by.x = c("year_av", "variable")#c("year", "variable")
+)
+
+# produce wide format version
+dt_srndngyrs_wide <- data.table::dcast(
+  dt_srndngyrs,
+  STAID + year ~ paste0("TS_", variable, "_", VOI),
+  value.var = "value"
+)
+
+# tmp reference table
+tmp_ref <- tmp_tmplt_dt[!is.na(value),]
+
+
+# 3. interpolated data from 2 nearest years
+# create reference table for interpolating on
+#########
+# would take about 7 hours on this Ben's Surface
+
+# commenting out so is not accidentally executed
+
+#######
+# Comment out starts here
+#######
+tmp_inp <- expand.grid(STAID = unique(dt_nrst$STAID), VOI = unique(dt_nrst$VOI), year = unique(dt_nrst$year))
+
+# create parallel cluster
+cl <- parallel::makeCluster(parallel::detectCores() - 1) # opens cluster
+
+# export int_fun and tmp_ref to cluster
+clusterExport(cl, c("int_fun", "tmp_ref"))
+
+system.time({
+tmp_int_value <-  unlist(parallel::clusterMap(cl,
+    function(year_in, sta_in, voi_in){
+    int_fun(
+      x = year_in,
+      dt.name = tmp_ref[tmp_ref$STAID == sta_in & tmp_ref$VOI == voi_in,],
+      xcol = "year",
+      ycol = "value"
+      )},
+    year_in = as.character(tmp_inp$year),
+    sta_in = as.character(tmp_inp$STAID),
+    voi_in = as.character(tmp_inp$VOI)
+    ))
+  })
+parallel::stopCluster(cl)
+
+##trbleshooting
+tmp_output <- as.data.table(tmp_inp)
+tmp_output$value <- tmp_int_value
+##end
+
+ dt_int <- dt_nrst[, value := NULL]
+ dt_int <- merge(
+   dt_int,
+   tmp_output,
+   by = c("STAID", "VOI", "year")
+ )
+ # produce wide format version
+ dt_int_wide <- data.table::dcast(
+   dt_int,
+   STAID + year ~ paste0("TS_", variable, "_", VOI),
+   value.var = "value"
+ )
+
+
+
+########
+# Comment out ends here
+########
+
+#################
+# Another approach to parallelism that clocked in as slower than the above approach
+# but it seems likely to be easier to apply on HPCs
+#################
+# # doPar (about 45-60 seconds )
+# tmp_inp <- expand.grid(STAID = unique(dt_nrst$STAID)[1:40], VOI = unique(dt_nrst$VOI), year = unique(dt_nrst$year))
+# 
+# 
+# cl <- parallel::makeCluster(detectCores())
+# doParallel::registerDoParallel(cl)
+# 
+# system.time({
+#   
+# tmp_test_dofor <- foreach(i = 1:nrow(tmp_inp), 
+#                           .packages = ("data.table")) %dopar% (
+# int_fun(
+#       x = as.numeric(as.character(tmp_inp$year))[i],
+#       dt.name = tmp_ref[STAID == unlist(tmp_inp$STAID)[i] & 
+#                           VOI == unlist(tmp_inp$VOI)[i], ],
+#       xcol = "year",
+#       ycol = "value"
+#       )
+#   )
+# 
+#   })
+# parallel::stopCluster(cl)
+#################
+
+#####
+# some trouble shooting code
+####
+# # test line
+# # system.time({
+# # sapply(seq(1980, 2020, 1), function(x){
+# int_fun("1980", tmp_ref[STAID == "01013500" & VOI == "HDEN"], xcol = "year", ycol = "value")
+# # })
+# # })
+#####
+
+# # write final GAGESii_TS data to csvs
+# # nearest-long
+# fwrite(dt_nrst,
+#        file = "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_NearestYrs.csv",
+#        append = TRUE)
+# #nearest-wide
+# fwrite(dt_nrst_wide,
+#        file = "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_NearestYrs_Wide.csv",
+#        append = TRUE)
+# 
+# # surrounding-long
+# fwrite(dt_srndngyrs,
+#        file = "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_SurroundingYrs.csv",
+#        append = TRUE)
+# # surrounding-wide
+# fwrite(dt_srndngyrs_wide,
+#        file = "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_SurroundingYrs_Wide.csv",
+#        append = TRUE)
+
+# interpolated-long
+# fwrite(dt_int,
+#      file = "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs.csv",
+#        append = TRUE)
+# # interpolated-wide
+# fwrite(dt_int_wide,
+#        file = "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_InterpYrs_Wide.csv",
+#        append = TRUE)
+
+# write remaining station ID's
+# fwrite(list("STAID" = unique(dt_expl_nrst$STAID)),
+#        file = "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Cont_STATID.csv",
+#       row.names = FALSE)
+
+
+rm(list = ls(pattern = "tmp"))
+#rm(list = ls(pattern = "ref"))
+```
+
+
+
+### Get total sample size
+Now that we have our final form of the GAGESii_TS data, 
+figure out how many total samples there will be
+for each time-scale of water yield to be modeled. Various lengths of lookback 
+data will be investigated.
+
+Here I list the longest lookback periods that will be considered:
+Annual: a 3-year period is 1 sample (2-years of lookback data)
+Monthly: a 12-month period is 1 sample (11-months of lookback data)
+Daily: a 365-day period is 1 sample (364-days of lookback data)
+
+In my proposal, I identified 1,280,000 daily samples as a target based on 
+previous work.
+
+```{r CalculateSampleSizes, echo=FALSE, warning=FALSE}
+
+# daily samples
+# daily samples = 
+#               ((#continuous Years) * 365 + (#leap years)- 
+#               (364 * #first years)) * (#stations) 
+tmp_dly_n_nrstint <- (33 * 365 + 9 - 364 * 1) * length(unique(dt_nrst$STAID))
+
+# for surrounding data method
+# #continuous years = 
+tmp_dly_n_srndng <- (9 * 365 + 3 - 364 * 3) * length(unique(dt_nrst$STAID))
+
+# monthly samples
+# monthly samples = 
+#               ((#continuous years) * 12 - (#first years * 11)) * (#stations)
+tmp_mnthly_n_nrstint <- (33 * 12 - 1 * 11) * length(unique(dt_nrst$STAID))
+tmp_mnthly_n_srndng <- (9 * 12 - 3 * 11) * length(unique(dt_nrst$STAID))
+
+# yearly samples
+# yearly samples =
+#                ((#continuous years) - (#first years)) * (#stations)
+tmp_yrly_n_nrstint <- (33 - 1) * length(unique(dt_nrst$STAID))
+tmp_yrly_n_srndng <- (9 - 3) * length(unique(dt_nrst$STAID))
+
+cat("\n# daily samples using all years (nearest and interpolated methods):\n",
+    tmp_dly_n_nrstint,
+    "\n# daily samples using only years with data surrounding it:\n",
+    tmp_dly_n_srndng,
+    "\n# monthly samples using all years (nearest and interpolated methods):\n",
+    tmp_mnthly_n_nrstint,
+    "\n# monthly samples using only years with data surrounding it:\n",
+    tmp_mnthly_n_srndng
+    )
+
+#rm(list=ls(pattern = "tmp"))
+#rm(list=ls())
+```
+
+
+
+### The Code
+
+```{r ref.label="LoadPackages", eval=FALSE}
+```
+```{r ref.label="LoadData", eval=FALSE}
+```
+```{r ref.label="IdentifyData", eval=FALSE}
+```
+```{r ref.label="LoadExplData", eval=FALSE}
+```
+```{r ref.label="ExplVariability"}
+```
+```{r re.label="ExpandToAllYears"}
+```
+```{r ref.label="CalculateSampleSizes", eval=FALSE}
+```
+
+

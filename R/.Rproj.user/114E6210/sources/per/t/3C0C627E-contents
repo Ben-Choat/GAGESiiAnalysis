@@ -1,0 +1,822 @@
+
+#Functions used in CIVE 622 (Risk Analysis of Water and Environmental Systems)
+#Fall 2020
+#####
+
+#Use library, randtests for turning point test of randomness
+
+#####
+#Number of histogram bins
+#####
+nbins.fun <- function(N.for.data.of.interest) {floor(1 + 3.322*log10(N.for.data.of.interest))}
+
+
+#####
+#ECDF
+#####
+ecdf.fun <- function(random.variables, var.type = "continuous", ecdf.name = "cdf.out", 
+                     plot.out = TRUE, underlying.distr = "uniform") {
+  #random variables is a vector of random variables to calculate ecdf for (e.g., discharge)
+  #var.type defines if variable is continuous or discrete
+  #plot.out specifies if a plot of the ecdf should be output
+  #underlying.distr specifies which type of distribution the underlying true distribution
+  #is assumed to be; default is "uniform"
+  #all possible underlying distrs. include "uniform", "normal", (more to come if need be)
+  
+  #get sample count, n, and sort random variables (discharge)
+  N <- length(na.omit(random.variables))
+  xs <- sort(na.omit(random.variables))
+  #If all variables are continuous then calculate ecdf assuming underlying distribution
+  if(var.type == "continuous") {
+    xs.rank <- rank(xs, ties.method = "min")
+    if(underlying.distr == "uniform") {
+      alpha <- 0
+      beta <- 1
+    }else if(underlying.distr == "normal") {
+      alpha <- 3/8
+      beta <- 1
+    }
+    xs.Fx <- (xs.rank - alpha)/(N + beta - 2*alpha)
+    assign(ecdf.name, 
+           data.frame("xs" = xs, "xs.rank"= xs.rank, "Fx"=xs.Fx, 
+                      "FDC" = (1-xs.Fx)), envir=.GlobalEnv)
+    #cat("ecdf is saved to data.frame called 'cdf.out'")
+    if(plot.out == TRUE) {
+      plot(xs.Fx~xs, type="b", xlab="Discharge [cfs]", ylab=expression(hat(F)(x)), 
+           main="ECDF Plot", ylim = c(0, 1))}   #xlim = c(0.1, max(cdf.out$xs))
+  }else{
+    #if random variables are discrete then calculate cumulative relative frequency
+    temp <- unique(xs)
+    Ni <-lapply(temp, function(x) {length(xs[xs==x])})
+    N.sums <- c()
+    for(i in 1:length(Ni)) {
+      N.sums <- c(N.sums, sum(unlist(Ni)[1:i]))
+    }
+    N.relfreq <- unlist(Ni)/N
+    xs.Fx <- N.sums/N
+    assign(ecdf.name, 
+           data.frame("xs"=temp, "Ni"= unlist(Ni), "fx" = N.relfreq, 
+                      "Fx"=xs.Fx, "FDC"=1-xs.Fx), envir=.GlobalEnv)
+    #cat("Cumulative relative frequency table is saved to data.frame called 'cdf.out'")
+    if(plot.out == TRUE) {
+      plot(xs.Fx~(temp), type="b", xlab="Discharge [cfs]", ylab=expression(hat(F)(x)), main="ECDF Plot",
+           ylim = c(0, 1), xlim = c(min(cdf.out$xs)+1, max(cdf.out$xs)))}
+  }
+}
+
+
+#####
+#interpolation for ecdf
+#####
+int.cdf.fun <- function(x, ecdf.name, forwardORinverse = "forward", xcol = "xs", ycol = "Fx") {
+  #x = quantile or probability to get the complimentary probability or quantile of, respectively 
+  #forward gets the quantile of a specific discharge
+  #inverse gets the discharge of a specific quantile
+  #if inverse is selected, then the only valid x values are those where 0<=x<=1
+  #xcol = colummn with x-variables (e.g., discharge)
+  #ycol = column with y-variable (e.g, non-exceedence probability)
+  if(forwardORinverse == "forward"){
+    if(x %in% ecdf.name[[xcol]]) {ecdf.name[[ycol]][which(ecdf.name[[xcol]] == x)]
+    }else if(x < min(ecdf.name[[xcol]])){
+      x1 <- ecdf.name[[xcol]][1]
+      x2 <- ecdf.name[[xcol]][2]
+      y1 <- ecdf.name[[ycol]][1]
+      y2 <- ecdf.name[[ycol]][2]
+      
+      if((y1 + ((x-x1)/(x2-x1))*(y2-y1)) < 0){0}else{y1 + ((x-x1)/(x2-x1))*(y2-y1)}
+    }else if(x > max(ecdf.name[[xcol]])) {
+      x1 <- ecdf.name[[xcol]][length(ecdf.name[[xcol]])-1]
+      x2 <- ecdf.name[[xcol]][length(ecdf.name[[xcol]])]
+      y1 <- ecdf.name[[ycol]][length(ecdf.name[[xcol]])-1]
+      y2 <- ecdf.name[[ycol]][length(ecdf.name[[xcol]])]
+      if(y1 + ((x-x1)/(x2-x1))*(y2-y1) > 1){1}else{y1 + ((x-x1)/(x2-x1))*(y2-y1)}
+    }else{
+      x1 <- ecdf.name[[xcol]][max(which(ecdf.name[[xcol]] <= x))]
+      x2 <- ecdf.name[[xcol]][min(which(ecdf.name[[xcol]] >= x))]
+      y1 <- ecdf.name[[ycol]][max(which(ecdf.name[[xcol]] <= x))]
+      y2 <- ecdf.name[[ycol]][min(which(ecdf.name[[xcol]] >= x))]
+      
+      y1 + ((x-x1)/(x2-x1))*(y2-y1)
+    }
+  } else if(forwardORinverse == "inverse") {
+    if(x %in% ecdf.name[[ycol]]) {ecdf.name[[xcol]][which(ecdf.name[[ycol]] == x)]
+    }else if(x < min(ecdf.name[[ycol]])){
+      x1 <- ecdf.name[[ycol]][1]
+      x2 <- ecdf.name[[ycol]][2]
+      y1 <- ecdf.name[[xcol]][1]
+      y2 <- ecdf.name[[xcol]][2]
+      if((y1 + ((x-x1)/(x2-x1))*(y2-y1)) < 0){0}else{y1 + ((x-x1)/(x2-x1))*(y2-y1)}
+    }else if(x > max(ecdf.name[[ycol]])) {
+      x1 <- ecdf.name[[ycol]][length(ecdf.name[[ycol]])-1]
+      x2 <- ecdf.name[[ycol]][length(ecdf.name[[ycol]])]
+      y1 <- ecdf.name[[xcol]][length(ecdf.name[[ycol]])-1]
+      y2 <- ecdf.name[[xcol]][length(ecdf.name[[ycol]])]
+      y1 + ((x-x1)/(x2-x1))*(y2-y1)
+    }else{
+      x1 <- ecdf.name[[ycol]][max(which(ecdf.name[[ycol]] <= x))]
+      x2 <- ecdf.name[[ycol]][min(which(ecdf.name[[ycol]] >= x))]
+      y1 <- ecdf.name[[xcol]][max(which(ecdf.name[[ycol]] <= x))]
+      y2 <- ecdf.name[[xcol]][min(which(ecdf.name[[ycol]] >= x))]
+      y1 + ((x-x1)/(x2-x1))*(y2-y1)
+    }
+  }
+} 
+
+#####
+#Moving average
+#####
+mv.avg.fun <- function(VectorOfData, m) {
+  #Data must be a vector
+  temp <- c()
+  for(i in 1:(length(VectorOfData) - m + 1)) {
+    temp <- c(temp, mean(VectorOfData[i:(i+m-1)], rm.na = TRUE))
+  }
+  #NOTE: if want to output moving average to global environment then must edit this line
+  assign(paste0("mv.avg.",m), temp)#, envir=.GlobalEnv)
+}
+
+
+#####
+#FDC
+#####
+fdc.fun <- function(discharge, group = FALSE, grpby, plot.ecdf = FALSE, plot.fdc = TRUE,
+                    xlab = expression(1 - hat(F)(Q)), ylab = "Q+1 [cfs]", main = "FDC") {
+  #data: data.frame holding data of interest
+  #discharge: vector of discharge data (e.g., dailyQ$Q_cfs)
+  #group = TRUE or FALSE and specifies if want to group the data or not
+  #grpby: vector of unique identifiers of group (e.g., year, month, location) to plot
+  #for example plot FDCs for each year of data
+  #
+  #
+  #get ecdf of all discharge data
+  discharge <- na.omit(discharge)
+  ecdf.fun(discharge, plot.out = plot.ecdf)
+  assign("Qcdf", cdf.out, envir = .GlobalEnv)
+  
+  #Define groups
+  #get ecdfs of grp (e.g., year) discharge for plotting
+  if(group != FALSE) {
+    lapply(grp, function(x) {ecdf.fun(discharge[grpby == x], plot.out = FALSE)
+      assign(paste0("Q",x), data.frame(cdf.out, "Year" = x), 
+             envir = parent.frame(n=2))})#, envir = .GlobalEnv)})
+    temp <-lapply(grp, function(x) {get(paste0("Q",x))})
+    fdc.yrly <- do.call(rbind, temp)
+    #names(fdc.yrly) <- unique(grpby)
+  }
+  
+  #Plot ecdfs for each group (e.g. year) and for overall discharge.
+  if (plot.fdc == TRUE) {
+    if(group != FALSE) {
+      plot(fdc.yrly$xs[fdc.yrly$Year == grp[1]]+1 ~ fdc.yrly$FDC[fdc.yrly$Year == grp[1]], 
+           type = "l", log = "y", lty = 6, lwd = 1, col = "gray",
+           xlab = xlab, ylab = ylab, main = main,
+           xlim = c(0, 1), ylim = c(min(fdc.yrly$xs)+1, max(fdc.yrly$xs)))
+      lapply(grp[2:length(grp)], function(x) {
+        lines(fdc.yrly$xs[fdc.yrly$Year == x]+1 ~ fdc.yrly$FDC[fdc.yrly$Year == x], 
+              type= "l", lty = 6, lwd = 1, col = "gray")})
+      lines(Qcdf$xs + 1 ~ Qcdf$FDC, type = "l", lty = 1, lwd=2, col = "red")
+      legend("topright", legend=c("Full Record", "Annual Curves"), 
+             col = c("red", "gray"), lty = c(1,6), lwd=c(2,1))
+    } else {
+      plot(Qcdf$xs + 1 ~ Qcdf$FDC, type = "l", log="y", lty = 1, lwd=1, 
+           xlab = xlab, ylab = ylab, main = main, 
+           xlim = c(0, 1), ylim = c(min(discharge)+1, max(discharge)))
+    }
+    
+    
+  }
+}
+
+#####
+#LDC
+#####
+ldc.fun <- function(concentration, discharge, stndrd1, stndrd2 = 0, K = 5.3938, 
+                    cdf.name = "ldc.cdf", plot.ldc = TRUE, plot.type = "scatter", 
+                    xlab = expression(1 - hat(F)(Q)), 
+                    ylab = "Load [lbs/day]", main = "LDC") {
+  #Function to plot LDC including up to two standards
+  #concentration: vector of concentration values
+  #discharge: vector of discharge values (e.g., vol/time, CFS)
+  #NOTE: concentration and discharge vectors must align
+  #stndrd1: standard for load (e.g., 1.25 [mg/L])
+  #stndrd2: standard for load (e.g., 2.01 [mg/L])
+  #K: conversion factor to go from input units to desired output units
+  #to go from mg/L to lbs/ft3; K = 5.3938
+  #plot.ldc = TRUE of FALSE; specifying if plots should be output
+  #plt.type: specifies if data should be plotted as boxplots by flow magniutde
+  #or as scatter plots
+  #plt.type = "box" or "scatter"
+  #xlab, ylab, main = labels for plots
+
+  #discharge <- WQ.all$Q_cfs
+  #concentration <- WQ.all$`TN_mg/L`
+  
+  #remove 'na's and sort concentraiton
+  tmpd <- discharge
+  tmpc <- concentration
+  concentration <- concentration[!is.na(tmpd)]
+  concentration <- concentration[!is.na(concentration)]
+  discharge <- discharge[!is.na(tmpc)]
+  discharge <- discharge[!is.na(discharge)]
+  
+  tmp.df <- data.frame(discharge, concentration)
+  tmp.df <- tmp.df[with(tmp.df, order(tmp.df$discharge)), ]
+  concentration <- tmp.df$concentration
+  
+  #Calc fdc 
+  fdc.fun(discharge = discharge, plot.fdc = FALSE)
+  
+  
+  #convert stndrds and concentrations 
+  #to loads and ad to cdf.out
+  cdf.out$st1 <- stndrd1 * K * cdf.out$xs
+  cdf.out$st2 <- stndrd2 * K * cdf.out$xs
+  cdf.out$conc <- concentration
+  
+  #assign output cdf to global variable
+  assign(cdf.name, cdf.out, envir = .GlobalEnv)
+  
+  cdf.out$load <- concentration * K * cdf.out$xs
+  #Plot
+  if(plot.ldc == TRUE){
+    if(plot.type == "scatter") {
+      plot(cdf.out$load ~ cdf.out$FDC, log = "y", 
+           xlab = xlab, ylab = ylab, main = main,
+           xlim = c(0, 1), 
+           ylim = c(min(cdf.out$st1), max(cdf.out$st2)))
+      abline(v = c(0.1, 0.4, 0.6, 0.9), col = "gray", lty = 2, lwd = 1)
+      lines(cdf.out$st1 ~ cdf.out$FDC, col = "blue", lwd = 2,
+            log = "y")
+      lines(cdf.out$st2 ~ cdf.out$FDC, col = "red", lwd = 2,
+            log = "y")
+      legend("topright", legend=c("Warm Streams", "Cold Streams"),
+             col = c("red", "blue"), lwd=c(2,2))
+    }
+  }
+
+}
+
+#####
+#mQn
+#####
+mQn.fun <- function(data, m, n, type = "lowflow", plot.ecdf = FALSE, plot.fdc = FALSE) {
+  #This function calculates the low flow and high flow mQn 
+  
+  #NOTE THAT THIS FUNCTION EXPECTS ecdf.fun, fdc.fun, int.cdf.fun, 
+  #and mv.avg.fun TO BE LOADED
+  #THOSE FUNCTIONS ARE USED TO GET THE ECDF, THE FLOW DURATION CURVE, 
+  #TO INTERPOLATE, AND TO CALCULATE M-DAY MOVING 
+  #AVERAGES. THEY WERE ORIGINALLY WRITTEN FOR CIVE 622, HW2 
+  #ecdf.fun is not explicitly called in this function, 
+  #but is from the fdc.fun function.
+  
+  #data: must be in wide format with a column for each year and a column 
+  #of dates without years (e.g., 5/2)
+  #m length of moving average window
+  #n return period
+  #type = "lowflow" or "highflow"
+  #outputs dataframe with moving averages
+  #outputs variable "output" with mQn value
+  
+  #If data is not from a leap year then exclude Feb., 29th from analysis. (Note Feb. 29 = DOY 60)
+  #Calculate m-day moving average of data and store to temp.df
+  temp.df <- c()
+  lapply(colnames(data)[2:length(colnames(data))], function(x) {if(as.numeric(x)%%4 != 0) {
+    y <- data[[x]][-60]
+  }else{
+    y <- data[[x]]}
+    temp.df[[paste0("avg.",m,".",x)]] <<- mv.avg.fun(y, m)
+  }
+  )
+  #assign moving average data to "avg.m.df"
+  assign(paste0("avg.",m,".df"), temp.df, envir = .GlobalEnv)
+  if(type == "lowflow") {
+    #Get min of moving averages for each year and assign to a variable
+    assign(paste0("lowflow.", m), lapply(get(paste0("avg.", m, ".df")), min), 
+           envir = .GlobalEnv)
+    #Calculate eCDFs of minimum m-day moving averages for the n years on record
+    fdc.fun(discharge = unlist(get(paste0("lowflow.", m))), 
+            grp.time = FALSE, plot.ecdf = FALSE, plot.fdc = FALSE)
+    assign(paste0("lowflow.", m, ".cdf"), cdf.out, envir = .GlobalEnv)
+    #Get n-year return period discharge associated with m-day average minimum discharges
+    assign(paste0("Q.lowflow.",m,".",n), 
+           int.cdf.fun(1/n, get(paste0("lowflow.", m, ".cdf")), "inverse")[1], 
+           envir = .GlobalEnv)
+    #assign("output", paste0("\n",m,"Qlowflow",n," = ", 
+    #                            round(get(paste0("Q.lowflow.",m,".",n)), 2)),
+    #                            envir = .GlobalEnv)
+    assign("output", round(get(paste0("Q.lowflow.",m,".",n)), 2), envir = .GlobalEnv)
+    #Plot FDC
+    if(plot.fdc != FALSE){
+      plot(Qcdf$xs + 1 ~ Qcdf$FDC, type = "l", log="y", lty = 1, lwd=1, 
+           xlab = expression(1 - hat(F)(Q)), ylab = "Q [cfs]", 
+           ylim = c(min(Qcdf$xs)+1, max(Qcdf$xs)))}
+  }
+  if(type == "highflow") {
+    #Get max of moving averages for each year and assign to a variable
+    assign(paste0("highflow.", m), lapply(get(paste0("avg.", m, ".df")), max),
+           envir = .GlobalEnv)
+    #Calculate eCDFs of maximum m-day moving averages for the n years on record
+    fdc.fun(discharge = unlist(get(paste0("highflow.", m))), grp.time = FALSE, 
+            plot.ecdf = FALSE, plot.fdc = FALSE)
+    assign(paste0("highflow.", m, ".cdf"), cdf.out, envir = .GlobalEnv)
+    #Get n-year return period discharge associated with m-day average maximum discharges
+    assign(paste0("Q.highflow.",m,".",n), int.cdf.fun((1-1/n), 
+                                                      get(paste0("highflow.", m,".cdf")), 
+                                                      "inverse"), envir = .GlobalEnv)
+    #assign("output", paste0("\n",m,"Qhighflow",n," = ", 
+    #                            round(get(paste0("Q.highflow.",m,".",n)), 2)), 
+    #                            envir = .GlobalEnv)
+    assign("output", round(get(paste0("Q.highflow.",m,".",n)), 2), envir = .GlobalEnv)
+    
+    #Plot FDC
+    if(plot.fdc != FALSE){
+      plot(Qcdf$xs + 1 ~ Qcdf$FDC, type = "l", log="y", lty = 1, lwd=1, 
+           xlab = expression(1 - hat(F)(Q)), ylab = "Q [cfs]", 
+           ylim = c(min(Qcdf$xs)+1, max(Qcdf$xs)))}
+  }
+}
+
+
+#####
+#mQn Frequency Curves
+#####
+#10/07/2020, as written, only works with annual analysis (not monthly or seasonal)
+  #Create the low flow and high flow frequency curves for mQn flow statistics, 
+  #e.g., where m = {3, 7, 14, 30} and n = {2, 5, 10, 25, 50, 100}.
+  #this function calls the mQn.fun function, and that function calls the fdc.fun 
+  #which calls the ecdf.fun so all of these need to be loaded
+
+mQn.FreqCrv.plot.fun <- function(data, m, n = c(2, 5, 10, 25, 50, 100), type = "lowflow", 
+                                 colors = c("blue", "black", "brown", "green"),
+                                 linetypes = c(1, 2, 6, 4),
+                                 main = if(type == "lowflow") {
+                                   "Low Flow Frequency Curve"
+                                 }else if(type == "highflow") {
+                                   "High Flow Frequency Curve"
+                                 })  {
+  
+  #NOTE THAT THIS FUNCTION EXPECTS ecdf.fun, fdc.fun, int.cdf.fun, 
+  #and mv.avg.fun TO BE LOADED
+  #THOSE FUNCTIONS ARE USED TO GET THE ECDF, THE FLOW DURATION CURVE, 
+  #TO INTERPOLATE, AND TO CALCULATE M-DAY MOVING 
+  #AVERAGES. THEY WERE ORIGINALLY WRITTEN FOR CIVE 622, HW2 
+  #ecdf.fun is not explicitly called in this function, 
+  #but is from the fdc.fun function.
+  
+  #data: must be in wide format with a column for each year and a column 
+  #of dates without years (e.g., 5/2)
+  #m length of moving average window
+  #n return period
+  #type = "lowflow" or "highflow"
+  #outputs plot of mQn frequency curves
+  
+  freq.curv.LF <- data.frame(matrix(ncol = length(m) + 1, nrow = length(n)))
+  colnames(freq.curv.LF) <- c("n", m)
+  freq.curv.LF$n <- n
+  
+  freq.curv.HF <- data.frame(matrix(ncol = length(m) + 1, nrow = length(n)))
+  colnames(freq.curv.HF) <- c("n", m)
+  freq.curv.HF$n <- n
+  
+  #Low-Flow
+  if(type == "lowflow") {
+    for(i in m) {
+      for (j in n) {
+        mQn.fun(data, i, j, "lowflow", plot.fdc = "FALSE", plot.ecdf = "FALSE")
+        freq.curv.LF[[paste(i)]][which(freq.curv.LF[["n"]] == j)] <- get(paste0("Q.lowflow.", i, ".", j))
+      }
+    }
+    
+    plot(freq.curv.LF[[paste(m[1])]] ~ freq.curv.LF[["n"]], type = "l", lty = 1, 
+         lwd=2, xlab = "Return period [years]", 
+         ylab = "Q [cfs]", main = main,
+         ylim = c(min(freq.curv.LF[2:length(freq.curv.LF)]), max(freq.curv.LF[2:length(freq.curv.LF)])))
+    lapply(colnames(freq.curv.LF)[2:length(freq.curv.LF)], 
+           function(x) {lines(freq.curv.LF[[x]] ~ freq.curv.LF[["n"]], type = "l", 
+                              lty = linetypes[which(colnames(freq.curv.LF)[2:length(freq.curv.LF)] == x)],
+                              lwd=2, col = colors[which(colnames(freq.curv.LF)[2:length(freq.curv.LF)] == x)])})
+    legend("topright", legend=colnames(freq.curv.LF)[2:length(freq.curv.LF)], 
+           col = colors, lty = linetypes, lwd=2, title = "m-days")
+    
+  }
+  
+  #High-Flow
+  if(type == "highflow") {
+    for(i in m) {
+      for (j in n) {
+        mQn.fun(data, i, j, "highflow", plot.fdc = "FALSE", plot.ecdf = "FALSE")
+        freq.curv.HF[[paste(i)]][which(freq.curv.HF[["n"]] == j)] <- get(paste0("Q.highflow.", i, ".", j))
+      }
+    }
+  
+    plot(freq.curv.HF[[paste(m[1])]] ~ freq.curv.HF[["n"]], type = "l", lty = 1, 
+         lwd=2, xlab = "Return period [years]", 
+         ylab = "Q [cfs]", main = main,
+         ylim = c(min(freq.curv.HF[2:length(freq.curv.HF)]), max(freq.curv.HF[2:length(freq.curv.HF)])))
+    lapply(colnames(freq.curv.HF)[2:length(freq.curv.HF)], 
+           function(x) {lines(freq.curv.HF[[x]] ~ freq.curv.HF[["n"]], type = "l", 
+                              lty = linetypes[which(colnames(freq.curv.HF)[2:length(freq.curv.HF)] == x)],
+                              lwd=2, col = colors[which(colnames(freq.curv.HF)[2:length(freq.curv.HF)] == x)])})
+    legend("bottomright", legend=colnames(freq.curv.HF)[2:length(freq.curv.HF)], 
+           col = colors, lty = linetypes, lwd=2, title = "m-days")
+  }
+}
+
+#####
+#Skewness coef.
+#####
+skewn.coef.fun <- function(X, N.data, mean.data, StDev.data) 
+{(N.data/((N.data-1)*(N.data-2))) * sum((X - mean.data)^3)/StDev.data^3}
+
+#####
+#kurtosis coef.                                                           
+#####
+kurtosis.fun <- function(X, N.data, mean.data, StDev.data) 
+{N.data^2/((N.data-1)*(N.data-2)*(N.data-3)) * sum((X - mean.data)^4)/StDev.data^4}
+
+
+#####
+#Anderson's correlogram test for randomness
+#####
+#This function outputs text stating if autocorrelation is present using output.name as
+#a label for the data
+andrsn.fun <- function(vectorOFdata, alpha = 0.05, output.name = "sample", 
+                       variable.CI = TRUE, plot.out = FALSE) {
+  #vectorOFdata is a vector of input data (e.g., daily total nitrogen or flow data)
+  #alpha = alpha value
+  #output.name = name used in output text that gives results
+  #variable.range = to use a constant or variable CI intervale
+  
+  x <- na.omit(vectorOFdata)
+  n.x <- length(x)
+  
+  #get ranges to compare counts of values outside range against
+  #Maximum number of lags
+  m.x <- floor(n.x/4)
+  
+  #Calc autocorrelation
+  ac.x <- acf(x, if(n.x>366){182}else{m.x}, plot = plot.out)
+  ac.x <- ac.x$acf[2:length(ac.x$acf)] 
+  
+  #define vector of values to be used in a dynamic range 
+  #(i.e., adjusted C.I.)
+  if(variable.CI  == TRUE) {
+    range.x <- c()
+    for(k in 1:m.x){
+      range.x <- c(range.x, (1 - qnorm(1 - alpha/2)/sqrt(n.x)*sqrt(n.x - k - 1))/(n.x - k))
+    }
+  }else{range.x <- qnorm(1 - alpha/2)/sqrt(n.x)}
+  
+  #get count of r_k's outside of range, r.time <- [+-Z_1-alpha/2/sqrtN]
+  cnt.x <- length(ac.x[abs(ac.x) > range.x])
+  
+  #Calc rejection count alpha*M, M = N/4
+  thresh.x <- alpha * n.x
+  
+  #Print outputs
+  #all data
+  if(cnt.x > thresh.x) {
+    cat("\n# r.ks,", cnt.x, "> theshold count,", thresh.x,"
+        Based on Anderson's correlogram test for randomness,
+        for", output.name, "we Reject the null;
+        it is NOT plausible to think the sample is random.")
+  }else if(cnt.x <= thresh.x){
+    cat("\n# r.ks,", cnt.x, "<= theshold count,", thresh.x,"
+        Based on Anderson's correlogram test for randomness,
+        for", output.name, "we fail to reject the null; 
+        it is plausible to to think the sample is random.")
+  }else{cat("error")}
+  }
+
+
+#####
+#Run test of randomness
+#####
+#This function outputs text stating if the sample is random using output.name as
+#a label for the data
+run.fun <- function(vectorOFdata, alpha = 0.05, output.name = "sample") {
+  #vectorOFdata is a vector of input data (e.g., daily total nitrogen or flow data)
+  #alpha = alpha value
+  #output.name = name used in output text that gives results
+  x <- na.omit(vectorOFdata)
+  mean.x <- mean(x)
+  #define W; 1 if x>mean.x and 0 otherwise
+  w.x <- sapply(x, function(x) if(x > mean.x){1}else{0})
+  
+  #get Z, # of runs of 0's + # of runs of 1's
+  #N.0, number of 0's
+  #N.1, number of 1's
+  temp.x <- rle(w.x)
+  z.x <- length(temp.x$lengths)
+  N.0.x <- length(w.x[w.x == 0])
+  N.1.x <- length(w.x[w.x == 1])
+  
+  #Calculate expected z (E(z)) and var(z) if the data is from a normal distr.
+  E.z <- (2*N.0.x*N.1.x)/(N.0.x+N.1.x) + 1
+  var.z<-(2*N.0.x*N.1.x*(2*N.0.x*N.1.x-N.0.x-N.1.x))/((N.0.x+N.1.x)^2*(N.0.x+N.1.x-1))
+  
+  #Calculate test statistic zc as well as the alpha level z-score
+  zc <- (z.x - E.z)/sqrt(var.z)
+  z.scr <- qnorm(1-alpha/2)
+  
+  #Print outputs
+  #all data
+  if(abs(zc) > z.scr) {
+    cat("\nAbsolute value of test statistic,", abs(zc), "> z-score,", z.scr,"
+        Based on the run test of randomness,
+        for", output.name, "we Reject the null;
+        it is NOT plausible to think the sample is random.")
+  }else if(abs(zc) <= z.scr){
+    cat("\nAbsolute value of test statistic,", abs(zc), "<= z-score,", z.scr,"
+        Based on the run test of randomness,
+        for", output.name, "we fail to reject the null; 
+        it is plausible to to think the sample is random.")
+  }else{cat("error")}
+  }
+
+
+#####
+#Turning point test of randomness
+#####
+#This function outputs text stating if the sample is random using output.name as
+#a label for the data
+#For turning point test
+turning.pt.fun <- function(vectorOFdata, alpha = 0.05, output.name = "sample") {
+  #This function uses the turning.point.test function from the randtests package
+  if (!require(randtests)) install.packages('randtests')
+  library(randtests)
+  
+  x <- na.omit(vectorOFdata)
+  #Execute turning pt test from randtests package using two-sided alternative
+  temp.delete <- turning.point.test(x)
+  zc <- temp.delete$statistic
+  z.scr <- qnorm(1 - alpha/2)
+  
+  #Print outputs
+  #all data
+  if(abs(zc) > z.scr) {
+    cat("\nAbsolute value of test statistic,", abs(zc), "> z-score,", z.scr,"
+        Based on the turning point test of randomness,
+        for", output.name, "we Reject the null;
+        it is NOT plausible to think the sample is random.")
+  }else if(abs(zc) <= z.scr){
+    cat("\nAbsolute value of test statistic,", abs(zc), "<= z-score,", z.scr,"
+        Based on the turning point test of randomness,
+        for", output.name, "we fail to reject the null; 
+        it is plausible to to think the sample is random.")
+  }else{cat("error")}
+  }
+
+
+#####
+#Spearman's rank correlation coefficient test of randomness
+#####
+#This function outputs text stating if the sample is random using output.name as
+#a label for the data
+spearman.rnkcoef.rand.fun <- function(vectorOFdata, alpha = 0.05, output.name = "sample") {
+  
+  x <- na.omit(vectorOFdata)
+  n.x <- length(x)
+  #Define vector of timesteps of same length as x
+  t.x <- seq(1, length(x), 1)
+  x.rank <- rank(x, ties.method = "min")
+  
+  #Calculate rank coefficient
+  R.x <-1 - 6 * sum((t.x - x.rank)^2)/(n.x*(n.x^2 - 1 ))
+  
+  #Calculate test statistic, tc and alpha level t-score, t.scr
+  tc <- (R.x*(sqrt(n.x - 2)))/sqrt(1 - R.x^2)
+  t.scr <- qt(1 - alpha/2, n.x - 2)
+  
+  #Print outputs
+  #all data
+  if(abs(tc) > t.scr) {
+    cat("\nAbsolute value of test statistic,", abs(tc), "> t-score,", t.scr,"
+        Based on Spearman's rank correlation coeficient test of randomness,
+        for", output.name, "we Reject the null;
+        it is NOT plausible to think the sample is random.")
+  }else if(abs(tc) <= t.scr){
+    cat("\nAbsolute value of test statistic,", abs(tc), "<= t-score,", t.scr,"
+        Based on Spearman's rank correlation coeficient test of randomness,
+        for", output.name, "we fail to reject the null; 
+        it is plausible to to think the sample is random.")
+  }else{cat("error")}
+}
+
+
+#####
+#Skewness test of normality
+#####
+#This function outputs text stating if the sample is normally distributed using output.name as
+#a label for the data
+skewness.norm.fun <- function(vectorOFdata, alpha = 0.05, output.name = "sample") {
+  
+  x <- na.omit(vectorOFdata)
+  mean.x <- mean(x)
+  stdev.x <- sd(x)
+  n.x <- length(x)
+  
+  skwn.coef <- skewn.coef.fun(x, N.data = n.x, mean.data = mean.x, StDev.data = stdev.x)
+  
+  range <- qnorm(1-alpha/2)*sqrt(6/n.x)
+  
+  #Print outputs
+  #all data
+  if(abs(skwn.coef) > range) {
+    cat("\nThe skenwess coeficient,",skwn.coef, " is outside the expected range, +-", range,"
+        Based on the skewness test of normality,
+        for", output.name, "we Reject the null;
+        it is NOT plausible to think the sample is normally distributed.")
+  }else if(abs(skwn.coef) <= range){
+    cat("\nThe skenwess coeficient,",skwn.coef, " is within the expected range, +-", range,"
+        Based on the skewness test of normality,
+        for", output.name, "we fail to reject the null; 
+        it is plausible to to think the sample is normally distributed.")
+  }else{cat("error")}
+  }
+
+
+
+#####
+#Shapiro-Wilks Test of normality
+#####
+#This function outputs text stating if the sample is normally distributed using output.name as
+#a label for the data
+shapiro.norm.fun <- function(vectorOFdata, alpha = 0.05, output.name = "sample") {
+  
+  x <- na.omit(vectorOFdata)
+  
+  temp.delete <- shapiro.test(x)
+  p.val <- temp.delete$p.value
+  
+  #Print outputs
+  #all data
+  if(p.val <= alpha) {
+    cat("np-value,", p.val, "<= alpha,", alpha, "
+        Based on the Shapiro-Wilks test for normality,
+        for", output.name, "we Reject the null;
+        it is NOT plausible to think the sample is normally distributed.")
+  }else if(p.val > alpha){
+    cat("\np-value,", p.val, "> alpha,", alpha, "
+        Based on the Shapiro-Wilks test for normality,
+        for", output.name, "we fail to reject the null; 
+        it is plausible to to think the sample is normally distributed.")
+  }else{cat("error")}
+  }
+
+
+#####
+#Two-sample t-test for shifts in time series
+#####
+#This function outputs text stating of there is a shift between two time 
+#periods using output.name.1 as a lable for the first time and
+#output.name.2 as a lable for the second time 
+t.test.fun <- function(vectorOFdata.1, vectorOFdata.2, alpha = 0.05, 
+                       output.name.1 = "First.Time", output.name.2 = "Second.Time") {
+  
+  x1 <- na.omit(vectorOFdata.1)
+  x2 <- na.omit(vectorOFdata.2)
+  
+  n.x1 <- length(x1)
+  n.x2 <- length(x2)
+  
+  temp.delete <- t.test(x1, x2)
+  
+  t.stat <- temp.delete$statistic
+  t.scr <- qt(1 - alpha/2, n.x1 + n.x2 - 2)
+  
+  #Print outputs
+  #all data
+  if(abs(t.stat) > t.scr) {
+    cat("\nAbsolute value of test statistic,", abs(t.stat), "> t-score,", t.scr,"
+        Based on the 2-sample t-test for shifts,
+        between", output.name.1, "and", output.name.2, "we Reject the null;
+        it is plausible to think there was a significant shift between time periods.")
+  }else if(abs(t.stat) <= t.scr) {
+    cat("\nAbsolute value of test statistic,", abs(t.stat), "<= t-score,", t.scr,"
+        Based on the 2-sample t-test for shifts,
+        between", output.name.1, "and", output.name.2, "we Reject the null; 
+        it is plausible to to think there was NOT a shift between time periods.")
+  }else{cat("error")}
+  }
+
+#####
+#Man-Whitney test for shifts in time series
+#####
+#This function outputs text stating of there is a shift between two time 
+#periods using output.name.1 as a label for the first time and
+#output.name.2 as a lable for the second time 
+man.whit.fun <- function(vectorOFdata.1, vectorOFdata.2, alpha = 0.05, 
+                         output.name.1 = "First.Time", output.name.2 = "Second.Time") {
+  
+  x1 <- na.omit(vectorOFdata.1)
+  x2 <- na.omit(vectorOFdata.2)
+  
+  n.x1 <- length(x1)
+  n.x2 <- length(x2)
+  
+  temp.delete <- wilcox.test(x1, x2)
+  
+  t.stat <- temp.delete$statistic
+  t.scr <- qnorm(1 - alpha/2)
+  
+  #Print outputs
+  #all data
+  if(abs(t.stat) > t.scr) {
+    cat("\nAbsolute value of test statistic,", abs(t.stat), "> t-score,", t.scr,"
+        Based on the Mann-Whitney test for shifts,
+        between", output.name.1, "and", output.name.2, "we Reject the null;
+        it is plausible to think there was a significant shift between time periods.")
+  }else if(abs(t.stat) <= t.scr) {
+    cat("\nAbsolute value of test statistic,", abs(t.stat), "<= t-score,", t.scr, "
+        Based on the Mann-Whitney test for shifts,
+        between", output.name.1, "and", output.name.2, "we Reject the null; 
+        it is plausible to to think there was NOT a shift between time periods.")
+  }else{cat("error")}
+  }
+
+
+#####
+#Mann-Kendall trend test for time series
+#####
+#This function outputs text stating of there is a trend in the sample 
+#using output.name as a label for the output data
+mann.kend.fun <- function(vectorOFdata,  alpha = 0.05, output.name = "sample") {
+  #This function uses the MannKendall function from the Kendall package
+  if (!require(Kendall)) install.packages('Kendall')
+  library(Kendall)
+  
+  x <- na.omit(vectorOFdata)
+  
+  n.x <- length(x)
+  
+  temp.delete <- MannKendall(x)
+  
+  z.stat <- (temp.delete$S - 1)/sqrt(temp.delete$varS)
+  z.scr <- qnorm(1 - alpha/2)
+  
+  #Print outputs
+  #all data
+  if(abs(z.stat) > z.scr) {
+    if(temp.delete$S < 0) {
+      cat("\nAbsolute value of test statistic,", abs(z.stat), "> z-score,", z.scr, "
+          Based on the Mann-Kendall test for trends,
+          it is plausible to think there is a monotonically decreasing
+          trend in the", output.name, "data.")} else if(temp.delete$S > 0) {
+            cat("\nAbsolute value of test statistic,", abs(z.stat), "<= z-score,", z.scr,"
+          Based on the Mann-Kendall test for trends,
+          it is plausible to think there is a monotonically increasing
+          trend in the", output.name, "data.")
+          }
+  }else if(abs(z.stat) <= z.scr) {
+    cat("\nBased on the Mann-Kendall test for trends,
+        it is NOT plausible to think there is a trend in the", output.name, "data")
+  }else{cat("error")}
+}
+
+#####
+#Sen's Slope test for trend magnitude of a time series
+#####
+#This function outputs text stating of there is a trend in the sample 
+#using output.name as a label the output data
+sen.slope.fun <- function(vectorOFdata,  alpha = 0.05, output.name = "sample") {
+  #This function uses the MannKendall function from the Kendall package
+  if (!require(trend)) install.packages('trend')
+  library(trend)
+  
+  x <- na.omit(vectorOFdata)
+  
+  n.x <- length(x)
+  
+  temp.delete <- sens.slope(x)
+  
+  sen.slope.out <- temp.delete$estimates
+  
+  #Print outputs
+  cat("\nThe magnitude of Sen's slope is", sen.slope.out)
+}
+
+#####
+#function to calc PWMs with non-exceedence weights
+#####
+PWM.fun <- function(x, r, exp.TF = FALSE) {
+  #x is vector of the random variable values
+  #r is the order of the PWM to take
+  #Currently written to only calculate unbiased estimates of PWM
+  N <- length(na.omit(x))
+  xs <- sort(na.omit(x))
+  xs.rank <- rank(xs, ties.method = "min")
+  x.df <- data.frame("xs" = xs, "rank" = xs.rank)
+  #x.df <- unique(x.df)
+  
+  if(exp.TF == TRUE) {
+    ecdf.fun(xs, plot.out = FALSE)
+    assign(paste0("b.",r, ".tmp"), (1-cdf.out$Fx)^r * x.df$xs)
+  } else {
+  assign(paste0("b.",r, ".tmp"), choose(seq(1,N,1) - 1, r)/choose((N - 1), r) * x.df$xs)
+  }
+  #assign(paste0("B.",r), 1/N * sum(get(paste0("b.", r, ".tmp"))))
+  1/N * sum(get(paste0("b.", r, ".tmp")))
+  
+}

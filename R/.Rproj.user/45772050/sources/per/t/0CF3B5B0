@@ -1,0 +1,27 @@
+{
+    "id": "0CF3B5B0",
+    "path": "E:/Projects/GAGESii_ANNstuff/R/scripts/GAGESii_Regression_MeanAnnualWY.Rmd",
+    "project_path": "scripts/GAGESii_Regression_MeanAnnualWY.Rmd",
+    "type": "r_markdown",
+    "hash": "4117676852",
+    "contents": "",
+    "dirty": false,
+    "created": 1651080419607.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "553,0",
+        "scrollLine": "535",
+        "last_setup_crc32": "74DFAE95bb338d19"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1651258390,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1651258388546,
+    "read_only": false,
+    "read_only_alternatives": []
+}

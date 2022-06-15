@@ -1,0 +1,14 @@
+"0","plt_fun(data_in, x_use = ""PPTAVG_BASIN"", 
+        color_use = ""TS_NLCD_imperv"",
+        save = TRUE,
+        filename_out = ""D:/Projects/GAGESii_ANNstuff/Figures/Prec_MnWY_Imperv.png"",
+        xlab = ""Mean Annual Precipitation [cm]"",
+        ylab = ""Mean Annual Water Yield [cm]"",
+        colname_in = ""% Imperv."")
+"
+"2","`geom_smooth()` using method = 'loess' and formula 'y ~ x'
+"
+"2","Saving 6.78 x 5.65 in image
+"
+"2","`geom_smooth()` using method = 'loess' and formula 'y ~ x'
+"

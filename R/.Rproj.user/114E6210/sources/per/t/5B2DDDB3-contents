@@ -1,0 +1,966 @@
+---
+title: "GAGESii_Clustering_Wrk"
+author: "Ben Choat"
+date: "3/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Libraries and functions
+
+```{r PackagesAndFunctions, echo=FALSE, warning=FALSE}
+# use renv for R and R-package version control
+
+#if(!require(renv))(install.pacakges("renv"))
+#options for the renv package
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+
+# pacman as a package loader
+if(!require(pacman))(install.packages("pacman"))
+
+# renv for dependency management
+# data.table for data wrangling
+# ggplot for visualization
+# ggiraph for interactive ggplots
+# plotly for interactive plots
+# corrplot for correlation and plots
+# factoextra for PCA visualization
+# Hmisc for caculating correlation matrix with p-values
+# cluster for PAM and Gower space
+# caret for splitting data into training, validating, and testing partitions
+#   and other ML methods
+pacman::p_load(renv, data.table, ggplot2, ggiraph, plotly, corrplot, factoextra,
+               Hmisc, cluster, caret) 
+
+
+```
+
+### Read in data
+
+```{r ReadData, warning=FALSE, echo=FALSE}
+# annual water yield 
+# training
+dt_annWY_train <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_train.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# validate in
+dt_annWY_valin <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_in.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# validate nit
+dt_annWY_valnit <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_nit.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# static watershed characteristics
+dt_static <- data.table::fread(
+  "C:/R/GAGESii_R/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )
+
+# ID variables
+dt_ID <- data.table::fread(
+  "C:/R/GAGESii_R/Data_out/GAGES_idVars.csv",
+  keepLeadingZeros = TRUE)
+
+# calculate mean wy for each station
+dt_annWYmn_train <- dt_annWY_train[
+  , .(mn_anl_ft3 = mean(Ann_WY_ft3),
+      mn_anl_acft = mean(Ann_WY_acft)),
+      by = site_no]
+
+dt_annWYmn_valin <- dt_annWY_valin[
+  , .(mn_anl_ft3 = mean(Ann_WY_ft3),
+      mn_anl_acft = mean(Ann_WY_acft)),
+      by = site_no]
+
+dt_annWYmn_train <- dt_annWY_train[
+  , .(mn_anl_ft3 = mean(Ann_WY_ft3),
+      mn_anl_acft = mean(Ann_WY_acft)),
+      by = site_no]
+
+dt_annWYmn_valnit <- dt_annWY_valnit[
+  , .(mn_anl_ft3 = mean(Ann_WY_ft3),
+      mn_anl_acft = mean(Ann_WY_acft)),
+      by = site_no]
+
+
+# data.table of static expl. vars and mean annual WY
+dt_wy_static_train <- merge(
+  dt_static,
+  dt_annWYmn_train,
+  by.x = "STAID", by.y = "site_no"
+)
+
+dt_wy_static_valin <- merge(
+  dt_static,
+  dt_annWYmn_valin,
+  by.x = "STAID", by.y = "site_no"
+)
+
+dt_wy_static_valnit <- merge(
+  dt_static,
+  dt_annWYmn_valnit,
+  by.x = "STAID", by.y = "site_no"
+)
+
+# long-format data.table of GAGESii-ts data with only years around those available
+dt_srndg_train <- fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_SurroundingYrs.csv",
+  keepLeadingZeros = TRUE)[
+   STAID %chin% dt_annWY_train$site_no &
+    year %in% dt_annWY_train$wtryr , 
+  ]
+
+dt_srndg_valin <- fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_SurroundingYrs.csv",
+  keepLeadingZeros = TRUE)[
+   STAID %chin% dt_annWY_valin$site_no &
+    year %in% dt_annWY_valin$wtryr , 
+  ]
+
+dt_srndg_valnit <- fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_SurroundingYrs.csv",
+  keepLeadingZeros = TRUE)[
+   STAID %chin% dt_annWY_valnit$site_no &
+    year %in% dt_annWY_valnit$wtryr , 
+  ]
+
+# mean of explanatory vars
+
+dt_ts_mn_train <- dt_srndg_train[
+  , .(mean_value = mean(value)), by = c("STAID", "variable", "VOI")
+  ]
+
+dt_ts_mn_trainw <- data.table::dcast(
+  dt_ts_mn_train, 
+  STAID ~ VOI,
+  value.var = "mean_value"
+  )
+
+dt_ts_mn_valin <- dt_srndg_valin[
+  , .(mean_value = mean(value)), by = c("STAID", "variable", "VOI")
+  ]
+
+dt_ts_mn_valinw <- data.table::dcast(
+  dt_ts_mn_valin, 
+  STAID ~ VOI,
+  value.var = "mean_value"
+  )
+
+dt_ts_mn_valnit <- dt_srndg_valnit[
+  , .(mean_value = mean(value)), by = c("STAID", "variable", "VOI")
+  ]
+
+dt_ts_mn_valnitw <- data.table::dcast(
+  dt_ts_mn_valnit, 
+  STAID ~ VOI,
+  value.var = "mean_value"
+  )
+
+
+# GAGESii-ts and static data and mean annual wy
+dt_all_mn_train <- merge(
+  dt_ts_mn_trainw,
+  dt_wy_static_train,
+  by = "STAID"
+)[
+  ,':=' (HYDRO_DISTURB_INDX = NULL,
+      RUNAVE7100 = NULL)
+]
+
+dt_all_mn_valin <- merge(
+  dt_ts_mn_valinw,
+  dt_wy_static_valin,
+  by = "STAID"
+)[
+  ,':=' (HYDRO_DISTURB_INDX = NULL,
+      RUNAVE7100 = NULL)
+]
+
+dt_all_mn_valnit <- merge(
+  dt_ts_mn_valnitw,
+  dt_wy_static_valnit,
+  by = "STAID"
+)[
+  ,':=' (HYDRO_DISTURB_INDX = NULL,
+      RUNAVE7100 = NULL)
+]
+
+```
+
+
+### Definw working data and investiagte how many stations are available at 
+various levels of development.
+
+### NOTE: stations 0164500 and 01646502 are identical based on gagesii static
+variables and the averages of gages_ts variables over time. The mean annual
+discharge over the training period is different by 0.06 ft.
+
+```{r WorkData, echo=FALSE, warning=FALSE}
+# which variables to remove
+dt_wrk_train <- copy(dt_all_mn_train)[
+  , ':=' (#TOPWET = NULL,
+      GEOL_REEDBUSH_DOM = unclass(as.factor(GEOL_REEDBUSH_DOM)), #NULL,
+      GEOL_HUNT_DOM_CODE = NULL,
+      HYDRO_DISTURB_INDX = NULL,
+      RUNAVE7100 = NULL,
+      WB5100_ANN_MM = NULL,
+      #STAID = NULL,
+      CLASS = NULL,
+      Class = NULL,
+      BFI_AVE = NULL,
+      #mn_anl_acft = NULL
+      mn_anl_ft3 = NULL
+      )
+      ][
+        , mn_anlQ_ft := mn_anl_acft/(DRAIN_SQKM * 247.105) 
+      ][ # Note 274.105 acres in 1 km2 and 304.8 mm in 1 ft (* 304.8)
+        , mn_anl_acft := NULL
+      ]
+dt_wrk_valin <- copy(dt_all_mn_valin)[
+  , ':=' (#TOPWET = NULL,
+      GEOL_REEDBUSH_DOM = unclass(as.factor(GEOL_REEDBUSH_DOM)), #NULL,
+      GEOL_HUNT_DOM_CODE = NULL,
+      HYDRO_DISTURB_INDX = NULL,
+      RUNAVE7100 = NULL,
+      WB5100_ANN_MM = NULL,
+      #STAID = NULL,
+      CLASS = NULL,
+      Class = NULL,
+      BFI_AVE = NULL,
+      mn_anl_ft3 = NULL
+      )
+    ][
+        , mn_anlQ_ft := mn_anl_acft/(DRAIN_SQKM * 247.105) 
+      ][
+        , mn_anl_acft := NULL
+      ] 
+
+dt_wrk_valnit <- copy(dt_all_mn_valnit)[
+  , ':=' (#TOPWET = NULL,
+      #GEOL_REEDBUSH_DOM = NULL,
+      GEOL_HUNT_DOM_CODE = unclass(as.factor(GEOL_REEDBUSH_DOM)), #NULL,
+      HYDRO_DISTURB_INDX = NULL,
+      RUNAVE7100 = NULL,
+      WB5100_ANN_MM = NULL,
+      #STAID = NULL,
+      CLASS = NULL,
+      Class = NULL,
+      BFI_AVE = NULL,
+      mn_anl_ft3 = NULL
+      )
+    ][
+        , mn_anlQ_ft := mn_anl_acft/(DRAIN_SQKM * 247.105) 
+      ][
+        , mn_anl_acft := NULL
+      ] 
+```
+
+
+### Partitioning around  medoids in Gower space (aka PAM, k-medoids clustering)
+leaning heavily on the websites:
+
+1.
+https://rpubs.com/sofiandra/477664
+2.
+https://dpmartin42.github.io/posts/r/cluster-mixed-types
+3.
+https://rpkgs.datanovia.com/factoextra/reference/fviz_silhouette.html
+
+### paritioning around medoids with only GAGESii-static variables.
+
+```{r PAM_static, echo=FALSE, warning=FALSE}
+# data for clustering
+data_in <- copy(dt_static)[
+  STAID %chin% dt_all_mn_train$STAID,
+][
+  , ':=' (GEOL_REEDBUSH_DOM = as.factor(GEOL_REEDBUSH_DOM),
+      GEOL_HUNT_DOM_CODE = NULL,
+      HYDRO_DISTURB_INDX = NULL,
+      STAID = NULL,
+      CLASS = NULL,
+      BFI_AVE = NULL,
+      LAT_GAGE = NULL,
+      LNG_GAGE = NULL
+      #mn_anl_acft = NULL
+      #mn_anl_ft3 = NULL
+      )
+]
+
+# calculate gower distance
+gower_dist <- cluster::daisy(data_in,
+                             metric = "gower"
+)
+
+#gower_mat <- as.matrix(gower_dist)
+
+# most similar based on distance calculation 
+# data_in[
+#   which(gower_mat == min(gower_mat[gower_mat != min(gower_mat)]),
+#         arr.ind = TRUE)[1, ], ]
+# 
+# # most dissimilar based on distance calculation 
+# data_in[
+#   which(gower_mat == max(gower_mat[gower_mat != max(gower_mat)]),
+#         arr.ind = TRUE)[1, ], ]
+
+
+###
+# Calculate silhouette width for many k using PAM
+
+# sil_width <- c(NA)
+# 
+# for(i in 2:20){
+# 
+#   pam_fit <- cluster::pam(gower_dist,
+#                  diss = TRUE,
+#                  k = i)
+# 
+#   sil_width[i] <- pam_fit$silinfo$avg.width
+# 
+# }
+# 
+# # Plot sihouette width (higher is better)
+# 
+# plot(2:20, sil_width[2:20],
+#      xlab = "Number of clusters",
+#      ylab = "Silhouette Width")
+# lines(2:20, sil_width[2:20])
+
+## 
+cat("Average silhouette width shows 2 (0.237) clusters to be the best, 
+    followed by 3 (0.179), 9 (0.166), and 15 (0.169).
+    All of these seem to be relatively low so, I explore 2, 3, 9, and 15")
+
+## compute pam for specified 
+for(i in c(2, 3, 9, 15)){
+  
+  tmp_pam <-  cluster::pam(gower_dist,
+                 diss = TRUE,
+                 k = i)
+  
+  assign(paste0("pam_fit_", i), tmp_pam)
+  
+  # assign(paste0("pam_results_", i), 
+  #        data_in[
+  #          , .(cluster = tmp_pam$clustering)
+  #          ][
+  #            , as.list(summary(data_in)), by = cluster
+  #          ]
+  #        )
+  
+  
+  
+}
+
+factoextra::fviz_silhouette(pam_fit_2)
+factoextra::fviz_silhouette(pam_fit_3)
+factoextra::fviz_silhouette(pam_fit_9)
+factoextra::fviz_silhouette(pam_fit_15)
+
+pam_fit_2 <- cluster::pam(gower_dist,
+                          diss = TRUE,
+                          k = 2)
+# look at general distribution of all vars
+#data_in_long <- data.table::melt()
+# 
+# ggplot(data = data_in) +
+#   geom_histogram(aes())
+
+# data_in <- cor(copy(data_train_in)[, Qft := NULL])
+# rownames(data_in) <- dt_ID[STAID %chin% dt_train$STAID, STAID]
+
+
+# add cluster numbers to a data.table to keep record. Only keeping best
+# performing K, in this case, 2
+
+dt_clust_ID <- data.table::setorder(
+  merge(
+    data.table(
+      STAID = copy(dt_static)[STAID %chin% dt_all_mn_train$STAID, STAID],
+      PAM_2_Static_K = pam_fit_2$clustering
+    ),
+    data.table(
+      PAM_2_Static_K = c(1, 2),
+      PAM_2_Static_Med = pam_fit_2$medoids
+    ), by = "PAM_2_Static_K"
+  ),
+  STAID
+) # close setorder
+
+# Write to a csv for later reference
+data.table::fwrite(dt_clust_ID,
+                "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv")
+
+```
+
+
+### paritioning around medoids with only GAGESii-ts variables.
+
+```{r PAM_ts, echo=FALSE, warning=FALSE}
+rm(list = ls(pattern = "pam_fit"))
+set.seed(100)
+# data for clustering
+data_in <- copy(dt_ts_mn_trainw)[
+  , STAID := NULL
+]
+
+# calculate gower distance
+gower_dist <- cluster::daisy(data_in,
+                             metric = "gower"
+)
+
+# gower_mat <- as.matrix(gower_dist)
+
+# # most similar based on distance calculation 
+# data_in[
+#   which(gower_mat == min(gower_mat[gower_mat != min(gower_mat)]),
+#         arr.ind = TRUE)[1, ], ]
+# 
+# # most dissimilar based on distance calculation 
+# data_in[
+#   which(gower_mat == max(gower_mat[gower_mat != max(gower_mat)]),
+#         arr.ind = TRUE)[1, ], ]
+
+
+###
+# Calculate silhouette width for many k using PAM
+# 
+# sil_width <- c(NA)
+# 
+# for(i in 2:20){
+# 
+#   pam_fit <- cluster::pam(gower_dist,
+#                  diss = TRUE,
+#                  k = i)
+# 
+#   sil_width[i] <- pam_fit$silinfo$avg.width
+# 
+# }
+
+# Plot sihouette width (higher is better)
+# 
+# plot(2:20, sil_width[2:20],
+#      xlab = "Number of clusters",
+#      ylab = "Silhouette Width")
+# lines(2:20, sil_width[2:20])
+# 
+# ## 
+# cat("Average silhouette width shows 2 (0.432) clusters to be the best, 
+#     followed by 4 (0.38).")
+
+## compute pam for specified 
+for(i in c(2, 4)){
+  
+  tmp_pam <-  cluster::pam(gower_dist,
+                 diss = TRUE,
+                 k = i)
+  
+  assign(paste0("pam_fit_", i), tmp_pam)
+  
+  # assign(paste0("pam_results_", i), 
+  #        data_in[
+  #          , .(cluster = pam_fit$clustering)
+  #          ][
+  #            , as.list(summary(data_in)), by = cluster
+  #          ]
+  #        )
+  
+  
+  
+}
+
+
+factoextra::fviz_silhouette(pam_fit_2)
+factoextra::fviz_silhouette(pam_fit_4)
+
+pam_fit_2 <- cluster::pam(gower_dist,
+                          diss= TRUE,
+                          k = 2)
+
+# add cluster numbers to a data.table to keep record. Only keeping best
+# performing K
+
+dt_clust_ID <- data.table::setorder(
+  merge(
+    data.table(
+      STAID = dt_wy_static_train$STAID,
+      PAM_2_TS_K = pam_fit_2$clustering
+    ),
+    data.table(
+      PAM_2_TS_K = c(1, 2),
+      PAM_2_TS_Med = pam_fit_2$medoids
+    ), by = "PAM_2_TS_K"
+  ),
+  STAID
+) # close setorder
+
+tmp_clust_rslts <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv",
+  keepLeadingZeros = TRUE)
+
+tmp_dt_write <- merge(
+  tmp_clust_rslts,
+  dt_clust_ID,
+  by = "STAID"
+)
+
+# Write to a csv for later reference
+data.table::fwrite(tmp_dt_write,
+                "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv")
+
+# look at general distribution of all vars
+#data_in_long <- data.table::melt()
+# 
+# ggplot(data = data_in) +
+#   geom_histogram(aes())
+
+# data_in <- cor(copy(data_train_in)[, Qft := NULL])
+# rownames(data_in) <- dt_ID[STAID %chin% dt_train$STAID, STAID]
+
+```
+
+### paritioning around medoids with all GAGESii-ts variables.
+
+```{r PAM_all, echo=FALSE, warning=FALSE}
+rm(list = ls(pattern = "pam_fit"))
+set.seed(100)
+# data for clustering
+data_in <- copy(dt_wrk_train)[
+  , ':=' (STAID = NULL,
+           mn_anlQ_ft = NULL)
+]
+
+# calculate gower distance
+gower_dist <- cluster::daisy(data_in,
+                             metric = "gower"
+)
+
+# gower_mat <- as.matrix(gower_dist)
+
+# most similar based on distance calculation 
+# data_in[
+#   which(gower_mat == min(gower_mat[gower_mat != min(gower_mat)]),
+#         arr.ind = TRUE)[1, ], ]
+# 
+# # most dissimilar based on distance calculation 
+# data_in[
+#   which(gower_mat == max(gower_mat[gower_mat != max(gower_mat)]),
+#         arr.ind = TRUE)[1, ], ]
+
+
+###
+# Calculate silhouette width for many k using PAM
+silh_plot <- factoextra::fviz_nbclust(gower_mat, pam, method='silhouette', k.max = 2)
+silh_plot
+
+pam_fit_2 <- cluster::pam(gower_dist,
+                          diss = TRUE,
+                          k = 2)
+
+factoextra::fviz_silhouette(pam_fit_2)
+factoextra::fviz_silhouette(pam_fit_4)
+
+# add cluster numbers to a data.table to keep record. Only keeping best
+# performing K
+
+dt_clust_ID <- data.table::setorder(
+  merge(
+    data.table(
+      STAID = dt_wy_static_train$STAID,
+      PAM_2_All_K = pam_fit_2$clustering
+    ),
+    data.table(
+      PAM_2_All_K = c(1, 2),
+      PAM_2_All_Med = pam_fit_2$medoids
+    ), by = "PAM_2_All_K"
+  ),
+  STAID
+) # close setorder
+
+tmp_clust_rslts <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv",
+  keepLeadingZeros = TRUE)
+
+tmp_dt_write <- merge(
+  tmp_clust_rslts,
+  dt_clust_ID,
+  by = "STAID"
+)
+
+
+# Write to a csv for later reference
+data.table::fwrite(tmp_dt_write,
+                "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv")
+
+# look at general distribution of all vars
+#data_in_long <- data.table::melt()
+# 
+# ggplot(data = data_in) +
+#   geom_histogram(aes())
+
+# data_in <- cor(copy(data_train_in)[, Qft := NULL])
+# rownames(data_in) <- dt_ID[STAID %chin% dt_train$STAID, STAID]
+
+```
+
+### Cluster the original clusters to see how they perform
+
+```{r CulsterClustersStatic, warning=FALSE, echo=FALSE}
+dt_clsts <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv",
+  keepLeadingZeros = TRUE
+)
+
+data_in <- copy(dt_static)[
+  STAID %chin% dt_all_mn_train$STAID,
+][
+  , ':=' (GEOL_REEDBUSH_DOM = as.factor(GEOL_REEDBUSH_DOM),
+      GEOL_HUNT_DOM_CODE = NULL,
+      HYDRO_DISTURB_INDX = NULL,
+      CLASS = NULL,
+      BFI_AVE = NULL,
+      LAT_GAGE = NULL,
+      LNG_GAGE = NULL
+      #mn_anl_acft = NULL
+      #mn_anl_ft3 = NULL
+      )
+]
+
+data_in <- merge(
+  data_in,
+  dt_clsts[, .(STAID, PAM_2_Static_K)],
+  by = "STAID"
+)
+
+data_in_k1 <- copy(data_in)[
+  PAM_2_Static_K == 1,
+][
+  , ':=' (STAID = NULL,
+          PAM_2_Static_K = NULL)
+]
+
+
+data_in_k2 <- copy(data_in)[
+  PAM_2_Static_K == 2,
+][
+  , ':=' (STAID = NULL,
+          PAM_2_Static_K = NULL)
+]
+
+
+# calculate gower distance
+gower_dist_k1 <- cluster::daisy(data_in_k1,
+                             metric = "gower",
+                             stand = TRUE
+)
+
+gower_dist_k2 <- cluster::daisy(data_in_k2,
+                             metric = "gower",
+                             stand = TRUE
+)
+
+# visualize distances between variables
+DistanceMap <- fviz_dist(
+  gower_dist_k1, 
+  order = TRUE, 
+  show_labels = TRUE, 
+  lab_size = 4) + 
+  labs(title = "Distance: Gower Measurements")
+
+###
+# Calculate silhouette width for many k using PAM
+# 
+sil_width <- c(NA)
+
+for(i in 2:10){
+
+  pam_fit <- cluster::pam(gower_dist_k2,
+                diss = TRUE,
+                 k = i,
+                 )
+
+  sil_width[i] <- pam_fit$silinfo$avg.width
+
+}
+
+# Plot sihouette width (higher is better)
+
+plot(2:10, sil_width[2:10],
+     xlab = "Number of clusters",
+     ylab = "Silhouette Width")
+lines(2:10, sil_width[2:10])
+
+# ## 
+# cat("Average silhouette width shows 2 (0.432) clusters to be the best, 
+#     followed by 4 (0.38).")
+
+## compute pam for specified 
+for(i in c(2, 4)){
+  
+  tmp_pam <-  cluster::pam(gower_dist,
+                 diss = TRUE,
+                 k = i)
+  
+  assign(paste0("pam_fit_", i), tmp_pam)
+
+}
+
+# nb_k1 <- factoextra::fviz_nbclust()
+
+silh_plot <- factoextra::fviz_nbclust(
+  x = as.matrix(gower_dist_k2), #data_in_k2,
+  #diss = as.matrix(gower_dist_k2), 
+  FUNcluster = pam, 
+  method = 'gap_stat',
+  k.max = 10
+  )
+```
+
+
+
+
+
+
+
+
+
+
+
+<!-- ### k-means clustering with only GAGESii-static variables. -->
+
+<!-- ```{r kmeans_static, echo=FALSE, warning=FALSE} -->
+<!-- # data for clustering -->
+<!-- data_in <- copy(dt_static)[ -->
+<!--   STAID %chin% dt_all_mn_train$STAID, -->
+<!-- ][ -->
+<!--   , ':=' (GEOL_REEDBUSH_DOM = as.factor(GEOL_REEDBUSH_DOM), -->
+<!--       GEOL_HUNT_DOM_CODE = NULL, -->
+<!--       HYDRO_DISTURB_INDX = NULL, -->
+<!--       STAID = NULL, -->
+<!--       CLASS = NULL, -->
+<!--       BFI_AVE = NULL, -->
+<!--       LAT_GAGE = NULL, -->
+<!--       LNG_GAGE = NULL -->
+<!--       #mn_anl_acft = NULL -->
+<!--       #mn_anl_ft3 = NULL -->
+<!--       ) -->
+<!-- ] -->
+<!-- # calculate gower distance -->
+<!-- gower_dist <- cluster::daisy(data_in, -->
+<!--                              metric = "gower" -->
+<!-- ) -->
+
+<!-- gower_mat <- as.matrix(gower_dist) -->
+
+
+<!-- ### -->
+<!-- # Calculate silhouette width for many k using kmeans -->
+
+<!-- silh_plot <- factoextra::fviz_nbclust(gower_mat, kmeans, method='silhouette', k.max = 10) -->
+
+<!-- km_fit_2 <- kmeans(x = gower_mat, -->
+<!--                    centers = 2) -->
+
+<!-- # add cluster numbers to a data.table to keep record. Only keeping best -->
+<!-- # performing K -->
+
+<!-- dt_clust_ID <- data.table::setorder( -->
+<!--   merge( -->
+<!--     data.table( -->
+<!--       STAID = dt_wy_static_train$STAID, -->
+<!--       KM_2_Static_K = km_fit_2$cluster -->
+<!--     ), -->
+<!--     data.table( -->
+<!--       KM_2_Static_K = c(1, 2), -->
+<!--       KM_2_Static_Mn = km_fit_2$medoids -->
+<!--     ), by = "KM_2_Static_K" -->
+<!--   ), -->
+<!--   STAID -->
+<!-- ) # close setorder -->
+
+<!-- tmp_clust_rslts <- data.table::fread( -->
+<!--   "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv", -->
+<!--   keepLeadingZeros = TRUE) -->
+
+<!-- tmp_dt_write <- merge( -->
+<!--   tmp_clust_rslts, -->
+<!--   dt_clust_ID, -->
+<!--   by = "STAID" -->
+<!-- ) -->
+
+<!-- # Write to a csv for later reference -->
+<!-- data.table::fwrite(tmp_dt_write, -->
+<!--                 "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv") -->
+
+<!-- ``` -->
+
+<!-- ### k-means clustering with only GAGESii-TS variables. -->
+
+<!-- ```{r kmeans_TS, echo=FALSE, warning=FALSE} -->
+<!-- # data for clustering -->
+<!-- rm(list = ls(pattern = "km_fit")) -->
+<!-- set.seed(100) -->
+<!-- # data for clustering -->
+<!-- data_in <- copy(dt_ts_mn_trainw)[ -->
+<!--   , STAID := NULL -->
+<!-- ] -->
+
+<!-- # calculate gower distance -->
+<!-- gower_dist <- cluster::daisy(data_in, -->
+<!--                              metric = "gower" -->
+<!-- ) -->
+
+<!-- gower_mat <- as.matrix(gower_dist) -->
+
+
+<!-- ### -->
+<!-- # Calculate silhouette width for many k using kmeans -->
+
+<!-- silh_plot <- factoextra::fviz_nbclust(gower_mat, -->
+<!--                                       kmeans,  -->
+<!--                                       method='silhouette',  -->
+<!--                                       k.max = 10) -->
+
+
+<!-- km_fit_2 <- kmeans(x = gower_mat, -->
+<!--                    centers = 2) -->
+
+<!-- km_fit_3 <- kmeans(x = gower_mat, -->
+<!--                    centers = 3) -->
+
+<!-- sil <- silhouette(km_fit_2$cluster, gower_dist) -->
+<!-- factoextra::fviz_silhouette(sil) -->
+
+<!-- sil <- silhouette(km_fit_3$cluster, gower_dist) -->
+<!-- factoextra::fviz_silhouette(sil) -->
+
+<!-- # add cluster numbers to a data.table to keep record. Only keeping best -->
+<!-- # performing K -->
+
+<!-- dt_clust_ID <- data.table::setorder( -->
+<!--   merge( -->
+<!--     data.table( -->
+<!--       STAID = dt_wy_TS_train$STAID, -->
+<!--       KM_2_TS_K = km_fit_2$cluster -->
+<!--     ), -->
+<!--     data.table( -->
+<!--       KM_2_TS_K = c(1, 2), -->
+<!--       KM_2_TS_Mn = pam_fit_2$medoids -->
+<!--     ), by = "KM_2_TS_K" -->
+<!--   ), -->
+<!--   STAID -->
+<!-- ) # close setorder -->
+
+<!-- tmp_clust_rslts <- data.table::fread( -->
+<!--   "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv", -->
+<!--   keepLeadingZeros = TRUE) -->
+
+<!-- tmp_dt_write <- merge( -->
+<!--   tmp_clust_rslts, -->
+<!--   dt_clust_ID, -->
+<!--   by = "STAID" -->
+<!-- ) -->
+
+<!-- # Write to a csv for later reference -->
+<!-- data.table::fwrite(tmp_dt_write, -->
+<!--                 "D:/Projects/GAGESii_ANNstuff/Data_Out/clustering_results.csv") -->
+
+<!-- ``` -->
+
+
+<!-- ### Hierarchical clustering on GAGES-static variables -->
+
+<!-- ```{r HiClust_static, echo=FALSE, warning=FALSE} -->
+
+<!-- data_in <- copy(dt_static_train)[ -->
+<!--   , ':=' (GEOL_REEDBUSH_DOM = NULL, #as.factor(GEOL_REEDBUSH_DOM), -->
+<!--       GEOL_HUNT_DOM_CODE = NULL, -->
+<!--       HYDRO_DISTURB_INDX = NULL, -->
+<!--       STAID = NULL, -->
+<!--       CLASS = NULL, -->
+<!--       BFI_AVE = NULL, -->
+<!--       LAT_GAGE = NULL, -->
+<!--       LNG_GAGE = NULL -->
+<!--       #mn_anl_acft = NULL -->
+<!--       #mn_anl_ft3 = NULL -->
+<!--       ) -->
+<!-- ] -->
+
+<!-- rownames(data_in) <- dt_static_train[STAID %chin% dt_ID_train$STAID, STAID] -->
+
+<!-- # scale the data then calculate the distance matrix -->
+<!-- dist_in <- dist(scale(data_in), method = "euclidian") -->
+<!-- #dist_in <- cluster::daisy(data_in, metric = "gower", stand = TRUE) -->
+<!-- #dist_in <- as.dist(1 - cor(data_in)) #, method = "euclidian") -->
+
+<!-- # hierarchical cluster -->
+<!-- out_hclust <- hclust(dist_in, method = "complete") -->
+
+
+<!-- plot(out_hclust, cex = 0.02)#, hang = -1) -->
+<!-- ``` -->
+
+<!-- ### Hierarchical clustering on GAGES-TS variables -->
+
+<!-- ```{r HiClust_ts, echo=FALSE, warning=FALSE} -->
+
+<!-- data_in <- copy(dt_ts_mn_train)[ -->
+<!--   , STAID := NULL -->
+<!-- ] -->
+
+<!-- rownames(data_in) <- dt_static_train[STAID %chin% dt_ID_train$STAID, STAID] -->
+
+<!-- # scale the data then calculate the distance matrix -->
+<!-- dist_in <- dist(scale(data_in), method = "euclidian") -->
+<!-- #dist_in <- cluster::daisy(data_in, metric = "gower", stand = TRUE) -->
+<!-- #dist_in <- as.dist(1 - cor(data_in)) #, method = "euclidian") -->
+
+<!-- # hierarchical cluster -->
+<!-- out_hclust <- hclust(dist_in, method = "complete") -->
+
+
+<!-- plot(out_hclust, cex = 0.02)#, hang = -1) -->
+<!-- ``` -->
+
+
+### The Code
+```{r ref.label="PackagesAndFunctions", eval=FALSE}
+```
+
+```{r ref.label="ReadData", eval=FALSE}
+```
+
+```{r ref.label="WorkData", eval=FALSE}
+```
+
+```{r ref.label="PAM_static", eval=FALSE}
+```
+
+```{r ref.label="PAM_ts", eval=FALSE}
+```
+
+```{r ref.label="PAM_all", eval=FALSE}
+```
+
+```{r ref.label="HiClust_static", eval=FALSE}
+```
+
+```{r ref.label="HiClust_ts", eval=FALSE}
+```

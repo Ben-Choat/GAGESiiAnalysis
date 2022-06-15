@@ -1,0 +1,5 @@
+"0","dt_explmn_train <- dt_expl_train[, mean, by = ""STAID""]
+"
+"2","Error in `[.data.table`(dt_expl_train, , mean, by = ""STAID"") : 
+  invalid type/length (closure/3214) in vector allocation
+"

@@ -1,0 +1,388 @@
+---
+title: "GAGESii_Analysis2_presentable"
+author: "Ben Choat"
+date: "2/28/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Libraries and functions
+
+```{r PackagesAndFunctions, echo=FALSE, warning=FALSE}
+# use renv for R and R-package version control
+
+#if(!require(renv))(install.pacakges("renv"))
+#options for the renv package
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+
+# pacman as a package loader
+if(!require(pacman))(install.packages("pacman"))
+
+# renv for dependency management
+# data.table for data wrangling
+# ggplot for visualization
+# ggiraph for interactive ggplots
+# plotly for interactive plots
+# corrplot for correlation and plots
+# factoextra for PCA visualization
+# Hmisc for caculating correlation matrix with p-values
+# cluster for PAM and Gower space
+# caret for splitting data into training, validating, and testing partitions
+#   and other ML methods
+pacman::p_load(renv, data.table, ggplot2, ggiraph, plotly, corrplot, factoextra,
+               Hmisc, cluster, caret) 
+
+
+```
+
+
+### Read in data
+
+```{r ReadData, warning=FALSE, echo=FALSE}
+
+# # monthly water yield 
+# dt_mnthWY <- data.table::fread(
+#         paste0(
+#         "D:/DataWorking/USGS_discharge/monthly_WY/Monthly_WY_1976_2013.csv"
+#         ) , keepLeadingZeros = TRUE
+#       )
+
+# annual water yield 
+# training
+dt_annWY_train <- data.table::fread(
+        paste0(
+        "D:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_train.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# static watershed characteristics
+# dt_static_train <- data.table::fread(
+#   "D:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv",
+#   keepLeadingZeros = TRUE
+#   )[
+#     STAID %chin% dt_annWY_train$site_no
+#   ]
+
+# ID variables
+dt_ID_train <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_out/GAGES_idVars.csv",
+  keepLeadingZeros = TRUE)[
+    STAID %chin% dt_annWY_train$site_no,
+    ]
+
+# calculate mean wy for each station
+dt_annWYmn_train <- dt_annWY_train[
+  , .(mn_anl_ft3 = mean(Ann_WY_ft3),
+      mn_anl_acft = mean(Ann_WY_acft)),
+      by = site_no]
+
+# Explanatory variables
+dt_expl_train <- data.table::fread(
+  "D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv",
+  keepLeadingZeros = TRUE
+)
+
+dt_explmn_train <- dt_expl_train[, lapply(.SD, mean), by = STAID][
+  , year := NULL
+]
+# # data.table of static expl. vars and mean annual WY
+# dt_wy_static_train <- merge(
+#   dt_static_train,
+#   dt_annWYmn_train,
+#   by.x = "STAID", by.y = "site_no"
+# )
+
+# long-format data.table of GAGESii-ts data with only years around those available
+# dt_srndg_train <- data.table::fread(
+#   "D:/Projects/GAGESii_ANNstuff/Data_Out/gagesii_ts/GAGESts_SurroundingYrs.csv",
+#   keepLeadingZeros = TRUE)[
+#    STAID %chin% dt_annWY_train$site_no, 
+#   ]
+
+# mean of explanatory vars
+
+# dt_ts_mn_train <- dt_srndg_train[
+#   , .(mean_value = mean(value)), by = c("STAID", "variable", "VOI")
+#   ]
+# 
+# dt_ts_mn_train <- data.table::dcast(
+#   dt_ts_mn_train, 
+#   STAID ~ VOI,
+#   value.var = "mean_value"
+#   )
+
+
+# # GAGESii-ts and static data and mean annual wy
+# dt_all_mn_train <- merge(
+#   dt_ts_mn_train,
+#   dt_wy_static_train,
+#   by = "STAID"
+# )
+
+# # Available dates and continuous time periods
+# # long-format data.table of GAGESii-ts data with only years around those available
+# dt_DlyQ_Cnts <- fread(
+#   "D:/Projects/GAGESii_ANNstuff/Data_Out/Daily_Q_Dates.csv",
+#   keepLeadingZeros = TRUE)[
+#    STAID %chin% dt_annWY$site_no, 
+#   ]
+
+rm(dt_wy_static_train, dt_annWYmn_train)
+```
+
+
+### PCA on explanatory variables. First static, then ts, then all.
+For PCA analysis leaning heavily on factoextra package and following guidance
+at the following two websites:
+
+1. 
+https://rpubs.com/joeflorence/pca_example
+
+2. 
+http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/118-principal-component-analysis-in-r-prcomp-vs-princomp/#prcomp-and-princomp-functions
+
+
+### PCA on GAGESii-static variables
+
+```{r PCA_Static, warning=FALSE, echo=FALSE}
+
+# data for PCA
+data_in <- copy(dt_explmn_train)[, 1:61][
+  , STAID := NULL
+]
+# [
+#   , ':=' (GEOL_REEDBUSH_DOM = as.numeric(unclass(as.factor(GEOL_REEDBUSH_DOM))),
+#       GEOL_HUNT_DOM_CODE = NULL,
+#       HYDRO_DISTURB_INDX = NULL,
+#       STAID = NULL,
+#       CLASS = NULL,
+#       BFI_AVE = NULL,
+#       mn_anl_acft = NULL,
+#       mn_anl_ft3 = NULL
+#       )
+# ]
+
+
+# calc principal components
+pca_prcomp <- prcomp(data_in, scale = TRUE, center = TRUE)
+
+# scree plot to visualize eigenvalues
+factoextra::fviz_eig(pca_prcomp, 
+                     addlabels = TRUE, 
+                     title = "Static Variables - Scree Plot")
+
+# get eigenvalues
+eig_val <- factoextra::get_eigenvalue(pca_prcomp)
+# eig_val
+
+# resuilts for variables
+res.var <- factoextra::get_pca_var(pca_prcomp)
+# res.var$coord
+
+# contributions of vars to PCs
+# res.var$contrib
+
+# quality of representatino
+# res.var$cos2
+
+# visualize quality of representation (cos2)
+corrplot::corrplot(res.var$cos2[, 1:10], 
+         is.corr = FALSE,
+         title = "Static Variables - How well vars are represented",
+         tl.cex = 0.5)
+
+# Visualize total quality of representation (cos2) of variables on Dim.1 and Dim.2 
+factoextra::fviz_cos2(pca_prcomp,choice = "var", 
+                      axes = 1:2,
+                      title = "Static variables - Cos2 of variables Dim-1-2")
+
+# Color by quality of representation values: quality on the factor map
+factoextra::fviz_pca_var(pca_prcomp, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # Avoid text overlapping
+             title = "Static Variables- PCA"
+             )
+
+# Results for individual units
+res.ind <- get_pca_ind(pca_prcomp)
+#res.ind$coord          # Coordinates
+#res.ind$contrib        # Contributions to the PCs
+
+#visualize individual unit contributions (this can be messy)
+# corrplot(res.ind$contrib[,1:3], is.corr=FALSE)
+
+#res.ind$cos2           # Quality of representation at the unit level
+
+# Biplot Graphic for individual units (potentially messy)
+# fviz_pca_ind(pca_prcomp,
+#              col.ind = "cos2", # Color by the quality of representation
+#              gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#              repel = TRUE     # Avoid text overlapping
+#              )
+```
+
+### PCA on GAGESii-TS variables
+
+```{r PCA_TS, warning=FALSE, echo=FALSE}
+
+# execute chunk of GAGESii_Regression to read
+# from that script, using dt_ID, DT_annWYmn which holds mean annual WY,
+# dt_static
+
+# data for PCA
+data_in <- copy(dt_explmn_train)[, 62:85]
+#   , ':=' (
+#       STAID = NULL
+#       )
+# ]
+
+
+# calc principal components
+pca_prcomp <- prcomp(data_in, scale = TRUE, center = TRUE)
+
+# scree plot to visualize eigenvalues
+factoextra::fviz_eig(pca_prcomp, 
+                     addlabels = TRUE,
+                     title = "TS Variables - Scree plot")
+
+# get eigenvalues
+eig_val <- factoextra::get_eigenvalue(pca_prcomp)
+# eig_val
+
+# resuilts for variables
+res.var <- factoextra::get_pca_var(pca_prcomp)
+# res.var$coord
+
+# contributions of vars to PCs
+# res.var$contrib
+
+# quality of representatino
+# res.var$cos2
+
+# visualize quality of representation (cos2)
+corrplot::corrplot(res.var$cos2[, 1:10], 
+         is.corr = FALSE,
+         title = "TS Variables - How well vars are represented",
+         tl.cex = 0.5)
+
+# Visualize total quality of representation (cos2) of variables on Dim.1 and Dim.2 
+factoextra::fviz_cos2(pca_prcomp,choice = "var", 
+                      axes = 1:2,
+                      title = "TS variables - Cos2 of variables Dim-1-2")
+
+# Color by quality of representation values: quality on the factor map
+factoextra::fviz_pca_var(pca_prcomp, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # Avoid text overlapping
+             title = "TS Variables- PCA"
+             )
+
+
+```
+
+### PCA on all GAGESii variables (i.e., TS and static)
+
+```{r PCA_AllExp, warning=FALSE, echo=FALSE}
+
+# execute chunk of GAGESii_Regression to read
+# from that script, using dt_ID, DT_annWYmn which holds mean annual WY,
+# dt_static
+
+# data for PCA
+data_in <- copy(dt_explmn_train)[
+  , STAID := NULL
+]
+# [
+#   , ':=' (GEOL_REEDBUSH_DOM = as.numeric(unclass(as.factor(GEOL_REEDBUSH_DOM))),
+#       GEOL_HUNT_DOM_CODE = NULL,
+#       HYDRO_DISTURB_INDX = NULL,
+#       STAID = NULL,
+#       CLASS = NULL,
+#       BFI_AVE = NULL,
+#       mn_anl_acft = NULL,
+#       mn_anl_ft3 = NULL
+#       )
+# ]
+
+# calc principal components
+pca_prcomp <- prcomp(data_in, scale = TRUE, center = TRUE)
+
+# scree plot to visualize eigenvalues
+factoextra::fviz_eig(pca_prcomp, 
+                     addlabels = TRUE,
+                     title = "All variables - Scree plot")
+
+# get eigenvalues
+eig_val <- factoextra::get_eigenvalue(pca_prcomp)
+# eig_val
+
+# resuilts for variables
+res.var <- factoextra::get_pca_var(pca_prcomp)
+# res.var$coord
+
+# contributions of vars to PCs
+# res.var$contrib
+
+# quality of representatino
+# res.var$cos2
+
+# visualize quality of representatin (cos2)
+corrplot::corrplot(res.var$cos2[, 1:20], 
+         is.corr = FALSE,
+         title = "All Variables - How well vars are represented",
+         tl.cex = 0.5)
+
+# Visualize total quality of representation (cos2) of variables on Dim.1 and Dim.2 
+factoextra::fviz_cos2(pca_prcomp,choice = "var", 
+                      axes = 1:2,
+                      title = "All variables - Cos2 of variables Dim-1-2")
+
+# Color by quality of representation values: quality on the factor map
+factoextra::fviz_pca_var(pca_prcomp, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # Avoid text overlapping
+             title = "All Variables- PCA"
+             )
+
+
+
+
+```
+
+
+
+### The Code
+```{r ref.label="PackagesAndFunctions", echo=FALSE, warning=FALSE}
+```
+
+```{r ref.label="ReadData", eval=FALSE}
+```
+
+```{r ref.label="ExplDataAvail", eval=FALSE}
+```
+
+```{r ref.label="TrainTestData", eval=FALSE}
+```
+
+```{r ref.label="PCA_Static", eval=FALSE}
+```
+
+```{r ref.label="PCA_TS", eval=FALSE}
+```
+
+```{r ref.label="PCA_AllExp", eval=FALSE}
+```
+
+
+
+
+

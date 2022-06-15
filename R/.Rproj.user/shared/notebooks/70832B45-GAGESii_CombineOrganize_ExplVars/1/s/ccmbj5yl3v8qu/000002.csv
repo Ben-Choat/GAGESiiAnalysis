@@ -1,0 +1,27 @@
+"0","# Merge static and ts training expl. vars
+dt_all_expl_testnit <- merge(
+  geol_ohe,
+  dt_ts_testnit,
+  by = ""STAID""
+)[
+  , ':=' (
+    GEOL_HUNT_DOM_CODE = NULL,
+    HYDRO_DISTURB_INDX = NULL,
+    RUNAVE7100 = NULL,
+    BFI_AVE = NULL,
+    CLASS = NULL,
+    RRMEAN = NULL,
+    WB5100_ANN_MM = NULL
+  )
+]
+"
+"2","Warning in `[.data.table`(merge(geol_ohe, dt_ts_testnit, by = ""STAID""),  :"
+"2","
+ "
+"2"," Column 'RUNAVE7100' does not exist to remove
+"
+"2","Warning in `[.data.table`(merge(geol_ohe, dt_ts_testnit, by = ""STAID""),  :"
+"2","
+ "
+"2"," Column 'WB5100_ANN_MM' does not exist to remove
+"

@@ -1,0 +1,26 @@
+"0","system.time({
+tmp_int_value <-  unlist(parallel::clusterMap(cl,
+    function(year_in, sta_in, voi_in){
+    int_fun(
+      x = year_in,
+      dt.name = tmp_ref[tmp_ref$STAID == sta_in & tmp_ref$VOI == voi_in,],
+      xcol = ""year"",
+      ycol = ""value""
+      )},
+    year_in = as.character(tmp_inp$year),
+    sta_in = as.character(tmp_inp$STAID),
+    voi_in = as.character(tmp_inp$VOI)
+    ))
+  })
+"
+"1","   user "
+"1"," system "
+"1","elapsed "
+"1","
+"
+"1"," 455.89 "
+"1"," 119.70 "
+"1","6729.12 "
+"1","
+"
+"0","parallel::stopCluster(cl)"

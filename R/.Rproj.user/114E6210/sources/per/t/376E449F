@@ -1,0 +1,28 @@
+{
+    "id": "376E449F",
+    "path": "D:/Projects/GAGESii_ANNstuff/R/scripts/GAGESii_Partition_Train_Val_Test.Rmd",
+    "project_path": "scripts/GAGESii_Partition_Train_Val_Test.Rmd",
+    "type": "r_markdown",
+    "hash": "2500088890",
+    "contents": "",
+    "dirty": false,
+    "created": 1646341443131.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "180,14",
+        "scrollLine": "0",
+        "last_setup_crc32": ""
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1652564810,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1652564808169,
+    "read_only": false,
+    "read_only_alternatives": []
+}

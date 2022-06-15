@@ -1,0 +1,27 @@
+{
+    "id": "FDB280F8",
+    "path": "D:/Projects/GAGESii_ANNstuff/R/scripts/GAGESii_Regression_Daymet_AnnualWY.rmd",
+    "project_path": "scripts/GAGESii_Regression_Daymet_AnnualWY.rmd",
+    "type": "r_markdown",
+    "hash": "737524386",
+    "contents": "",
+    "dirty": false,
+    "created": 1650579090154.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "11,32",
+        "scrollLine": "0",
+        "last_setup_crc32": ""
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1650591130,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1650591129406,
+    "read_only": false,
+    "read_only_alternatives": []
+}

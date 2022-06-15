@@ -13,11 +13,15 @@ from sklearn.preprocessing import StandardScaler # standardizing data
 from sklearn.preprocessing import MinMaxScaler # normalizing data (0 to 1)
 from sklearn.cluster import KMeans # kmeans
 from sklearn.metrics import silhouette_samples
+from sklearn.metrics import mean_squared_error # returns negative (larger is better)
+                                                # squared=True: MSE; squared=False: RMSE
+from sklearn.metrics import mean_absolute_error # returns negative (larger is better)
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV # for hyperparameter tuning
 from sklearn.model_selection import RepeatedKFold # for repeated k-fold validation
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score # only returns a single score (e.g., MAE)
+from sklearn.model_selection import cross_validate # can be used to return multiple scores 
 from sklearn.feature_selection import RFE
 from sklearn.feature_selection import RFECV
 from sklearn.pipeline import Pipeline
@@ -38,48 +42,75 @@ import pandas as pd # data wrangling
 # from mlxtend.plotting import heatmap # plotting heatmap
 
 
-# %% load data
+# # %% load data
 
-# # water yield directory
-dir_WY='E:/DataWorking/USGS_discharge/train_val_test'
-# dir_WY='E:/GAGES_Work/AnnualWY'
-# # explantory var (and other data) directory
-dir_expl='E:/Projects/GAGESii_ANNstuff/Data_Out'
-# dir_expl='E:/GAGES_Work/ExplVars_Model_In'
+# # # water yield directory
+# dir_WY='D:/DataWorking/USGS_discharge/train_val_test'
+# # dir_WY='E:/GAGES_Work/AnnualWY'
+# # # explantory var (and other data) directory
+# dir_expl='D:/Projects/GAGESii_ANNstuff/Data_Out'
+# # dir_expl='E:/GAGES_Work/ExplVars_Model_In'
 
-# Annual Water yield
-df_train_anWY=pd.read_csv(
-    f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_train.csv',
-    dtype={"site_no":"string"}
-    )
+# # Annual Water yield
+
+# # training water yield
 # df_train_anWY=pd.read_csv(
-#     f'{dir_WY}/Ann_WY_train.csv',
+#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_train.csv',
+#     dtype={"site_no":"string"}
+#     )
+# # validation water yield for gauges used in training
+# df_valin_anWY=pd.read_csv(
+#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_in.csv',
 #     dtype={"site_no":"string"}
 #     )
 
-# mean annual water yield
-df_train_mnanWY= df_train_anWY.groupby(
-    'site_no', as_index=False
-).mean().drop(columns=["yr"])
+# # df_train_anWY=pd.read_csv(
+# #     f'{dir_WY}/Ann_WY_train.csv',
+# #     dtype={"site_no":"string"}
+# #     )
 
-# GAGESii explanatory vars
-df_train_expl=pd.read_csv(
-    f'{dir_expl}/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv',
-    dtype={'STAID': 'string'}
-)
+# # mean annual water yield
+# # training
+# df_train_mnanWY=df_train_anWY.groupby(
+#     'site_no', as_index=False
+# ).mean().drop(columns=["yr"])
+# # val_in
+# df_valin_mnanWY=df_valin_anWY.groupby(
+#     'site_no', as_index=False
+# ).mean().drop(columns=["yr"])
 
-# mean GAGESii explanatory vars
-df_train_mnexpl=df_train_expl.groupby(
-    'STAID', as_index=False
-).mean().drop(columns=['year'])
+# # GAGESii explanatory vars
+# # training
+# df_train_expl=pd.read_csv(
+#     f'{dir_expl}/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv',
+#     dtype={'STAID': 'string'}
+# )
+# # val_in
+# df_valin_expl=pd.read_csv(
+#     f'{dir_expl}/ExplVars_Model_In/All_ExplVars_ValIn_Interp_98_12.csv',
+#     dtype={'STAID': 'string'}
+# )
 
-# vars to color plots with (e.g., ecoregion)
-df_ID=pd.read_csv(
-    f'{dir_expl}/GAGES_idVars.csv',
-    dtype={'STAID': 'string'}
-)
+# # mean GAGESii explanatory vars
+# # training
+# df_train_mnexpl=df_train_expl.groupby(
+#     'STAID', as_index=False
+# ).mean().drop(columns=['year'])
+# #valin
+# df_valin_mnexpl=df_valin_expl.groupby(
+#     'STAID', as_index=False
+# ).mean().drop(columns=['year'])
 
-df_train_ID=df_ID[df_ID.STAID.isin(df_train_expl.STAID)]
+# # vars to color plots with (e.g., ecoregion)
+# df_ID=pd.read_csv(
+#     f'{dir_expl}/GAGES_idVars.csv',
+#     dtype={'STAID': 'string'}
+# )
+
+# # training ID
+# df_train_ID=df_ID[df_ID.STAID.isin(df_train_expl.STAID)]
+# # validation ID
+# df_valin_ID=df_ID[df_ID.STAID.isin(df_valin_expl.STAID)]
 
 
 # %% define clustering class
@@ -143,12 +174,16 @@ class Clusterer:
         Attributes
         --------------
         clust_vars_tr_: transformed clustering variables
+        scaler_: the transform variables stored for application to other data
+            (e.g., mean and standard deviation of each column for standardization)
         """
 
         if method == 'standardize':
             stdsc=StandardScaler()
+            self.scaler_=stdsc.fit(self.clust_vars)
             clust_vars_tr_=pd.DataFrame(
-                stdsc.fit_transform(self.clust_vars)
+                self.scaler_.transform(self.clust_vars)
+                # stdsc.fit_transform(self.clust_vars)
             )
             # give columns names to transformed data
             clust_vars_tr_.columns=self.clust_vars.columns
@@ -159,7 +194,8 @@ class Clusterer:
 
         if method == 'normalize':
             normsc=MinMaxScaler()
-            self.clust_vars_tr_=normsc.fit_transform(self.clust_vars)
+            self.scaler_=normsc.fit(self.clust_vars)
+            self.clust_vars_tr_=self.scaler_.transform(self.clust_vars)
 
     
     def k_clust(self, 
@@ -192,6 +228,7 @@ class Clusterer:
             k groups between ki and kf
         silhouette_k_mean_: individual silhoueete scores for each
             group, k, for each number of k groups between ki and kf
+        self.km_clusterer_: k-means cluster object that can be used to fit new data to
 
         """
         # initialize vectors to hold outputs
@@ -247,10 +284,14 @@ class Clusterer:
             silhouette_mean_scores.append(mean_sil)
             silhouette_k_scores.append(mean_sil_k)
         
+        # assign outputs to object
         self.distortions_=distortions
         self.ks_predicted_=ks_out
         self.silhouette_mean_=silhouette_mean_scores
         self.silhouette_k_mean_=silhouette_k_scores
+
+        # assign km object to object
+        self.km_clusterer_=km_fit
 
         # if plot_mean_sil=true, plot mean silhouette coef. vs number of clusters
         if plot_mean_sil is True:
@@ -426,13 +467,18 @@ class Clusterer:
                                 gen_min_span_tree=gm_spantree,
                                 metric=metric_in,
                                 # cluster_selection_epsilon=clust_seleps,
-                                cluster_selection_method=clustsel_meth)
+                                cluster_selection_method=clustsel_meth,
+                                prediction_data=True)
 
         # cluster data
         try:
-            hd_clusterer.fit(self.clust_vars_tr_)
+            # hd_clusterer.fit(self.clust_vars_tr_)
+            data_in = self.clust_vars_tr_
         except:
-            hd_clusterer.fit(self.clust_vars)
+            # hd_clusterer.fit(self.clust_vars)
+            data_in = self.clust_vars
+        
+        hd_clusterer.fit(data_in)
 
         # plot condensed tree
         plt.figure()
@@ -494,6 +540,36 @@ class Clusterer:
 
         # print(plot3)
 
+    def hd_predictor(self,
+        points_to_predict,
+        id_vars):
+        """
+        Parameters
+        -------------
+        points_to_predict: pd.DataFrame type object of explantory variables
+            to be predicted on
+        id_vars: variables to identify each catchment (e.g., STAID)
+
+        Attributes
+        ------------
+        df_hd_pred_: pd.DataFrame with id_vars, predicted cluster, and 
+            measure of confidence in that prediction
+        """
+
+        # assign predictor function to self
+        clusters, pred_strength=hdbscan.approximate_predict(
+            clusterer=self.hd_clusterer_,
+            points_to_predict=points_to_predict
+        )
+
+        # define output dataframe with station IDs
+        self.df_hd_pred_=pd.DataFrame(
+            {'ID': id_vars,
+            'pred_cluster': clusters,
+            'conf_pred': pred_strength}
+        )
+
+
 
         
     def umap_reducer(self, 
@@ -506,12 +582,12 @@ class Clusterer:
         """
         Parameters
         -------------
-        nn: integer; 2 to 100 is reasonable
+        nn: integer: 2 to 100 is reasonable
             n_neighbors: How many points to include in nearest neighbor
             controls how UMAP balances local vs global structure.
             As nn increases focus shifts from local to global structure
             
-        mind: float; 
+        mind: float: 
             min_dist: minimum distance allowed to be in the low dimensional representation
                 values between 0 and 0.99
             controls how tightly UMAP is allowed to pack points together
@@ -522,12 +598,22 @@ class Clusterer:
             
         sprd: integer;
             effective scale of embedding points. In combination with min_dist (mind) this
-            determines how clustered/clumped the embedded points are
+            determines how clustered/clumped the embedded points are.
+            Generally leave set to 1 and use min_dist for tuning.
 
         nc: integer; 2 to 100 is reasonable
             n_components: number of dimensions (components) to reduce to
+        
+        Attributes
+        ------------
+        df_embedding_:
+            pd.DataFrame holding color variable (e.g., AggEcoregion), STAID, the point size
+            and the UMAP embeddings of the training data
+
+        umap_embedding_:
+            UMAP object that can be used to fit new data to the trained UMAP space
         """    
-      
+              
         # define umap reducer
         reducer=umap.UMAP(n_neighbors=nn, # 2 to 100
                         min_dist=mind, # 
@@ -547,17 +633,18 @@ class Clusterer:
         # data_in_scld=StandardScaler().fit_transform(data_in)
 
         # train reducer
-        embedding=reducer.fit_transform(data_in)
+        self.umap_embedding_=reducer.fit(data_in)
+        umap_embedding_transform=self.umap_embedding_.transform(data_in)
 
         # save embeddings as dataframe
         self.df_embedding_=pd.DataFrame.from_dict({
             'Color': color_in,
-            'ColSize' : np.repeat(0.1, len(embedding[:, 0]))
+            'ColSize' : np.repeat(0.1, len(umap_embedding_transform[:, 0]))
             }).reset_index().drop(columns=["index"])
 
         self.df_embedding_['STAID']=self.id_vars
         for i in range(0, nc):
-            self.df_embedding_[f'Emb{i}']=embedding[:, i]
+            self.df_embedding_[f'Emb{i}']=umap_embedding_transform[:, i]
 
         # Plot embedding
 
@@ -574,101 +661,14 @@ class Clusterer:
         # Edit so hover shows station id
         fig.update_traces(
         hovertemplate="<br>".join([
-            "STAID: %{customdata[0]}" 
+            "STAID: %{customdata[0]}"
         ])
         )
 
         print(fig.show())
-        return f'Embedding shape: {embedding.shape}'
+        return f'Embedding shape: {umap_embedding_transform.shape}'
 
 
-# %%
-# define list of columns not to transform
-# these columns are OHE so already either 0 or 1. 
-# for distance metrics, use Manhattan which lends itself to capturing 
-not_tr_in=['GEOL_REEDBUSH_DOM_anorthositic', 'GEOL_REEDBUSH_DOM_gneiss',
-       'GEOL_REEDBUSH_DOM_granitic', 'GEOL_REEDBUSH_DOM_quarternary',
-       'GEOL_REEDBUSH_DOM_sedimentary', 'GEOL_REEDBUSH_DOM_ultramafic',
-       'GEOL_REEDBUSH_DOM_volcanic']
-
-test=Clusterer(clust_vars=df_train_mnexpl.drop(columns=['STAID', 'LAT_GAGE', 'LNG_GAGE']),
-    id_vars=df_train_mnexpl['STAID'])
-
-test.stand_norm(method='standardize', # 'normalize'
-    not_tr=not_tr_in) 
-
-test.k_clust(
-    ki=2, kf=20, 
-    method='kmeans', 
-    plot_mean_sil=True, 
-    plot_distortion=True)
-    
-test.k_clust(
-    ki=2, kf=20, 
-    method='kmedoids', 
-    plot_mean_sil=True, 
-    plot_distortion=True,
-    kmed_method='alternate')
-
-for i in range(2, 11):
-    test.plot_silhouette_vals(k=i)
-
-test.hdbscanner(
-    min_clustsize=20,
-    gm_spantree=True,
-    metric_in=  'euclidean', #'manhattan', #
-    clustsel_meth='eom') #'leaf') #
-
-test.umap_reducer(
-    nn=10,
-    mind=0.01,
-    sprd=1,
-    nc=20,
-    color_in=df_train_ID['AggEcoregion'])
-    # df_train_ID['USDA_LRR_Site'])
-    # pd.Series(test2.hd_out_.labels, dtype='category')) #df_train_ID['AggEcoregion'])
-    # pd.Series(df_train_ID['ECO3_Site'], dtype="category"))# df_train_ID['Class'])
-
-##### 
-
-# new clusetering on umap reduced data
-test2=Clusterer(clust_vars=test.df_embedding_.drop(columns=['STAID', 'Color', 'ColSize']),
-    id_vars=df_train_mnexpl['STAID'])
-
-test2.k_clust(ki=2, kf=9, 
-    method='kmeans', 
-    plot_mean_sil=True, 
-    plot_distortion=True)
-
-for i in range(2, 9):
-    test2.plot_silhouette_vals(k=i)
-    
-test2.k_clust(
-    ki=2, kf=20, 
-    method='kmedoids', 
-    plot_mean_sil=True, 
-    plot_distortion=True,
-    kmed_method='alternate')
-
-for i in range(2, 10):
-    test2.plot_silhouette_vals(k=i,
-        method='kmedoids',
-        kmed_method='alternate')
-
-test2.hdbscanner(
-    min_clustsize=30,
-    gm_spantree=True,
-    metric_in=  'euclidean', #'manhattan', #
-    clustsel_meth='eom') #'leaf') #
-
-test2.umap_reducer(
-    nn=100,
-    mind=0.01,
-    sprd=1,
-    nc=3,
-    color_in=df_train_ID['AggEcoregion'])
-    # df_train_ID['USDA_LRR_Site'])
-    # pd.Series(df_train_ID['ECO3_Site'], dtype="category"))# df_train_ID['Class'])
 
 # %%
 # %% define regression class
@@ -760,7 +760,9 @@ class Regressor:
         print(self.reg.coef_)
 
 
-    def lasso_regression(self, alpha_in=1):
+    def lasso_regression(self, 
+                        alpha_in=1,
+                        max_iter_in=1000):
         # using info from here as guide: 
         # https://machinelearningmastery.com/lasso-regression-with-python/
         """
@@ -769,47 +771,54 @@ class Regressor:
         alpha_in: float [0:Inf)
             parameter controlling strength of L1 penalty.
             alpha=0 same as LinearRegression, but advised not to use alpha=0
+        max_iter_in: integer [0:Inf)
+            Maximum number of iterations
+            Default is 1000
 
         Attributes
         -------------
-        
-
+        lasso_scores_: numpy.ndarray
+            scores from cross validation
+        features_keep_: pandas DataFrame
+            features with non-zero coefficients and the coefficients
         """
         try:
             X_train, y_train=self.expl_vars_tr_, self.resp_var
         except:
             X_train, y_train=self.expl_vars, self.resp_var
 
-        self.lasso_reg=Lasso(alpha=1).fit(X_train, y_train)
+        self.lasso_reg=Lasso(alpha=alpha_in,
+                            max_iter=max_iter_in).fit(X_train, y_train)
 
         # define k-fold model
         cv=RepeatedKFold(n_splits=10, n_repeats=3, random_state=100)
 
         #evaluate model
-        scores=cross_val_score(self.lasso_reg, 
+        scores=cross_validate(self.lasso_reg, 
             X_train, y_train, 
-            scoring='neg_mean_absolute_error', cv=cv, n_jobs=1)
+            scoring=('neg_root_mean_squared_error', 
+            'neg_mean_absolute_error', 'r2'), cv=cv, n_jobs=1,
+            return_train_score=True,
+            return_estimator=False)
 
-        self.lasso_scores = np.absolute(scores)
+        self.lasso_scores_ = scores
 
-        print('Mean MASE: %.3f (%.3f)' % (np.mean(self.lasso_scores), np.std(self.lasso_scores)))
+        # return variables with non-zero coeficients
+        self.lasso_features_keep_=pd.DataFrame({
+            'features':  self.lasso_reg.feature_names_in_[
+                            np.where(np.abs(self.lasso_reg.coef_) > 10e-20)
+                            ],
+            'coefficients': self.lasso_reg.coef_[
+                            np.where(np.abs(self.lasso_reg.coef_) > 10e-20)
+                            ]
+        })
+
+        rmse_train=-self.lasso_scores_['train_neg_root_mean_squared_error']
+        rmse_test=-self.lasso_scores_['test_neg_root_mean_squared_error']
+        mae_train=-self.lasso_scores_['train_neg_mean_absolute_error']
+        mae_test=-self.lasso_scores_['test_neg_mean_absolute_error']
+        print('Mean training RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_train), np.std(rmse_train)))
+        print('Mean testing RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_test), np.std(rmse_test)))
+        print('Mean training MAE: %.3f (%.3f)' % (np.mean(mae_train), np.std(mae_train)))
+        print('Mean testing MAE: %.3f (%.3f)' % (np.mean(mae_test), np.std(mae_test)))
     
-# %%
-# define list of columns not to transform
-# these columns are OHE so already either 0 or 1.
-
-not_tr_in=['GEOL_REEDBUSH_DOM_anorthositic', 'GEOL_REEDBUSH_DOM_gneiss',
-       'GEOL_REEDBUSH_DOM_granitic', 'GEOL_REEDBUSH_DOM_quarternary',
-       'GEOL_REEDBUSH_DOM_sedimentary', 'GEOL_REEDBUSH_DOM_ultramafic',
-       'GEOL_REEDBUSH_DOM_volcanic']
-
-testreg=Regressor(expl_vars=df_train_mnexpl.drop(columns=['STAID']),
-    resp_var = df_train_mnanWY['Ann_WY_ft3'],
-    id_var = df_train_ID['AggEcoregion'])
-
-testreg.stand_norm(method='standardize', # 'normalize'
-    not_tr=not_tr_in) 
-
-testreg.lasso_regression()
-
-# %%

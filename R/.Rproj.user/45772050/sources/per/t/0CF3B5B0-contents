@@ -1,0 +1,924 @@
+---
+title: "Regression_GAGESii"
+author: "Ben Choat"
+date: "2/25/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Libraries
+
+```{r PackagesAndFunctions, echo=FALSE, warning=FALSE}
+# clear all variables
+rm(list=ls())
+
+# use renv for R and R-package version control
+
+#if(!require(renv))(install.pacakges("renv"))
+#options for the renv package
+
+# renv::init() #initiate new project
+# renv::snapshot() #store active libraries in locked env. - Run this command anytime a package is updated or added.
+# renv::restore() #restore libraries to previous stored state
+
+
+# pacman as a package loader
+if(!require(pacman))(install.packages("pacman"))
+
+# renv for dependency management
+# data.table for data wrangling
+# ggplot2 for plotting
+# ggpubr for arranging multiple plots
+# plotly for plotting
+# car for levene test
+# caret for regression
+# usdm for vifstep variable selection
+# leaps for regression variable selection
+# dunn.test for Dunn pairwise comparison of categorical vars
+
+pacman::p_load(renv, data.table, ggplot2, ggpubr, plotly, car, corrplot, Hmisc, 
+               caret, usdm, leaps, dunn.test)
+
+# function to estimate number of bins for histograms
+nbins.fun <- function(N.for.data.of.interest) {
+  floor(1 + 3.322*log10(N.for.data.of.interest))
+  }
+
+
+
+```
+
+### Read in data
+
+```{r ReadData, warning=FALSE, echo=FALSE}
+# annual water yield 
+# training
+dt_annWY_train <- data.table::fread(
+        paste0(
+        "E:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_train.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# validate in
+dt_annWY_valin <- data.table::fread(
+        paste0(
+        "E:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_in.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# validate nit
+dt_annWY_valnit <- data.table::fread(
+        paste0(
+        "E:/DataWorking/USGS_discharge/train_val_test/yrs_98_12/annual_WY/Ann_WY_val_nit.csv"
+        ) , keepLeadingZeros = TRUE
+      )
+
+# static watershed characteristics
+dt_static <- data.table::fread(
+  "E:/Projects/GAGESii_ANNstuff/Data_Out/GAGES_Static_Filtered.csv",
+  keepLeadingZeros = TRUE
+  )
+
+# ID variables
+dt_ID <- data.table::fread(
+  "E:/Projects/GAGESii_ANNstuff/Data_out/GAGES_idVars.csv",
+  keepLeadingZeros = TRUE)
+
+# calculate mean wy for each station
+dt_annWYmn_train <- dt_annWY_train[
+  , .(mn_anl_ft3 = mean(Ann_WY_ft3),
+      mn_anl_acft = mean(Ann_WY_acft)),
+      by = site_no]
+
+dt_annWYmn_valin <- dt_annWY_valin[
+  , .(mn_anl_ft3 = mean(Ann_WY_ft3),
+      mn_anl_acft = mean(Ann_WY_acft)),
+      by = site_no]
+
+
+dt_annWYmn_valnit <- dt_annWY_valnit[
+  , .(mn_anl_ft3 = mean(Ann_WY_ft3),
+      mn_anl_acft = mean(Ann_WY_acft)),
+      by = site_no]
+
+
+# data.table of GAGES explanatory vars
+dt_expl_train <- data.table::fread(
+  'E:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv',
+  keepLeadingZeros = TRUE
+)
+
+dt_expl_valin <- data.table::fread(
+  'E:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_ValIn_Interp_98_12.csv',
+  keepLeadingZeros = TRUE
+)
+
+dt_expl_valnit <- data.table::fread(
+  'E:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/All_ExplVars_ValNit_Interp_98_12.csv',
+  keepLeadingZeros = TRUE
+)
+
+
+# merge explanatory vars with annual water yield vars
+
+dt_all_train <- merge(
+  dt_expl_train, 
+  dt_annWY_train,
+  by.x = c("STAID", "year"), by.y = c("site_no", "yr")
+  )[
+  , ':=' (site_no = NULL,
+          yr = NULL)
+]
+
+dt_all_valin <- merge(
+  dt_expl_valin, 
+  dt_annWY_valin,
+  by.x = c("STAID", "year"), by.y = c("site_no", "yr")
+  )[
+  , ':=' (site_no = NULL,
+          yr = NULL)
+]
+
+dt_all_valnit <- merge(
+  dt_expl_valnit, 
+  dt_annWY_valnit,
+  by.x = c("STAID", "year"), by.y = c("site_no", "yr")
+  )[
+  , ':=' (site_no = NULL,
+          yr = NULL)
+]
+
+
+
+# mean of all vars
+
+dt_all_mn_train <- copy(dt_all_train)[
+  , lapply(.SD, mean), by = STAID
+][
+  , ':=' (year = NULL)
+]
+
+dt_all_mn_valin <- copy(dt_all_valin)[
+  , lapply(.SD, mean), by = STAID
+][
+  , ':=' (year = NULL)
+]
+
+dt_all_mn_valnit <- copy(dt_all_valnit)[
+  , lapply(.SD, mean), by = STAID
+][
+  , ':=' (year = NULL)
+]
+
+
+# Variable types and descriptions
+dt_types_descr <- fread(
+  "E:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_In/VarTypesDescrpts.csv"
+)[
+  , VarDescription := NULL
+]
+dt_types_descr[VarType == "Physical", ]$VarType<- "Bas_Morph"
+
+
+# Remove stations that only have streamflow pre-1980 from expl vars
+# NOTE: one station made it into water yield, but is not represented in 
+# explanatory variables, because the only year with discharge was before 1980
+
+ind_rm_del <- which(!dt_annWY_valnit$site_no %chin% dt_all_mn_valnit$STAID)
+
+sta_rm_del <- dt_annWY_valnit[ind_rm_del, site_no]
+
+dt_all_mn_valnit <- dt_all_mn_valnit[!STAID == sta_rm_del,]
+dt_all_all_valnit <- dt_all_valnit[!STAID == sta_rm_del, ]
+dt_annWY_valnit <- dt_annWY_valnit[!site_no == sta_rm_del, ]
+dt_annWYmn_valnit <- dt_annWYmn_valnit[!site_no == sta_rm_del, ]
+dt_expl_valnit <- dt_expl_valnit[!STAID == sta_rm_del, ]
+
+rm(list = ls(pattern = "del"))
+```
+
+### Definw working data and investiagte how many stations are available at 
+various levels of development.
+
+```{r WorkData, echo=FALSE, warning=FALSE}
+# which variables to remove
+dt_wrk_train <- copy(dt_all_mn_train)[
+        ,Ann_WY_ft := Ann_WY_acft/(DRAIN_SQKM * 247.105) 
+      ][ # Note 274.105 acres in 1 km2 and 304.8 mm in 1 ft (* 304.8)
+        , ':=' (Ann_WY_acft = NULL,
+                Ann_WY_ft3 = NULL)
+      ]
+
+dt_wrk_valin <- copy(dt_all_mn_valin)[
+        , Ann_WY_ft := Ann_WY_acft/(DRAIN_SQKM * 247.105) 
+      ][, ':=' (Ann_WY_acft = NULL,
+                Ann_WY_ft3 = NULL)
+      ]
+
+dt_wrk_valnit <- copy(dt_all_mn_valnit)[
+        , Ann_WY_ft := Ann_WY_acft/(DRAIN_SQKM * 247.105) 
+      ][, ':=' (Ann_WY_acft = NULL,
+                Ann_WY_ft3 = NULL)
+      ]
+
+
+# look at number of various categories of gage
+cat(
+  "Percent Development: \n Nmbr Stations: \n"
+)
+
+PercDev <- sapply(
+  seq(0, 100, 5), 
+  function(x) {
+    c(x, nrow(dt_wrk_train[TS_DEV_SUM <= x]))
+    }
+  )
+# assign to data.table
+dt_percDev <- data.table(
+  PercentDeveloped = PercDev[1,],
+  NumberStations = PercDev[2,],
+  RatioStations = PercDev[2,]/3214
+)
+
+
+cat(
+  "Percent Impervious: \n Nmbr Stations: \n"
+)
+sapply(
+  seq(0, 48, 2), 
+  function(x) {
+      c(x, nrow(dt_wrk_train[TS_imperv > x]))
+    }
+  )
+
+# plot percent developed and impervious
+ggplot(data = dt_percDev) +
+  geom_line(aes(x = PercentDeveloped, y = RatioStations), stat = 'identity')
+   
+```
+
+### Explore single variate correlation
+Results show no strong correlations between mean annual wy and any explanatory
+variables other than watershed area and maximum strahler order.
+
+```{r corr, warning=FALSE, echo=FALSE} 
+# function to plot correlogram
+fun_cor_plot <- function(data_in, 
+                         p_thresh=0.1, 
+                         r_thresh=0.7, 
+                         type_in="spearman",
+                         tl_cex = 0.7,
+                         save_fig = FALSE,
+                         filename_out = "Plot_Out.png") {
+  # data_in should be data.frame or data.table type object
+  # set p threshold (only p's <= threshold will be plotted)
+  # similar for r threshold
+  # type_in can be "pearson" or "spearman"
+  # tl_cex controls size of variable labels
+  
+  cor_main <- Hmisc::rcorr(as.matrix(data_in), type = type_in)
+
+  # p-vales
+  corP_in <- cor_main$P
+  # replace NA's along diagonal of p-matrix with 0
+  diag(corP_in) <- 0
+
+
+  corR_in <- cor_main$r
+  corR_in <- corR_in[apply(corP_in, 1, function(x){any(x<=p_thresh)}), ]
+
+  # replace values lower than R-thresh with NAs
+  # corP_in[corR_in < r_thresh] = 1
+  corR_in[corR_in < r_thresh] = 0
+
+  # plot
+ plt <- corrplot::corrplot(corR_in,
+            method = 'ellipse', 
+            type = "lower",
+            p.mat = corP_in, 
+            # sig.level = c(0.01, 0.05, 0.1),
+            insig = "blank", #"n", #insig = #,"label_sig", #
+            pch.cex = 0.3,
+            tl.cex = tl_cex,
+            tl.srt = 0.0001,
+            na.label = "."
+         )
+
+  
+  if(save_fig) {
+    ggplot2::ggsave(
+      filename = filename_out,
+      plot = plt,
+      dpi = 300
+    )
+  }
+  
+} # end correlogram function
+
+data_wrk <- copy(dt_wrk_train)#[, acft_sqkm := mn_anl_acft/DRAIN_SQKM]
+
+fun_cor_plot(data_wrk, type_in = "spearman")
+fun_cor_plot(data_wrk[, Ann_WY_ft := NULL], type_in = "pearson")
+
+# fun_cor_plot(
+#   data_in[, 62:90],
+#   save_fig = FALSE,
+#   filename_out = "E:/Projects/GAGESii_ANNstuff/Figures/CorPlot_GAGESii_pearson.png"
+#   )
+```
+
+### exploratory plots
+
+```{r expplots, warning=FALSE, echo=FALSE}
+knitr::include_graphics("E:/Projects/GAGESii_ANNstuff/Figures/AggEcoRgnsII.jpg")
+
+data_in <- merge(
+  dt_wrk_train,
+  dt_ID,
+  by = "STAID"
+)
+
+# ggplot(data = data_in) +
+#   geom_point(aes(x =  DRAIN_SQKM, y = Ann_WY_ft, color = AggEcoregion))
+
+cat("Q ~ average Precip:")
+p <- ggplot(data = data_in, aes(x = PPTAVG_BASIN, y = Ann_WY_ft)) + #[AggEcoregion == "WestMnts",]) +
+      geom_point(aes(color = AggEcoregion)) +
+      geom_smooth(method = "lm", se = TRUE) +
+      xlab("Mean Annual Precipitation [cm]") +
+      ylab("Mean Annual Water Yield [ft]") +
+      theme_minimal()
+
+plot(p)
+# ggsave(
+#   filename = "E:/Projects/GAGESii_ANNstuff/Figures/Prec_MnWY_All.png",
+#   plot = p
+# )
+
+cat("Q ~ average Precip by ecoregion, colored by area:")
+
+# function to plot with
+
+plt_fun <-function(data_use, 
+                   x_use, 
+                   color_use, 
+                   save_fig = FALSE,
+                   filename_out = NA,
+                   xlab_in = "x",
+                   ylab_in = "y",
+                   colname_in = NA) {
+  # data_use = the input dataframe or datatable
+  # x_use = string name of variable in data_use
+  # color_use = string name of variable in data_use
+  d_in <- data_use
+  x_in <- unlist(data_use[, ..x_use])
+  c_in <- unlist(data_use[, ..color_use])
+  
+  p <- ggplot(data = d_in,
+                aes(x = x_in, y = Ann_WY_ft)) +
+              geom_point(aes(color = c_in), alpha = 0.4) + #clr_tmp[i]) +
+              scale_color_gradient(low = "orange", 
+                                   high = "green",
+                                   name = if(is.na(colname_in)){
+                                     color_use
+                                   }else(colname_in)
+                                   ) +
+              geom_smooth() + # method = "lm", se = TRUE +
+              #ggtitle(eco_tmp) +
+              labs(color = paste0(color_use), x = x_use) +
+              theme_minimal() + 
+              facet_wrap(~ AggEcoregion, scales = 'free', nrow = 3) +
+              xlab(xlab_in) + ylab(ylab_in)
+
+  plot(p)
+  
+  if(save_fig){
+    ggplot2::ggsave(
+      filename = filename_out,
+      plot = p
+    )
+  }
+}
+
+# plot scatter Q ~ Areaw/regression line and color by size
+plt_fun(data_in, x_use = "PPTAVG_BASIN", color_use = "DRAIN_SQKM",
+        colname_in = "Drainage [Sq Km")
+
+
+cat("Q ~ average Precip by ecoregion, colored by number wet days:")
+# plot scatter Q ~ Areaw/regression line and color by wet days
+plt_fun(data_in, x_use = "PPTAVG_BASIN", color_use = "WD_BASIN") #,
+        # save = TRUE,
+        # filename_out = "E:/Projects/GAGESii_ANNstuff/Figures/Prec_MnWY_WetDays.png",
+        # xlab = "Mean Annual Precipitation [cm]", 
+        # ylab = "Mean Annual Water Yield [ft]",
+        # colname_in = "Annual Wet \n Days [#]")
+
+
+cat("Q ~ average Precip by ecoregion, colored by TWI:")
+# plot scatter Q ~ Areaw/regression line and color by topographic wetness index
+plt_fun(data_in, x_use = "PPTAVG_BASIN", color_use = "TOPWET")
+
+
+cat("Q ~ average Precip by ecoregion, colored by average temperature:")
+# plot scatter Q ~ Areaw/regression line and color by avg temp
+plt_fun(data_in, x_use = "PPTAVG_BASIN", color_use = "T_AVG_BASIN")
+
+
+cat("Q ~ average Precip by ecoregion, colored by lat:")
+# plot scatter Q ~ Areaw/regression line and color by avg temp
+plt_fun(data_in, x_use = "PPTAVG_BASIN", color_use = "LAT_GAGE")
+
+cat("Q ~ average Precip by ecoregion, colored by lat:")
+# plot scatter Q ~ Areaw/regression line and color by avg temp
+plt_fun(data_in, x_use = "PPTAVG_BASIN", color_use = "TS_imperv")# ,
+        # save = TRUE,
+        # filename_out = "E:/Projects/GAGESii_ANNstuff/Figures/Prec_MnWY_Imperv.png",
+        # xlab = "Mean Annual Precipitation [cm]",
+        # ylab = "Mean Annual Water Yield [ft]",
+        # colname_in = "% Impervious")
+
+# ggplot(data = data_in) +
+#   geom_point(aes(x = PPTAVG_BASIN, y = DRAIN_SQKM, color = AggEcoregion))
+
+cat("Boxplot: Q by grouping (e.g., ecoregion II")
+# boxplots
+p <- ggplot(data = data_in, aes(x = AggEcoregion, y = Ann_WY_ft)) +
+  geom_boxplot() + 
+  geom_jitter(height = 0, width = 0.1, size = 0.01, alpha = 0.1) +
+  theme_bw()
+p
+
+p <- ggplot(data = data_in, aes(x = Class, y = Ann_WY_ft)) +
+  geom_violin(draw_quantiles = c(0.05, 0.5, 0.95)) + 
+  geom_jitter(color = data_in$PPTAVG_BASIN,
+              height = 0, 
+              width = 0.1, 
+              size = 0.01, 
+              alpha = 0.7) +
+  xlab("Class") + ylab("Mean Annual Water Yield [ft]") +
+  theme_bw() +
+  facet_grid(~AggEcoregion)
+p
+# ggsave(
+#   filename = "E:/Projects/GAGESii_ANNstuff/Figures/Violing_WY_Class_Eco.png",
+#   plot = p,
+#   width = 9
+# )
+
+
+cat("Kruskal-Wallis test results")
+krskl_out <- kruskal.test(Ann_WY_ft ~ AggEcoregion, data = data_in)
+krskl_out
+
+d_test <- dunn.test::dunn.test(
+  x = data_in$Ann_WY_ft, g = data_in$AggEcoregion, method = "none"
+)
+
+```
+
+
+### Regression
+
+```{r lm, warning=FALSE, echo=FALSE}
+
+#####
+# Create subset of data using vif threshold of 10
+#####
+
+
+#####
+# Regression & variable selection with leaps
+#####
+# exhaustive
+# system.time({
+# lm_vars <- leaps::regsubsets(
+#   x = dt_wrk_train[, .SD, .SDcols = !c("STAID", "Ann_WY_ft")],
+#   y = dt_wrk_train$Ann_WY_ft,
+#   nbest = 1, # how many versions of model with n variables to return
+#   # nvmax = 10, # max number of vars
+#   method = "exhaustive",
+#   really.big = T
+# )
+# })
+# # save summary of output
+# lm_vars10_summary <- summary(lm_vars)
+
+set.seed(100)
+
+# forward selection
+system.time({
+lm_vars <- leaps::regsubsets(
+  x = dt_wrk_train[, .SD, .SDcols = !c("STAID", "Ann_WY_ft")],
+  y = dt_wrk_train$Ann_WY_ft,
+  nbest = 1, # how many versions of model with n variables to return
+  nvmax = 40, # max number of vars
+  method = "seqrep", #"forward",
+  really.big = T
+)
+})
+# save summary of output
+lm_vars_frwrd_summary <- summary(lm_vars)
+
+
+# caret package
+# nice caret reference:
+# https://daviddalpiaz.github.io/r4sl/the-caret-package.html
+
+# set up repeated k-fold cross validation
+train.control <- caret::trainControl(method = 'cv', number = 10)
+# run regression
+system.time({
+  lm_vars <- caret::train(
+    x = dt_wrk_train[, .SD, .SDcols = !c("STAID", "Ann_WY_ft")],
+    y = dt_wrk_train$Ann_WY_ft,
+    method = "leapSeq",
+    tuneGrid = data.frame(nvmax = 1:80),
+    trControl = train.control
+  )
+})
+
+lm_vars$results
+
+# save summary of output
+lm_vars_stepwise_summary <- summary(lm_vars)
+
+
+predict <- caret::predict.train(lm_vars, dt_wrk_valnit)
+
+plot(predict ~ dt_wrk_valnit$Ann_WY_ft)
+
+### see code chunk below for predictions
+
+#####
+# Summary Plots (r2, adjr2, bic, cp)
+#####
+# 1. R2 vs # var
+p_r2 <- ggplot(data = data.table(x = seq(1, 41, 1), y = lm_vars_stepwise_summary$rsq)) +
+  geom_point(aes(x = x, y = y), size = 1) +
+  geom_point(aes(x = x[which.max(y)], y = max(y)), color = "red", size = 4) +
+  ylab("R2") + xlab("Number of Variables") +
+  theme_bw()
+# 2. Adjusted R2 vs # vars
+p_adjr2 <- ggplot(data = data.table(x = seq(1, 41, 1), y = lm_vars_stepwise_summary$adjr2)) +
+  geom_point(aes(x = x, y = y), size = 1) +
+  geom_point(aes(x = x[which.max(y)], y = max(y)), color = "red", size = 4) +
+  ylab("Adj. R2") + xlab("Number of Variables") +
+  theme_bw()
+# 3. BIC
+p_BIC <- ggplot(data = data.table(x = seq(1, 41, 1), y = lm_vars_stepwise_summary$bic)) +
+  geom_point(aes(x = x, y = y), 
+            size = 1) +
+  geom_point(aes(x = x[which.min(y)], y = min(y)), 
+             color = "red", 
+             size = 4) +
+  geom_text(aes(x = x[which.min(y)], 
+                y = min(y) + 200, 
+                label = x[which.min(y)])) +
+  ylab("BIC") + xlab("Number of Variables") +
+  theme_bw()
+# 4. Mallow Cp
+p_Cp <- ggplot(data = data.table(x = seq(1, 41, 1), y = lm_vars_stepwise_summary$cp)) +
+  geom_point(aes(x = x, y = y), 
+            size = 1) +
+  geom_point(aes(x = which.min(abs(lm_vars_stepwise_summary$cp - seq(1, 41, 1))),
+                 y = y[which.min(abs(lm_vars_stepwise_summary$cp - seq(1, 41, 1)))]), 
+             color = "red", 
+             size = 4) +
+  geom_line(aes(x = x, y = x), color = "red") +
+  geom_text(aes(x = which.min(abs(
+    lm_vars_stepwise_summary$cp - seq(1, 41, 1)
+    )), 
+                y = y[which.min(abs(
+                  lm_vars_stepwise_summary$cp - seq(1, 41, 1)
+                  ))] + 200, 
+                label = which.min(abs(
+                  lm_vars_stepwise_summary$cp - seq(1, 41, 1))
+                  ))) +
+  ylab("Mallow Cp") + xlab("Number of Variables") +
+  theme_bw()
+
+p_all <- ggpubr::ggarrange(
+          p_r2, p_adjr2, p_BIC, p_Cp,
+          ncol = 2, nrow = 2
+)
+
+plot(p_all)
+
+# ggsave(
+#   filename = "E:/Projects/GAGESii_ANNstuff/Figures/MLR_VarSel_R2_BIC_Cp.png",
+#   p_all
+# )
+
+#####
+# plot of number of models each variable appears in
+#####
+vals_plot_in <- sort(
+    apply(lm_vars_frwrd_summary$which, 2, sum)[
+      names(apply(lm_vars_frwrd_summary$which, 2, sum)) != "(Intercept)"
+            ]
+    )
+in_wrk <- data.table(
+  Variables = factor(names(vals_plot_in), levels = names(vals_plot_in)),
+  NumberOfModels = unname(vals_plot_in),
+  KeepOrNot = ifelse(names(vals_plot_in) %chin% 
+                       names(which(lm_vars_frwrd_summary$which[26,] == TRUE)),
+                     "keep", "dont")
+)[
+  NumberOfModels > 0,
+]
+
+in_wrk <- merge(
+  in_wrk,
+  dt_types_descr,
+  by.x= 'Variables', by.y = 'Variable'
+)[
+  order(NumberOfModels),
+][
+  , ':=' (Variables = factor(Variables, levels = Variables),
+          MdlNumber = seq(length(NumberOfModels), 1, -1))
+]
+
+in_wrk[MdlNumber < 27, table(VarType)]
+
+# data_plot_in <- factor(in_wrk, levels = in_wrk)
+
+p <- ggplot(data = in_wrk, aes(x = Variables, y = NumberOfModels)) +
+  geom_bar(aes(fill = VarType, color = KeepOrNot), stat = "identity") +
+  theme_bw() +
+  coord_flip()
+
+plot(p)
+
+
+
+# ggsave(
+#   filename = "E:/Projects/GAGESii_ANNstuff/Figures/NmbrVars_MnAnWY_Regression.png",
+#   plot = p
+# )
+
+#####
+# regression and var selection with caret
+#####
+
+# 
+# # training data for plotting
+# data_in <- merge(
+#   dt_wrk_train,
+#   dt_ID,
+#   by = "STAID"
+# )
+# 
+
+# As default caret produces 25 bootstrap samples to estimate the out-of-sample 
+# performance. The reported out-of-sample error is the average of 25 estimated 
+# out-of-sample errors. The reported RMSE is the bootstrap RMSE, the square root 
+# of the average of 25 bootstrapped MSE’s.
+
+
+# https://bookdown.org/jhvdz1/ml2/linear-regression-models.html 
+
+# Regression with caret
+# set.seed(100)
+# data_in <- copy(dt_wrk_train)[
+#   , .SD, .SDcols = c(vars_included, 'Ann_WY_ft')
+# ]
+# 
+# lm1 <- train(Ann_WY_ft ~ ., 
+#              data = data_in, 
+#              method = "lm"
+# )
+#  
+# class(lm1)
+# attributes(lm1)
+# summary(lm1)
+# 
+# car::vif(lm1$finalModel)
+#                         
+#                         
+# mdl <- lm(Ann_WY_ft ~ .,
+#             data = data_in)
+# 
+# mdl_step <- step(mdl, direction =  "backward")# "forward")
+# 
+# mdl_step_bckwrd <- mdl_step
+# 
+# # print summary of model
+# # sink("E:/Projects/GAGESii_ANNstuff/Data_Out/lm_sqrtQ_avgAnWY_ExcludeDev.txt")
+# # print(summary(lm(mdl_step)))
+# # sink()  # returns output to the console
+# summary(mdl_step)
+# 
+# # VIF of model parameters
+# car::vif(mdl_step)
+# 
+# # Diagnostics
+# # test assumtions of homegeneity of variance 
+# # leveneTest(mn_anl_ft3 ~ DRAIN_SQKM )
+# 
+# # test assumtions of normality of residuals
+# hist(mdl_step$residuals, 60)
+# 
+# par(mfrow = c(3, 2))
+# plot(mdl_step, 1:6)
+# 
+# # shaprio-wilks test
+# # shrp_sqrt <- shapiro.test(mdl_step$residuals)
+# 
+# # predictwy
+# # prdct <- predict.lm(object = mdl_step,
+# #                       newdata = data_test_in,
+# #                       interval = "prediction")
+# # predict confidence intervals
+# data_in_val <- copy(dt_wrk_valin)[
+#   , .SD, .SDcols = !c("Ann_WY_ft", "STAID")
+# ]
+# prdct <- predict.lm(object = mdl_step, 
+#                  newdata = data_in_val,
+#                  interval = "confidence")
+# 
+# # residuals of fit points
+# prdctd_rsdls <- prdct[, 1] - dt_wrk_valin$Ann_WY_ft
+# 
+# # mean absolute error
+# mae <- sum(abs(prdctd_rsdls))/nrow(data_in_val)
+# # residual sum of squares
+# rss <- sum((prdctd_rsdls)^2)
+# # 
+# 
+# # predicted vs observed
+# ggplot(data = copy(data_in_val)[, Prdctd := prdct[,1]]) +
+#   geom_point(aes(x = dt_wrk_valin$Ann_WY_ft, 
+#                  y = Prdctd, 
+#                  color = dt_ID[STAID %chin% dt_wrk_valin$STAID, AggEcoregion]
+#                  ), alpha = 0.3
+#              ) +
+#   geom_abline(intercept = 0, slope = 1) +
+#   xlim(-1, 13) + ylim(-1, 13) +
+#  labs(color = "Ecoregion")
+# 
+
+
+```
+
+```{r reg_predict, include=FALSE, warning=FALSE}
+
+# write function to predict and report results from that prediction
+# this function expects a leaps regsubsets object as the input linear model
+# i.e., lm_in
+
+lm_predict_fun <- function(
+  lm_in = lm_vars, # the leaps regsubsets object
+  which_subset_in = NA, # which regsubsets subset of variables to use
+                     # how many vars are in the lm model from leaps to use
+  data_pred_in = dt_wrk_valnit, # data.table for prediction
+                                             # which data to predict
+  plot_tl_in = "Plot",
+  col_in = data_pred_in$TS_imperv
+  
+){
+  data_pred <- copy(data_pred_in)
+  lm_in <- copy(lm_vars)
+  
+  
+  # print(data_pred)
+  
+  val_matrix <- model.matrix(Ann_WY_ft ~ ., data = copy(data_pred)[
+                                                        , STAID := NULL])
+  
+  # print(val_matrix)
+  coefi <- coef(lm_in, which_subset_in)
+  intrcpt <- coefi[1]
+  coefi <- coefi[2:length(coefi)]
+  
+  # print(coefi)
+  # print(intrcpt)
+  
+  pred_out <- val_matrix[, names(coefi)]%*%coefi + intrcpt
+
+  data_in <- data.table(
+    site_no = data_pred_in$STAID,
+    observed = data_pred_in$Ann_WY_ft,
+    predicted = pred_out
+  )
+  
+  data_in <- merge(
+    data_in,
+    dt_ID,
+    by.x = "site_no", by.y = "STAID"
+  )
+  data_in$sqer <- (data_in$observed - data_in$predicted.V1)^2
+  mse_in <- round(mean(data_in$sqer), 2)
+  rmse_in <- round(sqrt(mse_in), 2)
+  
+  plt <- ggplot(data = data_in) +
+    geom_point(aes(x = observed, y = predicted.V1, color = col_in)) +
+    geom_abline(slope = 1, intercept = 0, color = "red") +
+    annotate("text", 
+             label = paste0("MSE = ", mse_in, " ft2 \nRMSE = ", rmse_in, " ft"), 
+             x = 0.1*max(data_in$observed), y = 0.9*max(data_in$predicted.V1)) +
+    xlab("Observed") + ylab("Predicted") + ggtitle(plot_tl_in) +
+    theme_bw() # +
+    # facet_wrap(facets = "AggEcoregion")
+  
+  plot(plt)
+}
+
+
+for(i in unique(dt_ID$AggEcoregion)){
+  lm_predict_fun(lm_in = lm_vars,
+                 which_subset_in = 26,
+                 data_pred_in = dt_wrk_valnit[
+                   STAID %chin% dt_ID[AggEcoregion == i, STAID]
+                   ],
+                 plot_tl_in = i)
+}
+
+
+dt_expl_in <- dt_all_mn_train[
+  , colnames(dt_all_mn_train) %chin% names(
+    coef(lm_in, 26))[
+      2:length(names(coef(lm_in, 26)))
+      ], with = FALSE
+    ][
+      , Ann_WY_acft := dt_all_mn_train$Ann_WY_acft
+    ]
+  
+
+lm_predict_fun(lm_in = lm(Ann_WY_acft ~ ., data = dt_expl_in
+  ), which_subset_in = 1, 
+)
+
+# val_matrix <- model.matrix(Ann_WY_ft ~ ., data = copy(dt_wrk_valnit)[, STAID := NULL])
+# 
+# coefi <- coef(lm_vars, 26)
+# intrcpt <- coefi[1]
+# coefi <- coefi[2:length(coefi)]
+# 
+# # http://www.science.smith.edu/~jcrouser/SDS293/labs/lab9-r.html
+# # predict.regsubsets = function(object,newdata,id,...){
+# #       form = as.formula(object$call[[2]]) # Extract the formula used when we called regsubsets()
+# #       mat = model.matrix(form,newdata)    # Build the model matrix
+# #       coefi = coef(object,id=id)          # Extract the coefficiants of the ith model
+# #       xvars = names(coefi)                # Pull out the names of the predictors used in the ith model
+# #       mat[,xvars]%*%coefi               # Make predictions using matrix multiplication
+# # }
+# 
+# 
+# pred_out <- val_matrix[, names(coefi)]%*%coefi + intrcpt
+# 
+# data_in <- data.table(
+#   site_no = dt_annWYmn_valnit$site_no,
+#   observed = dt_wrk_valnit$Ann_WY_ft,
+#   predicted = pred_out
+# )
+# 
+# data_in <- merge(
+#   data_in,
+#   dt_ID,
+#   by.x = "site_no", by.y = "STAID"
+# )
+# data_in$sqer <- (data_in$observed - data_in$predicted.V1)^2
+# mse_in <- round(mean(data_in$sqer), 2)
+# rmse_in <- round(sqrt(mse_in), 2)
+# 
+# ggplot(data = data_in) +
+#   geom_point(aes(x = observed, y = predicted.V1, color = AggEcoregion)) +
+#   geom_abline(slope = 1, intercept = 0, color = "red") +
+#   annotate("text", 
+#            label = paste0("MSE = ", mse_in, " ft2 \nRMSE = ", rmse_in, " ft"), 
+#            x = 1, y = 12) +
+#   xlab("Observed") + ylab("Predicted") +
+#   theme_bw()
+```
+
+
+
+### The Code
+```{r ref.label="PackagesAndFunctions", eval=FALSE}
+```
+
+```{r ref.label="ReadData", eval=FALSE}
+```
+
+```{r ref.label="WorkData", eval=FALSE}
+```
+
+```{r ref.label="corr", eval=FALSE}
+```
+
+```{r ref.label="explplots", eval=FALSE}
+```
+
+```{r ref.label="lm", eval=FALSE}
+```
+
+```{r ref.label="reg_predict", eval=FALSE}
+```
+
+
