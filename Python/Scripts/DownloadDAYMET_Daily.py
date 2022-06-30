@@ -24,54 +24,54 @@ from os.path import exists # to check if file already exists
 # 4/17/2022
 # Here I read in the data that did get downloaded, so I can pick up where I left off
 # if exists('D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Monthly.csv'):
-#     Daymet_Monthly=pd.read_csv(
+#     Daymet_Monthly = pd.read_csv(
 #         # 'D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Monthly.csv', 
 #         'D:/DataWorking/Daymet/Daymet_Monthly.csv',
 #         # 'C:/Users/bench/Desktop/Daymet_Monthly.csv',
-#         dtype={'site_no': 'string'})
-#         # dtype={'gages_retreived': 'string'}) # I changed column names after initial
+#         dtype = {'site_no': 'string'})
+#         # dtype = {'gages_retreived': 'string'}) # I changed column names after initial
 #         # download.
 
 # water yield directory
-dir_WY='D:/DataWorking/USGS_discharge/train_val_test'
+dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
 # explantory var (and other data) directory
-# dir_expl='D:/Projects/GAGESii_ANNstuff/Data_Out'
+# dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out'
 
 # Monthly Water yield
 
 # # training data
-# df_train_sites=pd.read_csv(
+# df_train_sites = pd.read_csv(
 #     f'{dir_WY}/yrs_98_12/monthly_WY/Mnthly_WY_train.csv',
-#     dtype={"site_no":"string"}
+#     dtype = {"site_no":"string"}
 #     )['site_no']
 
 # # test basins used in training
-# df_test_in_sites=pd.read_csv(
+# df_test_in_sites = pd.read_csv(
 #     f'{dir_WY}/yrs_98_12/monthly_WY/Mnthly_WY_test_in.csv',
-#     dtype={"site_no":"string"}
+#     dtype = {"site_no":"string"}
 #     )['site_no']
 
 # # test basins not used in training
-# df_test_nit_sites=pd.read_csv(
+# df_test_nit_sites = pd.read_csv(
 #     f'{dir_WY}/yrs_98_12/monthly_WY/Mnthly_WY_test_nit.csv',
-#     dtype={"site_no":"string"}
+#     dtype = {"site_no":"string"}
 #     )['site_no']
 
 # # validate basins used in training
-# df_val_in_sites=pd.read_csv(
+# df_val_in_sites = pd.read_csv(
 #     f'{dir_WY}/yrs_98_12/monthly_WY/Mnthly_WY_val_in.csv',
-#     dtype={"site_no":"string"}
+#     dtype = {"site_no":"string"}
 #     )['site_no']
 
 # # validation basins not used in training
-# df_val_nit_sites=pd.read_csv(
+# df_val_nit_sites = pd.read_csv(
 #     f'{dir_WY}/yrs_98_12/monthly_WY/Mnthly_WY_val_nit.csv',
-#     dtype={"site_no":"string"}
+#     dtype = {"site_no":"string"}
 #     )['site_no']
 
 
 # # all sites
-# df_all_sites=pd.concat([
+# df_all_sites = pd.concat([
 #     df_train_sites,
 #     df_test_in_sites,
 #     df_test_nit_sites,
@@ -88,22 +88,22 @@ dir_WY='D:/DataWorking/USGS_discharge/train_val_test'
 # # df_all_sites.to_csv('C:/Users/bchoat/desktop/DAYMET/all_sites.csv')
 # df_all_sites.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/all_sites.csv')
 
-# df_all_sites=pd.read_csv('F://DAYMET/all_sites.csv',
-#     dtype={'site_no': 'string'})
-df_all_sites=pd.read_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/all_sites.csv',
-    dtype={'site_no': 'string'})
+# df_all_sites = pd.read_csv('F://DAYMET/all_sites.csv',
+#     dtype = {'site_no': 'string'})
+df_all_sites = pd.read_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/all_sites.csv',
+    dtype = {'site_no': 'string'}).drop(columns = 'Unnamed: 0')
 # %% get list of shape file names
 
-list_shp=glob.glob(r"D:/DataWorking/GAGESii/boundaries-shapefiles-by-aggeco/*.shp")
-# list_shp=glob.glob(r'C:/Users/bchoat/Desktop/DAYMET/boundaries-shapefiles-by-aggeco/*.shp')
-# list_shp=glob.glob(r'F:/DAYMET/boundaries-shapefiles-by-aggeco/*.shp')
+list_shp = glob.glob(r"D:/DataWorking/GAGESii/boundaries-shapefiles-by-aggeco/*.shp")
+# list_shp = glob.glob(r'C:/Users/bchoat/Desktop/DAYMET/boundaries-shapefiles-by-aggeco/*.shp')
+# list_shp = glob.glob(r'F:/DAYMET/boundaries-shapefiles-by-aggeco/*.shp')
 
 # %% Loop through shape files and use geometry of catchments being used in study
 # to extract DAYMET data
 
 # Define dates to extract between, including the specified days
-dates_get=("1998-01-01", "2012-12-31")
-# dates_get=("1998-01-01", "1998-01-02")
+dates_get = ("1998-01-01", "2012-12-31")
+# dates_get = ("1998-01-01", "1998-01-02")
 
 # Write dataframe to csv to later append restults to
 # if not exists('D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Monthly.csv'):
@@ -122,16 +122,16 @@ dates_get=("1998-01-01", "2012-12-31")
 #         'D:/DataWorking/Daymet/Daymet_Monthly.csv',
 #         #'D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Monthly.csv',
 #         # 'C:/Users/bench/Desktop/Daymet_Monthly.csv',
-#         index=False
+#         index = False
 #     )
 
 
 
-# Daymet_Monthly=pd.read_csv(
+# Daymet_Monthly = pd.read_csv(
 #         #'D:/Projects/GAGESii_ANNstuff/Data_Out/Daymet_Monthly.csv', 
 #         'D:/DataWorking/Daymet/Daymet_Monthly.csv',
 #         # 'C:/Users/bench/Desktop/Daymet_Monthly.csv',
-#         dtype={'site_no': 'string'})    
+#         dtype = {'site_no': 'string'})    
 
 # Define variables to retrieve. Note that I'm retreiving all 7 available vars
 
@@ -143,10 +143,10 @@ dates_get=("1998-01-01", "2012-12-31")
 # NOTE: the next two are only available for daily download
 # srad: shortwave radiation [W/m2] - Average over daylight period - 
 #   daily total radiation (MJ/m2/day) can be calculated as srad * dayl / 1,000,000
-# dayl: day length [s/day] (s=seconds)
+# dayl: day length [s/day] (s = seconds)
 # NOTE: consider inclusion of latitute since srad and dayl are not available for 
 ##  monthly and annual time scales.
-vars_get=("dayl", "prcp", "srad","swe", "tmax", "tmin", "vp")
+vars_get = ("dayl", "prcp", "srad","swe", "tmax", "tmin", "vp")
 
 # disable garbage collector to keep loop from slowing as size of data grows
 # gc.disable()
@@ -176,17 +176,17 @@ for shape in list_shp:
             # f'C:/Users/bench/Desktop/daily_{shape[55:len(shape) - 4]}.csv',
             # f'F:/DAYMET/Daily/Daymet_daily_{shape[46:len(shape) - 4]}.csv',
             f'D:/DataWorking/Daymet/Daily/Daymet_daily_{shape[55:len(shape) - 4]}.csv',
-            index=False
+            index = False
         )
 
-    daily_work=pd.read_csv(
+    daily_work = pd.read_csv(
         f'D:/DataWorking/Daymet/Daily/Daymet_daily_{shape[55:len(shape) - 4]}.csv',
-        dtype={'site_no': 'string'}
+        dtype = {'site_no': 'string'}
     )
 
     # read in file and convert to coordinates consistant with default pydaymet crs
     print(f'Reading {shape}')
-    shp_in=gpd.read_file(
+    shp_in = gpd.read_file(
         shape 
         ).to_crs("EPSG:4326")
 
@@ -205,36 +205,36 @@ for shape in list_shp:
         if df_all_sites['site_no'].str.contains(gg_id).any():
             
             # Get index of which shp_in row is equal to current gage id (gg_id)
-            shp_single_index=np.where(shp_in['GAGE_ID'] == gg_id)[0][0]
+            shp_single_index = np.where(shp_in['GAGE_ID'] == gg_id)[0][0]
 
-            shp_in_single=shp_in['geometry'][shp_single_index]
+            shp_in_single = shp_in['geometry'][shp_single_index]
 
             # Plot
-            # shp_in.plot(column='GAGE_ID')
+            # shp_in.plot(column = 'GAGE_ID')
 
             # Get coords, for extracting form pixel instead of entire watershed
-            # cor_x=np.array(shp_in_single.exterior.coords.xy)[0,].mean().round(5)
-            # cor_y=np.array(shp_in_single.exterior.coords.xy)[1,].mean().round(5)
+            # cor_x = np.array(shp_in_single.exterior.coords.xy)[0,].mean().round(5)
+            # cor_y = np.array(shp_in_single.exterior.coords.xy)[1,].mean().round(5)
 
             # retrieve monthly daymet data
             # set up so if fails once, will try again (added because sometimes the connection
             # either timed out or failed to be established while working on campus)
             
             try:
-                daily=daymet.get_bygeom(shp_in_single, 
-                    dates=dates_get,
-                    time_scale="daily",
-                    variables=vars_get
+                daily = daymet.get_bygeom(shp_in_single, 
+                    dates = dates_get,
+                    time_scale = "daily",
+                    variables = vars_get
                     )
             except:
-                daily=daymet.get_bygeom(shp_in_single, 
-                    dates=dates_get,
-                    time_scale="daily",
-                    variables=vars_get
+                daily = daymet.get_bygeom(shp_in_single, 
+                    dates = dates_get,
+                    time_scale = "daily",
+                    variables = vars_get
                     )
 
             # Calculate mean across basin
-            daily_mean=daily.mean(dim=['x', 'y'])
+            daily_mean = daily.mean(dim = ['x', 'y'])
 
             # write to csv via pd.DataFrame
             pd.DataFrame({
@@ -250,9 +250,9 @@ for shape in list_shp:
             }).to_csv(
                 # f'F:/DAYMET/Daily/Daymet_daily_{shape[46:len(shape) - 4]}.csv',
                 f'D:/DataWorking/Daymet/Daily/Daymet_daily_{shape[55:len(shape) - 4]}.csv',
-                mode='a',
-                index=False,
-                header=False
+                mode = 'a',
+                index = False,
+                header = False
             )       
     
             # # save daymet data stored in daily to raw_data and working_data directories
