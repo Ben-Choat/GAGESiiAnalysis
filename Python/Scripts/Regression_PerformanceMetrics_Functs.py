@@ -16,6 +16,7 @@
 # %% Import libraries
 import numpy as np
 import pandas as pd
+import plotnine as p9
 
 # %% Define functions for calucating prediction performance metrics
 # sum of squared residuals
@@ -30,44 +31,44 @@ def ssr(y_pred, y_obs):
     ssr: float
         sum of squared residuals
     """
-    ssr = round(np.sum((y_pred - y_obs)**2), 2)
+    ssr = round(np.sum((y_pred - y_obs)**2), 4)
     return(ssr)
 # AIC
-def AIC(n_k, ssr, n_f):
+def AIC(n_k, ssr_k, n_f):
     """
     Parameters
     ----------
     n_k: sample size
     n_f: number of features
-    ssr: sum of squared residuals
+    ssr_k: sum of squared residuals
     
     Attributes
     ----------
     aic: float
         Akaike Information Criterion; Smaller is better
     """
-    aic = round(n_k * np.log(ssr/n_k) + 2 * n_f, 2)
+    aic = round(n_k * np.log(ssr_k/n_k) + 2 * n_f, 2)
     return(aic)
 
 # BIC
-def BIC(n_k, ssr, n_f):
+def BIC(n_k, ssr_k, n_f):
     """
     Parameters
     ---------
     n_k: sample size
     n_f: number of features
-    ssr: sum of squared residuals
+    ssr_k: sum of squared residuals
     
     Attributes
     ----------
     bic: float
         Bayesian Information Criterion; Smaller is better
     """
-    bic = round(n_k * np.log(ssr/n_k) + n_f * np.log(n_k), 2)
+    bic = round(n_k * np.log(ssr_k/n_k) + n_f * np.log(n_k), 2)
     return(bic)
 
 # Mallows' Cp
-def M_Cp(ssr_all, ssr, n_k, p_k):
+def M_Cp(ssr_all, ssr_k, n_k, n_f):
     """
     Mallows' Cp. Theory suggests the best-fitting model should have Cp ~= p,
     where p = k + 1 and k = number of features
@@ -78,7 +79,7 @@ def M_Cp(ssr_all, ssr, n_k, p_k):
     ----------
     MSE_all: float
         Mean squared error from regression equation with all features
-    ssr: float
+    ssr_k: float
         sum of squared residuals from model with p paramters (including intercept)
     n_k: integer
         sample size
@@ -86,7 +87,7 @@ def M_Cp(ssr_all, ssr, n_k, p_k):
         total number of variables in model being measured, including intercept.
         If number of features = k, then p = k + 1, where 1 is the intercept
     """
-    M_Cp = round(ssr/(ssr_all/n_k) - (n_k - 2*p_k), 2)
+    M_Cp = round(ssr_k/(ssr_all/n_k) - n_k + 2 * (n_f + 1), 2)
     return(M_Cp)
 
 
@@ -100,7 +101,7 @@ def R2adj(n_k, n_f, r2):
     r2: unadjusted r-squared (NOTE: that r2_score() function from
         sklearn.metrics can be used to calculate unadjusted r2)
     """
-    r2adj = round(1 - ((n_k - 1)/(n_k - n_f - 1)) * (1 - r2), 2)
+    r2adj = round(1 - ((n_k - 1)/(n_k - n_f - 1)) * (1 - r2), 4)
     return(r2adj)
 
 # Variance Inflation Factor (VIF)
@@ -122,6 +123,22 @@ def VIF(X):
     df_cor = X.corr()
     vifs = pd.Series(np.linalg.inv(df_cor.values).diagonal(), index=df_cor.index)
     return(vifs) 
+
+# Percent Bias
+def PercentBias(y_pred, y_obs):
+    """
+    calculate percent bias: The average tendency of the simulated values
+    to be larger or smaller than observed values
+
+    Parameters
+    ----------
+    y_pred: array of predicted time-series values
+    y_obs: array of observed time-series values
+    """
+
+    # calc percent bias
+    perc_bias = round(100 * (np.sum(y_pred - y_obs)/sum(y_obs)), 8)
+    return(perc_bias)
 
 # Nash-Sutcliffe Efficiency
 def NSE(y_pred, y_obs):
@@ -156,18 +173,33 @@ def KGE(y_pred, y_obs):
     
     return(kge)
 
-# Percent Bias
-def PercentBias(y_pred, y_obs):
+# plot performance metrics against number of features
+def PlotPM(df_in, timeseries = False):
     """
-    calculate percent bias: The average tendency of the simulated values
-    to be larger or smaller than observed values
-
+    Assumes the columns of input Pandas DataFrame are 
+    'n_features', 'ssr', 'r2', 'r2adj', 'mae', 'rmse', 'AIC', 'BIC', 'M_Cp',
+    'VIF', 'percBias', 
+    or if timeseries = True, then also including 'NSE' and 'KGE'
+    
     Parameters
-    ----------
-    y_pred: array of predicted time-series values
-    y_obs: array of observed time-series values
+    -----------
+    df_in: Pandas DataFrame
+        see note above about columns
     """
 
-    # calc percent bias
-    perc_bias = round(100 * (np.sum(y_pred - y_obs)/sum(y_obs)), 1)
-    return(perc_bias)
+    for i in range(1, (df_in.shape[1]), 1):
+        # define y_in as response variable
+        # if VIF, then take max
+        y_in = df_in[df_in.columns[i]]
+        
+        # if column = VIF, then take max
+        if df_in.columns[i] == 'VIF':
+            y_in = df_in['VIF'].apply(max)
+
+        # define plot
+        p = (
+                p9.ggplot(data = df_in) +
+                p9.geom_point(p9.aes(x = 'n_features', y = y_in)) +
+                p9.theme_light()
+            )
+        print(p)

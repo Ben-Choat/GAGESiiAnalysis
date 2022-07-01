@@ -387,6 +387,8 @@ testreg.lasso_regression(
     random_state_in = 100
 )
 
+
+
 # print output metrics available from model
 testreg.lasso_scores_.keys()
 
@@ -406,13 +408,14 @@ pred_lasso_in_rmse = np.sqrt(sum((pred_lasso_in - df_valin_mnanWY['Ann_WY_ft'])*
 
 #######
 # multiple linear regression
-testreg.lin_regression(kmax_in = 11)
+testreg.lin_regression_select(klim_in = 37,
+    timeseries = False)
+testreg.df_lin_regr_performance_
 # print performance metrics
 testreg.res_metr_
 # testreg.regr_metr_
 # print metrics in model
 testreg.sfs_features_
-
 
 ##############
 

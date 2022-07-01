@@ -621,7 +621,12 @@ class Regressor:
 
     Parameters
     -------------
-
+    expl_vars: a pandas dataframe of explanatory variables
+    resp_var: a pandas core.series.Series (a column from a pandas DataFrame)
+        of the response variable
+    id_var: a pandas core.series.Series (a column from a pandas DataFrame)
+        of the variable to be used for coloring plots, for example.
+        NOTE: This variable is not currenlty used within the Regressor object
 
     Attributes
     -------------
@@ -671,7 +676,7 @@ class Regressor:
             self.scaler_ = normsc.fit(self.expl_vars)
             self.expl_vars_tr_ = self.scaler_.transform(self.expl_vars)
 
-    def lin_regression_select(self, kmax_in = 30): #, fl, fh):
+    def lin_regression_select(self, klim_in = 30, timeseries = False): #, fl, fh):
 
         """
         Using explanatory and response data provided, explore linear regression 
@@ -681,42 +686,40 @@ class Regressor:
 
         Parameters
         -------------
-        kmax_in: integer
-            maximum number of features considered
-        fl: integer
-            smallest (or lowest) number of features to consider (e.g., 1)
-        fh: integer
-            largest (or highest) number of features to consider (e.g, 81)
+        klim_in: integer
+            maximum number of features considered if using forward selection or minimum
+            number of features considered if using backward selection
+        timeseries: Boolean
+            If set to True, then also calculate NSE, KGE, and % bias metrics
 
         Attributes
         -------------
-        vif_data_: pandas dataframe
-            dataframe holding vif for all variables
-
-        res_metr_: results metrics including MAE, RMSE, R2, R2_adj. , 
-            AIC, BIC, Mallows' Cp, and for time series, NSE and Bias. 
-
         sfscv_out_: results of the cross validation used for features selection
             including feature index, performance for each fold, average performance,
             feature names, information about variation in performance from cv
         sfs_out_: features and coefficients
+        df_lin_regr_performance_: pandas DataFrame
 
         """
         try:
-            X_train, y_train = self.expl_vars_tr_, self.resp_var
+            _train, y_train = self.expl_vars_tr_, self.resp_var
         except:
             X_train, y_train = self.expl_vars, self.resp_var
 
         # instantiate sklearn linear regression object
         reg = LinearRegression()
-        # apply linear regression using all explanatory variables
-        # Results from this will be used to calculate Mallows' Cp
-        reg_all = reg.fit(X_train, y_train)
 
+        # apply linear regression using all explanatory variables
+        # this object is used in feature selection just below and
+        # results from this will be used to calculate Mallows' Cp
+        reg_all = reg.fit(X_train, y_train)
+        # calc sum of squared residuals for all data for use in 
+        # Mallows' Cp calc
+        reg_all_ssr = ssr(y_train, reg_all.predict(X_train))
 
         # create sequential selection object
         sfs_obj = SFS(reg_all, 
-            k_features = kmax_in, 
+            k_features = klim_in, 
             forward = True, # set to False for backward)
             floating = False,
             verbose = 1, # 0 for no output, 1 for number features in set, 2 for more detail
@@ -727,9 +730,129 @@ class Regressor:
         # import sklearn
         # sklearn.metrics.SCORERS.keys()
         
+        # save sequential selection results in dataframe
         sfs_fit = sfs_obj.fit(X_train, y_train)
+        self.sfscv_out_ = pd.DataFrame.from_dict(sfs_fit.get_metric_dict()).T
         
-        self.sfs_features_ = sfs_fit.k_feature_names_
+        # intialize empty vectors to hold results below
+        # number of features, ssr, r2, adj, r2, mae, rmse,
+        # AIC, BIC, Mallows' Cp, VIF, % Bias, NSE, KGE
+        n_f_all = []
+        ssr_all = []
+        r2_all = []
+        r2adj_all = []
+        mae_all = []
+        rmse_all = []
+        AIC_all = []
+        BIC_all = []
+        M_Cp_all = []
+        VIF_all = []
+        percBias_all = []
+        if timeseries:
+                # Nash-Sutcliffe Efficeincy
+                NSE_all = []
+                # Kling Gupta Efficiency
+                KGE_all = []
+
+        # Apply a regression model using each set of features and report out:
+        # performance metrics, coefficients, and intercept.
+        for i in range(1, (self.sfscv_out_.shape[0] + 1), 1):
+            # features from each model
+            feat_in = list(self.sfscv_out_.loc[i, 'feature_names'])
+            # input explanatory vars
+            expl_in = X_train[feat_in]
+            
+            # apply linear regression object reg
+            lr_out = reg.fit(expl_in, y_train)
+            # predicted water yield from training data
+            ypred_out = lr_out.predict(expl_in)
+            # sample size
+            n_k_out = expl_in.shape[0]
+            # number of features
+            n_f_out = expl_in.shape[1]
+            # sum of squared residuals
+            ssr_out = ssr(ypred_out, y_train)
+            # unadjusted R-squared
+            r2_out = r2_score(y_train, ypred_out)
+            # Adjusted R-squared
+            r2adj_out = R2adj(n_k_out, n_f_out, r2_out)
+            # Mean absolute error
+            mae_out = mean_absolute_error(y_train, ypred_out)
+            # Root mean squared error
+            rmse_out = mean_squared_error(y_train, ypred_out, squared = False)
+            # Akaike Information Criterion
+            AIC_out = AIC(n_k_out, ssr_out, n_f_out)
+            # Bayesian Information Criterion
+            BIC_out = BIC(n_k_out, ssr_out, n_f_out)
+            # Mallows' Cp
+            M_Cp_out = M_Cp(reg_all_ssr, ssr_out, n_k_out, n_f_out)
+            # VIF
+            VIF_out = VIF(expl_in)
+            # Percent Bias
+            percBias_out = PercentBias(ypred_out, y_train)
+
+            # append results to vectors holding results for all models
+            n_f_all.append(n_f_out)
+            ssr_all.append(ssr_out)
+            r2_all.append(r2_out)
+            r2adj_all.append(r2adj_out)
+            mae_all.append(mae_out)
+            rmse_all.append(rmse_out)
+            AIC_all.append(AIC_out)
+            BIC_all.append(BIC_out)
+            M_Cp_all.append(M_Cp_out)
+            VIF_all.append(VIF_out)
+            percBias_all.append(percBias_out)
+            # If timeseries = True then also calculate NSE and KGE
+            if timeseries:
+                # Nash-Sutcliffe Efficeincy
+                NSE_out = NSE(ypred_out, y_train)
+                # Kling Gupta Efficiency
+                KGE_out = KGE(ypred_out, y_train)
+
+                # append results to vectors holding results
+                NSE_all.append(NSE_out)
+                KGE_all.append(KGE_out)
+
+        # Create pandas DataFrame and add all results to it
+        if timeseries:
+            df_perfmetr = pd.DataFrame({
+                'n_features': n_f_all,
+                'ssr': ssr_all,
+                'r2': r2_all,
+                'r2adj': r2adj_all,
+                'mae': mae_all,
+                'rmse': rmse_all,
+                'AIC': AIC_all,
+                'BIC': BIC_all,
+                'M_Cp': M_Cp_all,
+                'VIF': VIF_all,
+                'percBias': percBias_all,
+                'NSE': NSE_all,
+                'KGE': KGE_all
+            })
+        else:
+            df_perfmetr = pd.DataFrame({
+                'n_features': n_f_all,
+                'ssr': ssr_all,
+                'r2': r2_all,
+                'r2adj': r2adj_all,
+                'mae': mae_all,
+                'rmse': rmse_all,
+                'AIC': AIC_all,
+                'BIC': BIC_all,
+                'M_Cp': M_Cp_all,
+                'VIF': VIF_all,
+                'percBias': percBias_all
+            })
+        
+        # assign performance metric dataframe to self, plot, and print results
+        self.df_lin_regr_performance_ = df_perfmetr
+        PlotPM(self.df_lin_regr_performance_, timeseries = False)
+        return(df_perfmetr)
+        
+    
+        # self.sfs_features_ = sfs_fit.k_feature_names_
         # self.sfs_
         # sfs_coefs = sfs_fit.coef_
 
@@ -738,61 +861,15 @@ class Regressor:
         #     'coef': sfs_coefs
         # })
         
-        # # save sequential selection results in dataframe
-        self.sfscv_out_ = pd.DataFrame.from_dict(sfs_fit.get_metric_dict()).T
-
-        fig = plot_sfs(sfs_fit.get_metric_dict(), kind = 'std_dev')
-        print(fig)
-        plt.title('Performance of Sequential Forward Selection (w. StdErr')
-        plt.grid()
-        plt.show()
-
-        # loop through all combinations of features selected by the sfs (or other algorithm)
-        # and log the performance metrics
-
-        
 
 
-        # define sample size n_k, number of features k_k, and rsquared r2_k
-        n_k = len(y_train)
-        k_k = len(X_train.columns)
-        r2_k = r2_score(y_train, self.reg.predict(X_train))
+        # fig = plot_sfs(sfs_fit.get_metric_dict(), kind = 'std_dev')
+        # print(fig)
+        # plt.title('Performance of Sequential Forward Selection (w. StdErr')
+        # plt.grid()
+        # plt.show()
 
-        
-
-        ######## Apply this chunk to each round of models
-        # sum of squared residuals
-        # ssr = np.sum((self.reg.predict(X_train) - y_train)**2)
-        # # define sample size n_k, number of features k_k, and rsquared r2_k
-        # n_k = len(y_train)
-        # k_k = len(X_train.columns)
-        # r2_k = r2_score(y_train, self.reg.predict(X_train))
-
-        # # AIC
-        # aic = n_k * np.log(ssr/n_k) + 2 * k_k
-        # # BIC
-        # bic = n_k * np.log(ssr/n_k) + k_k * np.log(n_k)
-        # # Adjusted R2
-        # r2adj = 1 - ((n_k - 1)/(n_k - k_k - 1)) * (1 - r2_k)
-
-        # # assign rsquared, adjusted rsquared, AIC, BIC to a dataframe
-        # regr_metr = pd.DataFrame({
-        #     'r2': [r2_k],
-        #     'r2_adj': [r2adj],
-        #     'aic': [aic],
-        #     'bic': [bic]
-        # })
-        
-        # # assign MLR performance metrics to ouptut dataframe
-        # # NOTE to self: may move this so only performance  
-        # self.regr_metr_ = regr_metr
-        #############
-
-        # # subset features to features chosen by sfs
-        # X_train_sfs = sfs_fit.transform(X_train)
-        # # perform new linear regression with selected features
-        # self.reg_sfs_ = LinearRegression().fit(X_train_sfs, y_train)
-
+    
         # # retrieve the intercept
         # print('Intercept:') 
         # self.reg.intercept_
@@ -803,42 +880,15 @@ class Regressor:
 
 
 
-        # self.results = sm.OLS(y_train, X_train).fit()
-
-        # # VIF dataframe
-        # vif_data = pd.DataFrame()
-        # vif_data['feature'] = X_train.columns
-
-        # # caclute VIF for each feature
-        # vif_data['VIF'] = [vif(X_train.values, i)
-        #                     for i in range(len(X_train.columns))]
-        
-        # # assign VIF dataframe to self object
-        # self.vif_data_ = vif_data
-
-        # # calculate Mallows Cp
-        # # mallowCp = self.results.ssr/
-
-        # # # assign rsquared, adjusted rsquared, AIC, BIC to a dataframe
-        # res_metr = pd.DataFrame({
-        #     'r2': [self.results.rsquared],
-        #     'r2_adj': [self.results.rsquared_adj],
-        #     'aic': [self.results.aic],
-        #     'bic': [self.results.bic]
-        # })
-
-        # self.res_metr_ = res_metr
-
-    # def lin_regression(self):
-
-        
+               
 
     def lasso_regression(self,
                         alpha_in = 1,
                         max_iter_in = 1000,
                         n_splits_in = 10,
                         n_repeats_in = 3,
-                        random_state_in = 100):
+                        random_state_in = 100,
+                        timeseries = False):
         # using info from here as guide: 
         # https://machinelearningmastery.com/lasso-regression-with-python/
         """
@@ -854,7 +904,10 @@ class Regressor:
             Nunmber of folds for k-fold CV
         n_repeats_in: integer
             Number of times to repreat k-fold CV
-        random_state_in = random seed for stochastic processes (helps ensure reproducability)
+        random_state_in: integer
+            random seed for stochastic processes (helps ensure reproducability)
+        timeseries: Boolean
+            If set to True, then also calculate NSE, KGE, and % bias metrics
 
         Attributes
         -------------
@@ -902,5 +955,98 @@ class Regressor:
         print('Mean CV testing RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_test), np.std(rmse_test)))
         print('Mean CV training MAE: %.3f (%.3f)' % (np.mean(mae_train), np.std(mae_train)))
         print('Mean CV testing MAE: %.3f (%.3f)' % (np.mean(mae_test), np.std(mae_test)))
+
+        # Calculate performance metrics and output as single row pandas DataFrame
+        # pandas dataframe including only features selected in lasso regression
+        expl_out = X_train[self.lasso_features_keep_['features']]
+        # predicted water yield from training data
+        ypred_out = self.lasso_reg.predict(X_train)
+        # sample size
+        n_k_out = X_train.shape[0]
+        # number of features
+        n_f_out = self.lasso_features_keep_.shape[0]
+        # sum of squared residuals
+        ssr_out = ssr(ypred_out, y_train)
+        # unadjusted R-squared
+        r2_out = r2_score(y_train, ypred_out)
+        # Adjusted R-squared
+        r2adj_out = R2adj(n_k_out, n_f_out, r2_out)
+        # Mean absolute error
+        mae_out = mean_absolute_error(y_train, ypred_out)
+        # Root mean squared error
+        rmse_out = mean_squared_error(y_train, ypred_out, squared = False)
+        # Akaike Information Criterion
+        AIC_out = AIC(n_k_out, ssr_out, n_f_out)
+        # Bayesian Information Criterion
+        BIC_out = BIC(n_k_out, ssr_out, n_f_out)
+        # Mallows' Cp
+        # apply linear regression using all explanatory variables
+        # this object is used in feature selection just below and
+        # results from this will be used to calculate Mallows' Cp
+        reg_all = LinearRegression().fit(X_train, y_train)
+        # calc sum of squared residuals for all data for use in 
+        # Mallows' Cp calc
+        reg_all_ssr = ssr(y_train, reg_all.predict(X_train))
+        M_Cp_out = M_Cp(reg_all_ssr, ssr_out, n_k_out, n_f_out+1)
+        # VIF
+        VIF_out = VIF(expl_out)
+        # Percent Bias
+        percBias_out = PercentBias(ypred_out, y_train)
+        # # append results to vectors holding results for all models
+        # n_f_all.append(n_f_out)
+        # ssr_all.append(ssr_out)
+        # r2_all.append(r2_out)
+        # r2adj_all.append(r2adj_out)
+        # mae_all.append(mae_out)
+        # rmse_all.append(rmse_out)
+        # AIC_all.append(AIC_out)
+        # BIC_all.append(BIC_out)
+        # M_Cp_all.append(M_Cp_out)
+        # VIF_all.append(VIF_out)
+        # percBias_all.append(percBias_out)
+        # If timeseries = True then also calculate NSE and KGE
+        if timeseries:
+            # Nash-Sutcliffe Efficeincy
+            NSE_out = NSE(ypred_out, y_train)
+            # Kling Gupta Efficiency
+            KGE_out = KGE(ypred_out, y_train)
+            # append results to vectors holding results
+            # NSE_all.append(NSE_out)
+            # KGE_all.append(KGE_out)
     
+        # write performance metrics to dataframe
+        if timeseries:
+            df_perfmetr = pd.DataFrame({
+                'n_features': n_f_out,
+                'ssr': ssr_out,
+                'r2': r2_out,
+                'r2adj': r2adj_out,
+                'mae': mae_out,
+                'rmse': rmse_out,
+                'AIC': AIC_out,
+                'BIC': BIC_out,
+                'M_Cp': M_Cp_out,
+                'VIF': [VIF_out],
+                'percBias': percBias_out,
+                'NSE': NSE_out,
+                'KGE': KGE_out
+            })
+        else:
+            df_perfmetr = pd.DataFrame({
+                'n_features': n_f_out,
+                'ssr': ssr_out,
+                'r2': r2_out,
+                'r2adj': r2adj_out,
+                'mae': mae_out,
+                'rmse': rmse_out,
+                'AIC': AIC_out,
+                'BIC': BIC_out,
+                'M_Cp': M_Cp_out,
+                'VIF': [VIF_out],
+                'percBias': percBias_out
+            })
+
+        # assign performance metric dataframe to self
+        self.df_lasso_regr_performance_ = df_perfmetr
+        return(df_perfmetr)
 # %%
