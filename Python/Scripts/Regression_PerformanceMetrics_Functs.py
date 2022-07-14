@@ -17,6 +17,9 @@
 import numpy as np
 import pandas as pd
 import plotnine as p9
+import statsmodels.api as sm
+# import matplotlib.pyplot as plt
+
 
 # %% Define functions for calucating prediction performance metrics
 # sum of squared residuals
@@ -24,14 +27,14 @@ def ssr(y_pred, y_obs):
     """
     Parameters
     ----------
-    y_pred: list(double check type) of predicted y (Water yield) values
-    y_obs: list(double doublce check type) of observed y (Water yield) values
+    y_pred: numpy array of predicted y (Water yield) values
+    y_obs: numpy array of observed y (Water yield) values
     Attributes
     ----------
     ssr: float
         sum of squared residuals
     """
-    ssr = round(np.sum((y_pred - y_obs)**2), 4)
+    ssr = np.sum((y_pred - y_obs)**2)
     return(ssr)
 # AIC
 def AIC(n_k, ssr_k, n_f):
@@ -47,7 +50,9 @@ def AIC(n_k, ssr_k, n_f):
     aic: float
         Akaike Information Criterion; Smaller is better
     """
-    aic = round(n_k * np.log(ssr_k/n_k) + 2 * n_f, 2)
+    # aic = n_k * np.log(ssr_k/n_k) + 2 * n_f
+    # below formulation from Helsel et al. 2020 - Statistical Methods in Water Resources
+    aic = n_k + n_k * np.log(2 * np.pi) + n_k * np.log(ssr_k/n_k) + 2 * (n_f + 2)
     return(aic)
 
 # BIC
@@ -64,7 +69,9 @@ def BIC(n_k, ssr_k, n_f):
     bic: float
         Bayesian Information Criterion; Smaller is better
     """
-    bic = round(n_k * np.log(ssr_k/n_k) + n_f * np.log(n_k), 2)
+    # bic = n_k * np.log(ssr_k/n_k) + n_f * np.log(n_k)
+    # below formulation from Helsel et al. 2020 - Statistical Methods in Water Resources
+    bic = n_k + n_k * np.log(2 * np.pi) + n_k * np.log(ssr_k/n_k) + np.log(n_k) * (n_f + 2)
     return(bic)
 
 # Mallows' Cp
@@ -77,17 +84,24 @@ def M_Cp(ssr_all, ssr_k, n_k, n_f):
 
     Parameters
     ----------
-    MSE_all: float
-        Mean squared error from regression equation with all features
+    ssr_all: float
+        sum of squared residuals from regression equation with all features
     ssr_k: float
         sum of squared residuals from model with p paramters (including intercept)
     n_k: integer
         sample size
-    p_k: integer
-        total number of variables in model being measured, including intercept.
-        If number of features = k, then p = k + 1, where 1 is the intercept
+    n_f: integer
+        n_f: number of features
     """
-    M_Cp = round(ssr_k/(ssr_all/n_k) - n_k + 2 * (n_f + 1), 2)
+    # M_Cp = ssr_k/(ssr_all/(n_k - n_f - 1)) - n_k + 2 * (n_f + 1)
+    # below formulation from Helsel et al. 2020 - Statistical Methods in Water Resources
+    # define p; p = number of features + 1 (1 for the intercept)
+    p_in = n_f + 1
+    # define MSE_k (mean squared error for model with p coefficients (including intercept as coefficeint))
+    MSE_k = ssr_k/(n_k - p_in)
+    # define MSE for model including all candidate variables
+    MSE_all = ssr_all/(n_k  - p_in)
+    M_Cp = (p_in) + ((n_k - p_in) *(MSE_k - MSE_all))/MSE_all
     return(M_Cp)
 
 
@@ -101,7 +115,7 @@ def R2adj(n_k, n_f, r2):
     r2: unadjusted r-squared (NOTE: that r2_score() function from
         sklearn.metrics can be used to calculate unadjusted r2)
     """
-    r2adj = round(1 - ((n_k - 1)/(n_k - n_f - 1)) * (1 - r2), 4)
+    r2adj = 1 - ((n_k - 1)/(n_k - n_f - 1)) * (1 - r2)
     return(r2adj)
 
 # Variance Inflation Factor (VIF)
@@ -137,7 +151,7 @@ def PercentBias(y_pred, y_obs):
     """
 
     # calc percent bias
-    perc_bias = round(100 * (np.sum(y_pred - y_obs)/sum(y_obs)), 8)
+    perc_bias = 100 * (np.sum(y_pred - y_obs)/np.sum(y_obs))
     return(perc_bias)
 
 # Nash-Sutcliffe Efficiency
@@ -150,7 +164,7 @@ def NSE(y_pred, y_obs):
     y_pred: array of predicted time-series values
     y_obs: array of observed time-series values
     """
-    nse = round(1 - (np.sum((y_obs - y_pred)**2)/np.sum((y_obs - np.mean(y_obs))**2)), 3)
+    nse = 1 - (np.sum((y_obs - y_pred)**2)/np.sum((y_obs - np.mean(y_obs))**2))
     return(nse)
 
 # Kling Gupta Efficiency
@@ -169,7 +183,7 @@ def KGE(y_pred, y_obs):
     alpha = np.std(y_pred)/np.std(y_obs)
     # calc bias term beta as mean_pred/mean_obs
     beta = np.mean(y_pred)/np.mean(y_obs)
-    kge = round(1 - np.sqrt((r_o_m - 1)**2 + (alpha - 1)**2 + (beta - 1)**2), 3)
+    kge = 1 - np.sqrt((r_o_m - 1)**2 + (alpha - 1)**2 + (beta - 1)**2)
     
     return(kge)
 
@@ -197,9 +211,52 @@ def PlotPM(df_in, timeseries = False):
             y_in = df_in['VIF'].apply(max)
 
         # define plot
+        if df_in.columns[i] == 'VIF' or df_in.columns[i] == 'M_Cp':
+            p = (
+                p9.ggplot(data = df_in) +
+                p9.geom_point(p9.aes(x = 'n_features', y = y_in)) +
+                p9.scale_y_log10(breaks = [1, 10, 50, 100, 1000]) +
+                p9.theme_light() 
+            )
+
         p = (
                 p9.ggplot(data = df_in) +
                 p9.geom_point(p9.aes(x = 'n_features', y = y_in)) +
                 p9.theme_light()
             )
         print(p)
+
+
+    # analyze residuals and return diagnostic plots
+def test_reg_assumpts(residuals, y_pred):
+
+    #create Q-Q plot with 1:1 line added to plot
+    # fig = sm.qqplot(residuals, line='45')
+    # return(fig)
+    fig_qq = (
+                p9.ggplot(p9.aes(sample = residuals)) +
+                p9.stat_qq() +
+                p9.stat_qq_line(color = 'red') +
+                p9.ggtitle('Q-Q Plot')
+    )
+    
+    
+
+    # plot residuals vs fitted values
+    # input dataframe
+    df_in = pd.DataFrame({
+        'residuals': residuals,
+        'predicted': y_pred
+    })
+
+    fig_res_pred = (
+                    p9.ggplot(df_in, p9.aes('predicted', 'residuals')) +
+                    p9.geom_point() +
+                    p9.stat_smooth(method = 'lowess', color = 'red') +
+                    p9.ggtitle('Residuals vs Fitted')
+    ) 
+
+    # return(fig_qq)
+    return(fig_res_pred, fig_qq)
+
+# %%

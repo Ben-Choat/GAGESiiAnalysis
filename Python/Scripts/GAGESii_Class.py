@@ -21,11 +21,11 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV # for hyperparameter tuning
 from sklearn.model_selection import RepeatedKFold # for repeated k-fold validation
-from sklearn.model_selection import cross_val_score # only returns a single score (e.g., MAE)
+# from sklearn.model_selection import cross_val_score # only returns a single score (e.g., MAE)
 from sklearn.model_selection import cross_validate # can be used to return multiple scores 
-from sklearn.feature_selection import RFE
-from sklearn.feature_selection import RFECV
-from sklearn.pipeline import Pipeline
+# from sklearn.feature_selection import RFE
+# from sklearn.feature_selection import RFECV
+# from sklearn.pipeline import Pipeline
 from sklearn_extra.cluster import KMedoids
 # import statsmodels.formula.api as smf # for ols, aic, bic, etc.
 # import statsmodels.api as sm # for ols, aic, bic, etc.
@@ -36,7 +36,8 @@ from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs # plo
 import matplotlib.pyplot as plt # plotting
 # from matplotlib import cm
 import plotnine as p9
-import umap # for umap training and projection
+import umap # for umap training and projection (dimension reduction)
+from sklearn.decomposition import PCA # dimension reduction
 import hdbscan # for hdbscan clustering
 # from mpl_toolkits.mplot3d import Axes3D # plot 3d plot
 # import plotly as ply # interactive plots
@@ -118,7 +119,6 @@ class Clusterer:
             self.scaler_ = stdsc.fit(self.clust_vars)
             clust_vars_tr_ = pd.DataFrame(
                 self.scaler_.transform(self.clust_vars)
-                # stdsc.fit_transform(self.clust_vars)
             )
             # give columns names to transformed data
             clust_vars_tr_.columns = self.clust_vars.columns
@@ -130,10 +130,18 @@ class Clusterer:
         if method == 'normalize':
             normsc = MinMaxScaler()
             self.scaler_ = normsc.fit(self.clust_vars)
-            self.clust_vars_tr_ = self.scaler_.transform(self.clust_vars)
+            clust_vars_tr_ = pd.DataFrame(
+                self.scaler_.transform(self.clust_vars)
+            )
+            # give columns names to transformed data
+            clust_vars_tr_.columns = self.clust_vars.columns
+            # replace transformed vars with untransformed for specified columns
+            clust_vars_tr_[not_tr] = self.clust_vars[not_tr]
+
+            self.clust_vars_tr_ = clust_vars_tr_
 
     
-    def k_clust(self, 
+    def k_clust(self,
                 method = 'kmeans', 
                 ki = 2, kf = 20, 
                 plot_mean_sil = True, 
@@ -157,8 +165,8 @@ class Clusterer:
         Attributes
         -------------
         distortions_: distortion scores used in elbow plot
-        ks_predicted_: list of arrays with the labels of which
-            group, k, in which each catchment was placed
+        df_ks_predicted_: pandas DataFrame
+            which group k, in which each catchment was placed
         silhouette_mean_: mean silhouette score for each number of
             k groups between ki and kf
         silhouette_k_mean_: individual silhoueete scores for each
@@ -221,7 +229,7 @@ class Clusterer:
         
         # assign outputs to object
         self.distortions_ = distortions
-        self.ks_predicted_ = ks_out
+        self.df_ks_predicted_ = pd.DataFrame(ks_out).T
         self.silhouette_mean_ = silhouette_mean_scores
         self.silhouette_k_mean_ = silhouette_k_scores
 
@@ -512,7 +520,8 @@ class Clusterer:
         mind = 0.1,
         sprd = 1,
         nc = 3,
-        color_in = 'blue'):
+        color_in = 'blue',
+        n_jobs_in = -1):
         
         """
         Parameters
@@ -538,6 +547,10 @@ class Clusterer:
 
         nc: integer; 2 to 100 is reasonable
             n_components: number of dimensions (components) to reduce to
+
+        n_jobs_in: -1 or a positive integer
+            specifies number of cores to distribute job to
+            value of -1 uses all available resources
         
         Attributes
         ------------
@@ -555,7 +568,8 @@ class Clusterer:
                         spread = sprd,
                         n_components = nc, # 2 to 100
                         random_state = 100,
-                        n_epochs = 200) # 200 for large datasets; 500 small
+                        n_epochs = 200, # 200 for large datasets; 500 small
+                        n_jobs = n_jobs_in) 
 
         # working input data
         try:
@@ -604,6 +618,148 @@ class Clusterer:
         return f'Embedding shape: {umap_embedding_transform.shape}'
 
 
+    def pca_reducer(self, 
+        nc = None,
+        color_in = 'blue',
+        plot_out = True):
+        
+        """
+        Parameters
+        -------------
+        nc: integer or 'None'
+            if set to integer, then that is the number of components to keep (< number of features)
+            if set to None, then keeps all components
+
+        color_in: pandas series or string specifying color
+            if string (e.g., 'blue') then that is the color all plotted points will be
+            if pandas series (e.g., df_train_ID['AggEcoregion']), 
+                then that variable will be used for coloring the plotted points
+            
+        plot_out: boolean,
+            if True, then plot 3d components (NOTE: not set up to work with less than 3 dimensions/components)
+            
+        
+        Attributes
+        ------------
+        pca_fit_: sklearn PCA object with associated attributes and methods
+            The below three attributes are actually attributes of pca_fit_
+
+        df_pca_components_: pandas DataFrame of shape (n_components, n_features)
+            represents directions of maximum variance in the data
+
+        df_pca_embedding_: pandas DataFrame
+            transformed training data
+
+        df_pca_var_: pandas DataFrame of shape (n_components, 3 - [component, var_expl, ratio_var_expl])
+            The amount of variance and the ratio of variance explained by each of the selected components.
+            Columns are:
+                'Component' which specifies which PCA component the row refers to
+                'var_expl' which is the total variance explained by that component
+                'ratio_var_expl' which is the ratio of total variance explained by that component
+        
+        """    
+              
+        # define PCA reducer
+        reducer = PCA(n_components = nc)
+
+        # working input data
+        try:
+            data_in = self.clust_vars_tr_
+
+        except: 
+            data_in = self.clust_vars
+
+        # train and transform reducer
+        self.pca_fit_ = reducer.fit(data_in)
+        df_pca_embedding = pd.DataFrame(self.pca_fit_.transform(data_in))
+        # rename columns of embedding df
+        df_pca_embedding.columns = [f'Comp{i}' for i in np.arange(0, df_pca_embedding.shape[1], 1)]
+        # add stations to embedding df
+        df_pca_embedding['ID'] = self.id_vars
+        self.df_pca_embedding_ = df_pca_embedding
+        
+        # output attributes
+        # pca components saved as pandas DataFrame
+        df_pca_components_ = pd.DataFrame(self.pca_fit_.components_)
+        df_pca_components_.columns = data_in.columns
+        # add station IDs to df
+        self.df_pca_components_ = df_pca_components_
+
+        # variance explained
+        df_pca_var = pd.DataFrame({'component': np.arange(0, df_pca_components_.shape[1], 1)})
+        df_pca_var['var_expl'] = self.pca_fit_.explained_variance_
+        df_pca_var['ratio_var_expl'] = self.pca_fit_.explained_variance_ratio_
+        df_pca_var['Cum_Var'] = np.cumsum(df_pca_var['ratio_var_expl'])
+        # define variable holding number of components when 50%, 75%, 90%, and 95% 
+        # variance is explained
+        var_50 = np.min(np.where(df_pca_var['Cum_Var'] > 0.5))
+        var_75 = np.min(np.where(df_pca_var['Cum_Var'] > 0.75))
+        var_90 = np.min(np.where(df_pca_var['Cum_Var'] > 0.90))
+        var_95 = np.min(np.where(df_pca_var['Cum_Var'] > 0.95))
+        self.df_pca_var_ = df_pca_var
+        
+        if plot_out:
+            # save embeddings as dataframe and add color and colsize
+            df_pca_embedding['Color'] = color_in
+            df_pca_embedding['ColSize'] = 0.1
+
+            # Plot embedding
+
+            fig = px.scatter_3d(df_pca_embedding,
+                                x = 'Comp0',
+                                y = 'Comp1',
+                                z = 'Comp2',
+                                color = 'Color',
+                                size = 'ColSize',
+                                size_max = 10,
+                                title = 'PCA',
+                                custom_data = ['ID']
+                                )
+            # Edit so hover shows station id
+            fig.update_traces(
+            hovertemplate = "<br>".join([
+                "STAID: %{customdata[0]}"
+            ])
+            )
+
+            print(fig.show())
+
+            # plot ratio of variance explained by each component
+            fig2 = (
+                    p9.ggplot(df_pca_var, p9.aes(x = 'component', y = 'ratio_var_expl')) +
+                    p9.geom_bar(stat = 'identity', width = 0.5) +
+                    p9.theme_light() +
+                    p9.ylab('Ratio of Variance Explained')
+            )
+
+            print(fig2)
+
+            # define input data frame
+            df_in = df_pca_var
+            
+
+            # plot cumulative variance explained by components
+            fig3 = (
+                    p9.ggplot(df_pca_var, p9.aes(x = 'component', y = 'Cum_Var')) +
+                    p9.geom_line() +
+                    p9.geom_point() +
+                    p9.theme_light() +
+                    p9.ylab('Cumulative Variance Explained')
+            )
+
+            print(fig3)
+            
+            # return number of components where 50%, 75%, 90%, and 95% of 
+            # variance is explained
+            print(f'50% variance explained at {var_50} components')
+            print(f'75% variance explained at {var_75} components')
+            print(f'90% variance explained at {var_90} components')
+            print(f'95% variance explained at {var_95} components')
+
+        # return f'Embedding shape: {df_pca_embedding.shape - 3}'
+
+
+
 
 # %%
 # %% define regression class
@@ -624,9 +780,7 @@ class Regressor:
     expl_vars: a pandas dataframe of explanatory variables
     resp_var: a pandas core.series.Series (a column from a pandas DataFrame)
         of the response variable
-    id_var: a pandas core.series.Series (a column from a pandas DataFrame)
-        of the variable to be used for coloring plots, for example.
-        NOTE: This variable is not currenlty used within the Regressor object
+    id_var: string
 
     Attributes
     -------------
@@ -634,14 +788,12 @@ class Regressor:
 
     """
 
-    def __init__(self, expl_vars, resp_var, id_var):
+    def __init__(self, expl_vars, resp_var):
         
         # explanatory variables
         self.expl_vars = expl_vars
         # response variable
         self.resp_var = resp_var
-        # ID vars (e.g., gauge numbers)
-        self.id_var = id_var
 
     def stand_norm(self, method = 'standardize', not_tr = []):
         """
@@ -674,9 +826,23 @@ class Regressor:
         if method == 'normalize':
             normsc = MinMaxScaler()
             self.scaler_ = normsc.fit(self.expl_vars)
-            self.expl_vars_tr_ = self.scaler_.transform(self.expl_vars)
+            expl_vars_tr_ = pd.DataFrame(
+                self.scaler_.transform(self.expl_vars)
+            )
+            # give columns names to transformed data
+            expl_vars_tr_.columns = self.expl_vars.columns
+            # replace transformed vars with untransformed for specified columns
+            expl_vars_tr_[not_tr] = self.expl_vars[not_tr]
 
-    def lin_regression_select(self, klim_in = 30, timeseries = False): #, fl, fh):
+            self.expl_vars_tr_ = expl_vars_tr_
+
+    def lin_regression_select(self, 
+        sel_meth = 'forward', 
+        float_opt = 'False',
+        min_k = 1,
+        klim_in = 30,
+        timeseries = False, 
+        n_jobs_in = 1): #, fl, fh):
 
         """
         Using explanatory and response data provided, explore linear regression 
@@ -686,11 +852,24 @@ class Regressor:
 
         Parameters
         -------------
+        sel_meth: string
+            sepecifies what selection method to use
+            options are 'forward', 'backward', or 'exhaustive'
+        float_opt: Boolean
+            if True, then set SFS float option to True.
+            When set to True, an extra step in feature selection is performed allowing
+            features to be removed, once they have been added.
+            NOTE: only applies when sel_meth = 'forward' or 'backward'            
+        min_k: integer
+            specifies the minimum number of features to consider
+            NOTE: only applies when sel_meth = 'exhaustive'
         klim_in: integer
             maximum number of features considered if using forward selection or minimum
             number of features considered if using backward selection
         timeseries: Boolean
             If set to True, then also calculate NSE, KGE, and % bias metrics
+        n_jobs_in: integer
+            Specify number of processors to distribute job to
 
         Attributes
         -------------
@@ -702,7 +881,7 @@ class Regressor:
 
         """
         try:
-            _train, y_train = self.expl_vars_tr_, self.resp_var
+            X_train, y_train = self.expl_vars_tr_, self.resp_var
         except:
             X_train, y_train = self.expl_vars, self.resp_var
 
@@ -717,15 +896,35 @@ class Regressor:
         # Mallows' Cp calc
         reg_all_ssr = ssr(y_train, reg_all.predict(X_train))
 
-        # create sequential selection object
-        sfs_obj = SFS(reg_all, 
-            k_features = klim_in, 
-            forward = True, # set to False for backward)
-            floating = False,
-            verbose = 1, # 0 for no output, 1 for number features in set, 2 for more detail
-            scoring = 'r2', # 'neg_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error'
-            cv = 10
-        )
+        # define selection method (forward, backward, or exhaustive)
+        if sel_meth == 'forward':
+            forward_in = True
+        elif sel_meth =='backward':
+            forward_in = False
+
+        if sel_meth == 'forward' or sel_meth == 'backward':
+            # create sequential selection object
+            sfs_obj = SFS(reg_all, 
+                n_jobs = n_jobs_in, # how to distribute
+                k_features = klim_in, 
+                forward = forward_in, # set to False for backward
+                floating = float_opt,
+                verbose = 1, # 0 for no output, 1 for number features in set, 2 for more detail
+                scoring = 'r2', # 'neg_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error'
+                cv = 10
+            )
+        elif sel_meth == 'exhaustive':
+            sfs_obj = EFS(reg_all,
+                n_jobs = n_jobs_in,
+                min_features = min_k,
+                max_features = klim_in,
+                scoring = 'r2',
+                print_progress = True,
+                cv = 2
+                )
+        
+        else:
+            print('Please enter a valid string for sel_meth')
         # for scoring options you can import sklearn and print options using code below
         # import sklearn
         # sklearn.metrics.SCORERS.keys()
@@ -733,6 +932,8 @@ class Regressor:
         # save sequential selection results in dataframe
         sfs_fit = sfs_obj.fit(X_train, y_train)
         self.sfscv_out_ = pd.DataFrame.from_dict(sfs_fit.get_metric_dict()).T
+        # reset index
+        self.sfscv_out_ = self.sfscv_out_.reset_index()
         
         # intialize empty vectors to hold results below
         # number of features, ssr, r2, adj, r2, mae, rmse,
@@ -756,7 +957,7 @@ class Regressor:
 
         # Apply a regression model using each set of features and report out:
         # performance metrics, coefficients, and intercept.
-        for i in range(1, (self.sfscv_out_.shape[0] + 1), 1):
+        for i in range(0, (self.sfscv_out_.shape[0]), 1):
             # features from each model
             feat_in = list(self.sfscv_out_.loc[i, 'feature_names'])
             # input explanatory vars
@@ -878,25 +1079,25 @@ class Regressor:
         # print(f' Coefficients:')
         # self.reg.coef_
 
-
-
                
 
     def lasso_regression(self,
-                        alpha_in = 1,
+                        alpha_in = 1, 
                         max_iter_in = 1000,
                         n_splits_in = 10,
                         n_repeats_in = 3,
                         random_state_in = 100,
-                        timeseries = False):
+                        timeseries = False,
+                        n_jobs_in = 1):
         # using info from here as guide: 
         # https://machinelearningmastery.com/lasso-regression-with-python/
         """
         Parameters
         -------------
-        alpha_in: float [0:Inf)
+        alpha_in: int, float, or list [0:1]
             parameter controlling strength of L1 penalty.
             alpha = 0 same as LinearRegression, but advised not to use alpha = 0
+            if alpha_in is list, then cross validation will be used for Lasso regression
         max_iter_in: integer [0:Inf)
             Maximum number of iterations
             Default is 1000
@@ -908,112 +1109,309 @@ class Regressor:
             random seed for stochastic processes (helps ensure reproducability)
         timeseries: Boolean
             If set to True, then also calculate NSE, KGE, and % bias metrics
+        n_jobs_in: -1 or positive integer
+            -1 means run on all available cores
 
         Attributes
         -------------
+        lasso_reg_: sklearn regression object
+            output model from lasso regression
         lasso_scores_: numpy.ndarray
             scores from cross validation
-        features_keep_: pandas DataFrame
+        features_coef_: pandas DataFrame
             features with non-zero coefficients and the coefficients
+        df_lasso_features_coef_: pandas DataFrame
+            features and coefficients from lasso regression
         """
         try:
             X_train, y_train = self.expl_vars_tr_, self.resp_var
         except:
             X_train, y_train = self.expl_vars, self.resp_var
 
-        self.lasso_reg = Lasso(alpha = alpha_in,
-                            max_iter = max_iter_in).fit(X_train, y_train)
+        self.lasso_reg_ = Lasso(alpha = alpha_in,
+                            max_iter = max_iter_in)
+        
+        
 
-        # define k-fold model
-        cv = RepeatedKFold(n_splits = n_splits_in, n_repeats = n_repeats_in, random_state = random_state_in)
 
-        #evaluate model
-        scores = cross_validate(self.lasso_reg, 
-            X_train, y_train, 
-            scoring = ('neg_root_mean_squared_error', 
-            'neg_mean_absolute_error', 'r2'), cv = cv, n_jobs = 1,
-            return_train_score = True,
-            return_estimator = False)
+        ##### k-fold CV if alpha_in is a list
+        # Following code found here:
+        # https://machinelearningmastery.com/lasso-regression-with-python/
+        if isinstance(alpha_in, list):
+            # define model evaluation method
+            cv = RepeatedKFold(
+                    n_splits = n_splits_in, 
+                    n_repeats = n_repeats_in, 
+                    random_state = random_state_in)
+            # define grid
+            grid = dict()
+            grid['alpha'] = alpha_in
+            # define search
+            search = GridSearchCV(self.lasso_reg_,
+                grid,
+                scoring = ['neg_root_mean_squared_error', 
+                            'neg_mean_absolute_error', 'r2'],
+                refit = False,
+                cv = cv,
+                n_jobs = n_jobs_in)
+            # perform the search
+            results = search.fit(X_train, y_train)
+            self.lassoCV_results = results
+            # self.lassoCV_results = pd.DataFrame(self.lassoCV_results.cv_results_)
 
-        self.lasso_scores_ = scores
+            # print top 10 performing based on scores
+            self.df_lassoCV_rmse = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
+                            'param_alpha',
+                            'mean_test_neg_root_mean_squared_error',
+                            'std_test_neg_root_mean_squared_error',
+                            'rank_test_neg_root_mean_squared_error']]
+            self.df_lassoCV_mae = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
+                            'param_alpha',
+                            'mean_test_neg_mean_absolute_error',
+                            'std_test_neg_mean_absolute_error',
+                            'rank_test_neg_mean_absolute_error']]
+            self.df_lassoCV_r2 = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_r2')[[
+                            'param_alpha',
+                            'mean_test_r2',
+                            'std_test_r2',
+                            'rank_test_r2']]
+            
+            # return(# self.lassoCV_results.cv_results_, 
+            #         self.df_lassoCV_rmse[0:10],
+            #         self.df_lassoCV_mae[0:10], 
+            #         self.df_lassoCV_r2[0:10])
+            # summarize (best score and best params aren't available when using
+            # more than 1 scoring metric)
+            # print('MAE: %.3f' % results.cv_results_.best_score_)
+            # print('Config: %s' % results.cv_results_.best_params_)
 
-        # return variables with non-zero coeficients
-        self.lasso_features_keep_ = pd.DataFrame({
-            'features':  self.lasso_reg.feature_names_in_[
-                            np.where(np.abs(self.lasso_reg.coef_) > 10e-20)
-                            ],
-            'coefficients': self.lasso_reg.coef_[
-                            np.where(np.abs(self.lasso_reg.coef_) > 10e-20)
-                            ]
+        else:
+            # fit model
+            self.lasso_reg_.fit(X_train, y_train)
+
+            # return variables with non-zero coeficients
+            # with intercept appended
+
+            coef_int = np.append(self.lasso_reg_.coef_[
+                                np.where(np.abs(self.lasso_reg_.coef_) > 10e-20)
+                                ], self.lasso_reg_.intercept_)
+            feat_int = np.append(self.lasso_reg_.feature_names_in_[
+                                np.where(np.abs(self.lasso_reg_.coef_) > 10e-20)
+                                ], 'intercept')
+
+            self.df_lasso_features_coef_ = pd.DataFrame({
+                'features':  feat_int,
+                'coefficients': coef_int,
+            })
+
+            # Calculate performance metrics and output as single row pandas DataFrame
+            # pandas dataframe including only features selected in lasso regression
+            expl_out = X_train[self.df_lasso_features_coef_.drop(
+                            self.df_lasso_features_coef_.tail(1).index)['features']]
+            # predicted water yield from training data
+            ypred_out = self.lasso_reg_.predict(X_train)
+            
+        
+            #### Apply k-fold cross validation to see how performs across samples
+            # define k-fold model
+            cv = RepeatedKFold(n_splits = n_splits_in,
+                    n_repeats = n_repeats_in,
+                    random_state = random_state_in)
+
+            #evaluate model
+            scores = cross_validate(self.lasso_reg_,
+                X_train, y_train, 
+                scoring = ('neg_root_mean_squared_error', 
+                'neg_mean_absolute_error', 'r2'), cv = cv, n_jobs = 1,
+                return_train_score = True,
+                return_estimator = False)
+
+            self.lasso_scores_ = scores
+
+
+            rmse_train = -self.lasso_scores_['train_neg_root_mean_squared_error']
+            rmse_test = -self.lasso_scores_['test_neg_root_mean_squared_error']
+            mae_train = -self.lasso_scores_['train_neg_mean_absolute_error']
+            mae_test = -self.lasso_scores_['test_neg_mean_absolute_error']
+            print('Mean CV training RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_train), np.std(rmse_train)))
+            print('Mean CV testing RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_test), np.std(rmse_test)))
+            print('Mean CV training MAE: %.3f (%.3f)' % (np.mean(mae_train), np.std(mae_train)))
+            print('Mean CV testing MAE: %.3f (%.3f)' % (np.mean(mae_test), np.std(mae_test)))
+
+        #####
+
+            # sample size
+            n_k_out = X_train.shape[0]
+            # number of features
+            n_f_out = self.df_lasso_features_coef_.shape[0] - 1
+            # sum of squared residuals
+            ssr_out = ssr(ypred_out, y_train)
+            # unadjusted R-squared
+            r2_out = r2_score(y_train, ypred_out)
+            # Adjusted R-squared
+            r2adj_out = R2adj(n_k_out, n_f_out, r2_out)
+            # Mean absolute error
+            mae_out = mean_absolute_error(y_train, ypred_out)
+            # Root mean squared error
+            rmse_out = mean_squared_error(y_train, ypred_out, squared = False)
+            # Akaike Information Criterion
+            AIC_out = AIC(n_k_out, ssr_out, n_f_out)
+            # Bayesian Information Criterion
+            BIC_out = BIC(n_k_out, ssr_out, n_f_out)
+            # Mallows' Cp
+            # apply linear regression using all explanatory variables
+            # this object is used in feature selection just below and
+            # results from this will be used to calculate Mallows' Cp
+            reg_all = LinearRegression().fit(X_train, y_train)
+            # calc sum of squared residuals for all data for use in
+            # Mallows' Cp calc
+            reg_all_ssr = ssr(y_train, reg_all.predict(X_train))
+            M_Cp_out = M_Cp(reg_all_ssr, ssr_out, n_k_out, n_f_out)
+            # VIF
+            VIF_out = VIF(expl_out)
+            # Percent Bias
+            percBias_out = PercentBias(ypred_out, y_train)
+    # 
+            if timeseries:
+                # Nash-Sutcliffe Efficeincy
+                NSE_out = NSE(ypred_out, y_train)
+                # Kling Gupta Efficiency
+                KGE_out = KGE(ypred_out, y_train)
+        # 
+            # write performance metrics to dataframe
+            if timeseries:
+                df_perfmetr = pd.DataFrame({
+                    'n_features': n_f_out,
+                    'ssr': ssr_out,
+                    'r2': r2_out,
+                    'r2adj': r2adj_out,
+                    'mae': mae_out,
+                    'rmse': rmse_out,
+                    'AIC': AIC_out,
+                    'BIC': BIC_out,
+                    'M_Cp': M_Cp_out,
+                    'VIF': [VIF_out],
+                    'percBias': percBias_out,
+                    'NSE': NSE_out,
+                    'KGE': KGE_out
+                })
+            else:
+                df_perfmetr = pd.DataFrame({
+                    'n_features': n_f_out,
+                    'ssr': ssr_out,
+                    'r2': r2_out,
+                    'r2adj': r2adj_out,
+                    'mae': mae_out,
+                    'rmse': rmse_out,
+                    'AIC': AIC_out,
+                    'BIC': BIC_out,
+                    'M_Cp': M_Cp_out,
+                    'VIF': [VIF_out],
+                    'percBias': percBias_out
+                })
+    # 
+            # assign performance metric dataframe to self
+            self.df_lasso_regr_performance_ = df_perfmetr
+            return(df_perfmetr)
+
+
+    def pred_plot(self,
+        model_in,
+        X_pred,
+        y_obs,
+        id_vars,
+        timeseries = False):
+        """
+        Takes ... add description
+        
+        Parameters
+        ----------
+        model_in: an sklearn model like object
+            it must have a .fit or .predict method (e.g., LinearRegression().fit())
+        X_pred: pd.DataFrame
+            features of the same name and type as in X_train, but associated with the time
+            and/or conditions associated with the response variable being predicted
+        y_obs: numpy array
+            Observed response variables to be used for training and validating model
+        id_vars: numeric or character array type object
+            e.g., numpy array or pandas.series
+            Variable used to color points in predicted vs observed plots (e.g., 'aggecoregion')
+        timeseries: Boolean
+            if True, then KGE and NSE are included in performance metrics
+        
+        Attributes
+        ----------
+        plots: Outputs plots of predicted vs. observed along with performance metrics
+        df_pred_performance_: pandas DataFrame
+            A DataFrame holding performance metrics of the applied model (model_in)
+        pred_model_coef_: pandas DataFrame
+            DataFrame of features and their coefficients
+        pred_model_interc_: float
+            the intercept from the model used in prediction
+        """
+        # output model features, associated coefficeints, and intercept
+        # append intercept to features
+        features_int = np.append(model_in.coef_, model_in.intercept_)
+        features_int_names = np.append(model_in.feature_names_in_, 'intercept')
+
+        # output to self
+        self.df_linreg_features_coef_ = pd.DataFrame({
+            'features': features_int_names,
+            'coef': features_int
         })
 
-        rmse_train = -self.lasso_scores_['train_neg_root_mean_squared_error']
-        rmse_test = -self.lasso_scores_['test_neg_root_mean_squared_error']
-        mae_train = -self.lasso_scores_['train_neg_mean_absolute_error']
-        mae_test = -self.lasso_scores_['test_neg_mean_absolute_error']
-        print('Mean CV training RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_train), np.std(rmse_train)))
-        print('Mean CV testing RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_test), np.std(rmse_test)))
-        print('Mean CV training MAE: %.3f (%.3f)' % (np.mean(mae_train), np.std(mae_train)))
-        print('Mean CV testing MAE: %.3f (%.3f)' % (np.mean(mae_test), np.std(mae_test)))
+        # # return variables with non-zero coeficients
+        # self.lasso_features_coef_ = pd.DataFrame({
+        #     'features':  self.lasso_reg_.feature_names_in_[
+        #                     np.where(np.abs(self.lasso_reg_.coef_) > 10e-20)
+        #                     ],
+        #     'coefficients': self.lasso_reg_.coef_[
+        #                     np.where(np.abs(self.lasso_reg_.coef_) > 10e-20)
+        #                     ]
+        # })
 
+        # Predict y with input model
+        y_pred = model_in.predict(X_pred)
         # Calculate performance metrics and output as single row pandas DataFrame
-        # pandas dataframe including only features selected in lasso regression
-        expl_out = X_train[self.lasso_features_keep_['features']]
-        # predicted water yield from training data
-        ypred_out = self.lasso_reg.predict(X_train)
         # sample size
-        n_k_out = X_train.shape[0]
+        n_k_out = X_pred.shape[0]
         # number of features
-        n_f_out = self.lasso_features_keep_.shape[0]
+        # if from lasso equation then use model_in.coef_ to get number of features
+        # otherwise, use explanatory variable dataframe
+        try:
+            n_f_out = len(np.where(np.abs(model_in.coef_) > 0)[0])
+        except:
+            n_f_out = X_pred.shape[1]
         # sum of squared residuals
-        ssr_out = ssr(ypred_out, y_train)
+        ssr_out = ssr(y_pred, y_obs)
         # unadjusted R-squared
-        r2_out = r2_score(y_train, ypred_out)
+        r2_out = r2_score(y_obs, y_pred)
         # Adjusted R-squared
         r2adj_out = R2adj(n_k_out, n_f_out, r2_out)
         # Mean absolute error
-        mae_out = mean_absolute_error(y_train, ypred_out)
+        mae_out = mean_absolute_error(y_obs, y_pred)
         # Root mean squared error
-        rmse_out = mean_squared_error(y_train, ypred_out, squared = False)
-        # Akaike Information Criterion
-        AIC_out = AIC(n_k_out, ssr_out, n_f_out)
-        # Bayesian Information Criterion
-        BIC_out = BIC(n_k_out, ssr_out, n_f_out)
-        # Mallows' Cp
-        # apply linear regression using all explanatory variables
-        # this object is used in feature selection just below and
-        # results from this will be used to calculate Mallows' Cp
-        reg_all = LinearRegression().fit(X_train, y_train)
-        # calc sum of squared residuals for all data for use in 
-        # Mallows' Cp calc
-        reg_all_ssr = ssr(y_train, reg_all.predict(X_train))
-        M_Cp_out = M_Cp(reg_all_ssr, ssr_out, n_k_out, n_f_out+1)
-        # VIF
-        VIF_out = VIF(expl_out)
+        rmse_out = mean_squared_error(y_obs, y_pred, squared = False)
+        # VIF of variables in predictive model
+        # if lasso regression, then only use features with non-zero coefficeints
+        # else use X_pred directoy
+        try:
+            self.lasso_reg_.l1_ratio
+            X_in = X_pred[self.df_lasso_features_coef_.drop(
+                self.df_lasso_features_coef_.tail(1).index)['features']]
+            VIF_out = VIF(X_in)
+        except:
+            VIF_out = VIF(X_pred)
         # Percent Bias
-        percBias_out = PercentBias(ypred_out, y_train)
-        # # append results to vectors holding results for all models
-        # n_f_all.append(n_f_out)
-        # ssr_all.append(ssr_out)
-        # r2_all.append(r2_out)
-        # r2adj_all.append(r2adj_out)
-        # mae_all.append(mae_out)
-        # rmse_all.append(rmse_out)
-        # AIC_all.append(AIC_out)
-        # BIC_all.append(BIC_out)
-        # M_Cp_all.append(M_Cp_out)
-        # VIF_all.append(VIF_out)
-        # percBias_all.append(percBias_out)
+        percBias_out = PercentBias(y_pred, y_obs)
+
         # If timeseries = True then also calculate NSE and KGE
         if timeseries:
             # Nash-Sutcliffe Efficeincy
-            NSE_out = NSE(ypred_out, y_train)
+            NSE_out = NSE(y_pred, y_obs)
             # Kling Gupta Efficiency
-            KGE_out = KGE(ypred_out, y_train)
-            # append results to vectors holding results
-            # NSE_all.append(NSE_out)
-            # KGE_all.append(KGE_out)
-    
+            KGE_out = KGE(y_pred, y_obs)
+
         # write performance metrics to dataframe
         if timeseries:
             df_perfmetr = pd.DataFrame({
@@ -1023,9 +1421,6 @@ class Regressor:
                 'r2adj': r2adj_out,
                 'mae': mae_out,
                 'rmse': rmse_out,
-                'AIC': AIC_out,
-                'BIC': BIC_out,
-                'M_Cp': M_Cp_out,
                 'VIF': [VIF_out],
                 'percBias': percBias_out,
                 'NSE': NSE_out,
@@ -1039,14 +1434,37 @@ class Regressor:
                 'r2adj': r2adj_out,
                 'mae': mae_out,
                 'rmse': rmse_out,
-                'AIC': AIC_out,
-                'BIC': BIC_out,
-                'M_Cp': M_Cp_out,
                 'VIF': [VIF_out],
                 'percBias': percBias_out
             })
 
+        # prepare dataframe for plotting performance
+        df_in = pd.DataFrame({
+            'observed': y_obs,
+            'predicted': y_pred,
+            'ID': id_vars
+        })
+        # Plot predicted vs observed
+        p = (
+                p9.ggplot(data = df_in) +
+                p9.geom_point(p9.aes(x = 'observed', 
+                                        y = 'predicted', 
+                                        color = 'ID')) +
+                p9.geom_abline(slope = 1) +
+                p9.theme_bw() +
+                p9.theme(axis_text = p9.element_text(size = 14),
+                            axis_title = p9.element_text(size = 14),
+                            aspect_ratio = 1,
+                            legend_text = p9.element_text(size = 14),
+                            legend_title = p9.element_text(size = 14))
+            )
+        print(p)
         # assign performance metric dataframe to self
-        self.df_lasso_regr_performance_ = df_perfmetr
+        self.df_pred_performance_ = df_perfmetr
         return(df_perfmetr)
+
+
+
+
+
 # %%
