@@ -330,7 +330,7 @@ fig.update_traces(
 
 ##### 
 
-# new clusetering on umap reduced data
+# new clustering on umap reduced data
 test2 = Clusterer(clust_vars = test.df_embedding_.drop(columns = ['STAID', 'Color', 'ColSize']),
     id_vars = df_train_mnexpl['STAID'])
 

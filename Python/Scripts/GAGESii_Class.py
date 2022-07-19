@@ -645,7 +645,8 @@ class Clusterer:
             The below three attributes are actually attributes of pca_fit_
 
         df_pca_components_: pandas DataFrame of shape (n_components, n_features)
-            represents directions of maximum variance in the data
+            principal axes in features space. represents directions of maximum variance in the data.
+            components are sorted by explained variance
 
         df_pca_embedding_: pandas DataFrame
             transformed training data
@@ -681,7 +682,7 @@ class Clusterer:
         # output attributes
         # pca components saved as pandas DataFrame
         df_pca_components_ = pd.DataFrame(self.pca_fit_.components_)
-        df_pca_components_.columns = data_in.columns
+        df_pca_components_.columns = [f'Comp{i}' for i in np.arange(0, df_pca_components_.shape[1], 1)]
         # add station IDs to df
         self.df_pca_components_ = df_pca_components_
 
@@ -1050,7 +1051,7 @@ class Regressor:
         # assign performance metric dataframe to self, plot, and print results
         self.df_lin_regr_performance_ = df_perfmetr
         PlotPM(self.df_lin_regr_performance_, timeseries = False)
-        return(df_perfmetr)
+        return(df_perfmetr.sort_values(by = 'BIC')[0:5])
         
     
         # self.sfs_features_ = sfs_fit.k_feature_names_
@@ -1352,7 +1353,13 @@ class Regressor:
         # output model features, associated coefficeints, and intercept
         # append intercept to features
         features_int = np.append(model_in.coef_, model_in.intercept_)
+        # try:
         features_int_names = np.append(model_in.feature_names_in_, 'intercept')
+        # except:
+        #     features_int_names = np.append([X_pred.name], 'intercept')
+        #     X_pred = pd.DataFrame(np.array(X_pred).reshape(-1,1))
+            
+
 
         # output to self
         self.df_linreg_features_coef_ = pd.DataFrame({
