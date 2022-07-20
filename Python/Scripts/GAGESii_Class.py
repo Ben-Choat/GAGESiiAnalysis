@@ -1051,7 +1051,7 @@ class Regressor:
         # assign performance metric dataframe to self, plot, and print results
         self.df_lin_regr_performance_ = df_perfmetr
         PlotPM(self.df_lin_regr_performance_, timeseries = False)
-        return(df_perfmetr.sort_values(by = 'BIC')[0:5])
+        print(df_perfmetr.sort_values(by = 'BIC')[0:5])
         
     
         # self.sfs_features_ = sfs_fit.k_feature_names_

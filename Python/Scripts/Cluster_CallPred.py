@@ -174,11 +174,6 @@ except:
 
 
 
-# %% AggEcoregions as clusters
-
-for i in df_train_ID['AggEcoregion'].unique():
-    print(i)
-
 
 
 
@@ -271,6 +266,16 @@ df_km_valnit_pred = pd.DataFrame({
 
 
 
+# %% AggEcoregions as clusters
+
+for i in df_train_ID['AggEcoregion'].unique():
+    print(i)
+
+
+
+
+
+
 
 
 # %% Call function to perform modeling
@@ -285,13 +290,14 @@ df_km_valnit_pred = pd.DataFrame({
 #                 train_ID, # training data id's (e.g., clusters or ecoregions; df_train_ID['AggEcoregion'])
 #                 valin_ID, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
 #                 valnit_ID, # # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
-#                 reg_in: # region label, i.e., 'NorthEast'
+#                 clust_meth, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
+#                 reg_in) # region label, i.e., 'NorthEast'
 
 # subset data to catchment IDs that match the cluster or region being predicted
-region_in = 'NorthEast'
-cidtrain_in = df_train_ID[df_train_ID['AggEcoregion'] == 'region_in']
-cidvalin_in = df_valin_ID[df_valin_ID['AggEcoregion'] == 'region_in']
-cidvalnit_in = df_valnit_ID[df_valnit_ID['AggEcoregion'] == 'region_in']
+region_in = 'EastHghlnds'
+cidtrain_in = df_train_ID[df_train_ID['AggEcoregion'] == region_in]
+cidvalin_in = df_valin_ID[df_valin_ID['AggEcoregion'] == region_in]
+cidvalnit_in = df_valnit_ID[df_valnit_ID['AggEcoregion'] == region_in]
 
 # Water yield
 train_resp_in = pd.merge(
@@ -316,13 +322,13 @@ valnit_expl_in = pd.merge(df_valnit_mnexpl, cidvalnit_in, on = 'STAID').drop(
 # ID dataframes
 train_ID_in = pd.merge(
     df_train_ID, cidtrain_in, on = ['STAID', 'Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site']
-    )['Class']
+    )['ECO3_Site']
 valin_ID_in = pd.merge(
     df_valin_ID, cidvalin_in, on = ['STAID', 'Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site']
-    )['Class']
+    )['ECO3_Site']
 valnit_ID_in = pd.merge(
     df_valnit_ID, cidvalnit_in, on = ['STAID', 'Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site']
-    )['Class']
+    )['ECO3_Site']
 
 regress_fun(df_train_expl = train_expl_in, # training data explanatory variables. Expects STAID to be a column
             df_valin_expl = valin_expl_in, # validation data explanatory variables using same catchments that were trained on
@@ -333,7 +339,9 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             train_ID = train_ID_in, # training data id's (e.g., clusters or ecoregions; df_train_ID['AggEcoregion'])
             valin_ID = valin_ID_in, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
             valnit_ID = valnit_ID_in, # # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
-            reg_in = region_in) # region label, i.e., 'NorthEast'
+            clust_meth = 'Ecoregion', # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
+            reg_in = region_in # region label, i.e., 'NorthEast'
+            )       
 
 
 # %%
