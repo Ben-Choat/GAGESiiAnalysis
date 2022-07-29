@@ -12,10 +12,10 @@ from sklearn.linear_model import LinearRegression
 # %% load data
 
 # # water yield directory
-dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+dir_WY = 'E:/DataWorking/USGS_discharge/train_val_test'
 # dir_WY = 'D:/GAGES_Work/AnnualWY'
 # # explantory var (and other data) directory
-dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out'
+dir_expl = 'E:/Projects/GAGESii_ANNstuff/Data_Out'
 # dir_expl = 'D:/GAGES_Work/ExplVars_Model_In'
 
 # GAGESii explanatory vars
@@ -175,7 +175,7 @@ test.k_clust(
     plot_distortion = False)
 
 #######
-# data to project into k-means (or k-medoids) space
+# data to project into k-means (or other clustering) space
 df_valnit_trnsfrmd = pd.DataFrame(test.scaler_.transform(df_valnit_mnexpl.drop(
     columns = ['STAID'])
     ))
@@ -225,6 +225,45 @@ df_km_valnit_pred = pd.DataFrame({
     'STAID': df_valnit_mnexpl['STAID'],
     'K_predicted': km_valnit_pred
 })
+
+########
+#fuzzy c-means
+test.fuzzy_cm_clusterer(
+    c_i = 2, c_f = 30,
+    m_in = 2,
+    error_in = 0.005,
+    maxiter_in = 1000,
+    init_in = None,
+    seed_in = 100
+)
+
+# based on previous results use 2 clusters
+test.fuzzy_cm_clusterer(
+    c_i = 5, c_f = 5,
+    m_in = 2,
+    error_in = 0.005,
+    maxiter_in = 1000,
+    init_in = None,
+    seed_in = 100
+)
+
+# note that the test object now has an attribute fcm_centers which holds
+# cluster centers to be used in prediction
+
+# predict the clusters for the valnit data
+# first standardize it
+df_in = df_valnit_mnexpl.drop(columns = 'STAID')
+df_in = pd.DataFrame(test.scaler_.transform(df_in))
+test.fuzzy_cm_predictor(
+    data_pred = df_in,
+    m_in = 2,
+    error_in = 0.005,
+    maxiter_in = 1000,
+    init_in = None,
+    seed_in = 100
+)
+
+
 #####
 # PCA
 
@@ -294,10 +333,10 @@ test.hd_predictor(
 test.df_hd_pred_
 
 test.umap_reducer(
-    nn = 10,
-    mind = 0.01,
+    nn = 30, # 10,
+    mind = 0, # 0.01,
     sprd = 1, # don't use for tuning - leave set to 1
-    nc = 10,
+    nc = 3,
     color_in = df_train_ID['AggEcoregion'])
 
 # project valnit data into the umap space
@@ -416,15 +455,42 @@ hovertemplate = "<br>".join([
     "STAID: %{customdata[0]}"
 ]))
 ########
+# fuzzy c-means on umap transformed data
+test2.fuzzy_cm_clusterer(
+    c_i = 2, c_f = 15,
+    m_in = 2,
+    error_in = 0.005,
+    maxiter_in = 1000,
+    init_in = None,
+    seed_in = 100
+)
 
-# test2.umap_reducer(
-#     nn = 100,
-#     mind = 0.01,
-#     sprd = 1,
-#     nc = 3,
-#     color_in = df_train_ID['AggEcoregion'])
-#     # df_train_ID['USDA_LRR_Site'])
-#     # pd.Series(df_train_ID['ECO3_Site'], dtype = "category"))# df_train_ID['Class'])
+# based on previous results use best number of clusters
+test2.fuzzy_cm_clusterer(
+    c_i = 2, c_f = 2,
+    m_in = 2,
+    error_in = 0.005,
+    maxiter_in = 1000,
+    init_in = None,
+    seed_in = 100
+)
+
+# note that the test object now has an attribute fcm_centers which holds
+# cluster centers to be used in prediction
+
+# predict the clusters for the valnit data
+df_in = df_umap_valnit_pred.iloc[:, 0:3]
+
+test2.fuzzy_cm_predictor(
+    data_pred = df_in,
+    m_in = 2,
+    error_in = 0.005,
+    maxiter_in = 1000,
+    init_in = None,
+    seed_in = 100
+)
+
+
 
 
 # %% Apply regressor class methods

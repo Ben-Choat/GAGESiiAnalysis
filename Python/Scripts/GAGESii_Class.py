@@ -27,23 +27,28 @@ from sklearn.model_selection import cross_validate # can be used to return multi
 # from sklearn.feature_selection import RFECV
 # from sklearn.pipeline import Pipeline
 from sklearn_extra.cluster import KMedoids
+from sklearn.decomposition import PCA # dimension reduction
 # import statsmodels.formula.api as smf # for ols, aic, bic, etc.
 # import statsmodels.api as sm # for ols, aic, bic, etc.
 # from statsmodels.stats.outliers_influence import variance_inflation_factor as vif
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from mlxtend.feature_selection import ExhaustiveFeatureSelector as EFS
 from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs # plot sfs results
-import matplotlib.pyplot as plt # plotting
-# from matplotlib import cm
-import plotnine as p9
+
+import xgboost as xg
+import skfuzzy as fuzz # for fuzzy c-means
+
 import umap # for umap training and projection (dimension reduction)
-from sklearn.decomposition import PCA # dimension reduction
 import hdbscan # for hdbscan clustering
 # from mpl_toolkits.mplot3d import Axes3D # plot 3d plot
 # import plotly as ply # interactive plots
 # import plotly.io as pio5 # easier interactive plots
 import plotly.express as px # easier interactive plots
+import matplotlib.pyplot as plt # plotting
+# from matplotlib import cm
+import plotnine as p9
 import seaborn as sns # easier interactive plots
+
 import pandas as pd # data wrangling
 from Regression_PerformanceMetrics_Functs import *
 
@@ -514,6 +519,186 @@ class Clusterer:
 
 
 
+
+    def fuzzy_cm_clusterer(self,
+        c_i = 3, c_f = 20,
+        m_in = 2,
+        error_in = 0.005,
+        maxiter_in = 1000,
+        init_in = None,
+        seed_in = 100):
+
+        """
+        This function returns a plot of the fuzzy partition coefficient for clusters
+        ranging from c_i to c_f as a measure of how cleanly the data was described
+        by a model including that number of clusters. Values of fpc range from 0 to 1
+        where 1 is the best and 0 the worst.
+
+        Parameters
+        ------------
+        c_i: integer
+            initial (or smallest) number of clusters to consider
+        c_f: integer
+            final (or largest) number of clusters to consider
+        m_in: float
+            array exponentiation applied to the membership function u_old at each iteration
+            U_new = u_old ** m
+        error_in: float
+            stopping criterion; stop early if the norm of (u[p] - u[p-1]) < error
+        maxiter: int
+            Maximum number of iterations allowed
+        init_in:  2d array, size (S, N)
+            initial fuzzy c-partitioned matrix. If none provided, algorithm is 
+            randomly initilized
+        seed_in: integer
+            sets random seed of init. Only applies when init_in is set to None
+
+        Attributes
+        -------------
+        fcm_centers: array of cluster centers from training
+            these centers are used in the cmeans_predict function
+        fcm_df_membership: pandas DataFrame
+            contains columns for each cluster and how well each datapoint fits into that cluster
+            and an additional column with the cluster label of the best fitting cluster
+        # fcm_u: 2d array, size (S, N)
+        #     Final fuzzy c-partitioned matrix
+        # fcm_fpc: float
+        #      final fuzzy parition coefficient
+        commented lines just below here are the attributes of the skfuzzy cluster.cmeans
+        command, but not necessarily attributes of theself.fuzzy_cm_clusterer object
+        # cntr: 2d array, size (S, c)
+        #     cluster centers. Data for each center along each feature provided
+        #     for every cluster (of the c requested clusters)
+        # u: 2d array, size (S, N)
+        #     Final fuzzy c-partitioned matrix
+        # u0: 2d array, (S, N)
+        #     Initial guess at fuzzy c-partitioned matrix (either provided init or
+        #     random guess used if init was provided).
+        # d: 2d array, (S, N)
+        #     Final Euclidian distance matrix
+        # jm: 1d array, length P
+        #     Objective funciton history
+        # p: init
+        #     Number of iterations run
+        # fpc: float
+        #     final fuzzy parition coefficient
+        """
+
+        # define data to work with
+        # cluster data
+        try:
+            # hd_clusterer.fit(self.clust_vars_tr_)
+            data_in = self.clust_vars_tr_
+        except:
+            # hd_clusterer.fit(self.clust_vars)
+            data_in = self.clust_vars
+
+        # initialize empty arrays to hold fpc values, the number of clusters
+        fpcs = []
+        cs_out = []
+
+        # loop through the number of clusters specified (from c_i to c_f)
+        for c_in in range(c_i, c_f+1, 1):
+            # cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmean(
+            cntrs, u, _, _, _, _, fpc = fuzz.cluster.cmeans(
+                data = data_in.T, 
+                c = c_in, 
+                m = m_in, 
+                error = error_in, 
+                maxiter = maxiter_in, 
+                init = init_in, 
+                seed = seed_in
+            )
+
+            fpcs.append(fpc)
+            cs_out.append(c_in)
+
+        self.fcm_centers = cntrs
+        # write dataframe with probability of membership and the cluster
+        # with highest probability
+        df_temp = pd.DataFrame(u.T)
+        df_temp['Cluster'] = np.argmax(u, axis = 0)
+        self.fcm_df_membership = df_temp
+
+        # define pd.DataFrame for plotting
+        df_plot = pd.DataFrame({
+            'Clusters': cs_out,
+            'FPC': fpcs
+        })
+
+        # plot
+        plot = (
+                p9.ggplot(data = df_plot) +
+                p9.geom_point(p9.aes(x = 'Clusters', y = 'FPC')) +
+                p9.ggtitle('FPC vs # of Clusters')
+        )
+
+        print(plot)
+
+    
+    def fuzzy_cm_predictor(self,
+        data_pred,
+        # cntrs_trained = self.fcm_centers,
+        m_in = 2,
+        error_in = 0.005,
+        maxiter_in = 1000,
+        init_in = None,
+        seed_in = 100):
+
+        """
+        This function returns a plot of the fuzzy partition coefficient for clusters
+        ranging from c_i to c_f as a measure of how cleanly the data was described
+        by a model including that number of clusters. Values of fpc range from 0 to 1
+        where 1 is the best and 0 the worst.
+
+        Parameters
+        ------------
+        data_pred: pd.DataFrame 
+            data to predict clusters for
+            Must have same columns as data which was used for training clusters
+        m_in: float
+            array exponentiation applied to the membership function u_old at each iteration
+            U_new = u_old ** m
+        error_in: float
+            stopping criterion; stop early if the norm of (u[p] - u[p-1]) < error
+        maxiter: int
+            Maximum number of iterations allowed
+        init_in:  2d array, size (S, N)
+            initial fuzzy c-partitioned matrix. If none provided, algorithm is 
+            randomly initilized
+        seed_in: integer
+            sets random seed of init. Only applies when init_in is set to None
+
+        Attributes
+        -------------
+        fcm_pred_fpc: float
+            fuzzy patition coefficient
+        fcm_pred_u: 2d array, size (S, N)
+             Final fuzzy c-partitioned matrix
+        """
+
+        # u, u0, d, jm, p, fpc
+        u, _, _, _, _, fpc = fuzz.cmeans_predict(
+                test_data = data_pred.T, 
+                cntr_trained = self.fcm_centers, 
+                m = m_in, 
+                error = error_in, 
+                maxiter = maxiter_in, 
+                init = init_in, 
+                seed = seed_in
+            )
+
+        self.fcm_pred_u = u
+        self.fcm_pred_fpc = fpc
+
+        # write dataframe with probability of membership and the cluster
+        # with highest probability
+        df_temp = pd.DataFrame(u.T)
+        df_temp['Cluster'] = np.argmax(u, axis = 0)
+        self.fcm_pred_df_membership = df_temp
+
+
+
         
     def umap_reducer(self, 
         nn = 3, 
@@ -688,9 +873,9 @@ class Clusterer:
 
         # variance explained
         df_pca_var = pd.DataFrame({'component': np.arange(0, df_pca_components_.shape[1], 1)})
-        df_pca_var['var_expl'] = self.pca_fit_.explained_variance_
-        df_pca_var['ratio_var_expl'] = self.pca_fit_.explained_variance_ratio_
-        df_pca_var['Cum_Var'] = np.cumsum(df_pca_var['ratio_var_expl'])
+        df_pca_var['var_expl'] = pd.Series(self.pca_fit_.explained_variance_)
+        df_pca_var['ratio_var_expl'] = pd.Series(self.pca_fit_.explained_variance_ratio_)
+        df_pca_var['Cum_Var'] = pd.Series(np.cumsum(df_pca_var['ratio_var_expl']))
         # define variable holding number of components when 50%, 75%, 90%, and 95% 
         # variance is explained
         var_50 = np.min(np.where(df_pca_var['Cum_Var'] > 0.5))
@@ -736,7 +921,7 @@ class Clusterer:
             print(fig2)
 
             # define input data frame
-            df_in = df_pca_var
+            # df_in = df_pca_var
             
 
             # plot cumulative variance explained by components
@@ -756,6 +941,9 @@ class Clusterer:
             print(f'75% variance explained at {var_75} components')
             print(f'90% variance explained at {var_90} components')
             print(f'95% variance explained at {var_95} components')
+
+            # assign number of components where 95% of variation is explained to a self.variable
+            self.pca95 = var_95
 
         # return f'Embedding shape: {df_pca_embedding.shape - 3}'
 

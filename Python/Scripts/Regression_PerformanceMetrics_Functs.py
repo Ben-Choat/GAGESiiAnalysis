@@ -17,7 +17,8 @@
 import numpy as np
 import pandas as pd
 import plotnine as p9
-import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.tools.tools import add_constant
 # import matplotlib.pyplot as plt
 
 
@@ -119,24 +120,40 @@ def R2adj(n_k, n_f, r2):
     return(r2adj)
 
 # Variance Inflation Factor (VIF)
-def VIF(X):
+def VIF(df_X):
     """
     This if taken from,
     https://stackoverflow.com/questions/42658379/variance-inflation-factor-in-python
     with few edits by me.
-    It is a very concise syntax for calculating VIF
-    I compared it againt the car::vif command in R and it produced idential results
-    It essentially takes the diagonal of the inverse of the correlation matrix, which
-    gives the values of 1/(1 = Rj2) = VIF
-
+  
     NOTE: The function expects pandas to be imported as pd, and numpy as np
-    Paramters
+    Parameters
     ---------
-    X: pandas DataFrame of explantory variables
+    df_X: pandas DataFrame of explantory variables
     """
-    df_cor = X.corr()
-    vifs = pd.Series(np.linalg.inv(df_cor.values).diagonal(), index=df_cor.index)
-    return(vifs) 
+
+    # try to use statsmodels VIF function first. It may fail if VIF approaches Inf
+    # or RSS is 0 (which rarely occurs).
+    # If the statsmodel VIF function fails, then take the diagonal which will return 
+    # a NA or NaN leaving a blank space in the results.
+    try:
+        df = df_X
+    
+        X = add_constant(df)
+        vifs = pd.Series([variance_inflation_factor(X.values, i)
+                for i in range(X.shape[1])], 
+                    index=X.columns)
+
+        vifs = vifs.drop('const')
+    
+    except:
+        df_cor = df_X.corr()
+        vifs = pd.Series(np.linalg.inv(df_cor.values).diagonal(), index=df_cor.index)
+
+    
+
+    return(vifs)
+
 
 # Percent Bias
 def PercentBias(y_pred, y_obs):
@@ -209,6 +226,13 @@ def PlotPM(df_in, timeseries = False):
         # if column = VIF, then take max
         if df_in.columns[i] == 'VIF':
             y_in = df_in['VIF'].apply(max)
+            # color = []
+            # for j in y_in:
+            #     if y_in <= 10:
+            #         color = [color, 'green']
+            #     e
+
+
 
         # define plot
         if df_in.columns[i] == 'VIF' or df_in.columns[i] == 'M_Cp':

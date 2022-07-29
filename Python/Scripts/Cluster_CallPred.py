@@ -294,7 +294,7 @@ for i in df_train_ID['AggEcoregion'].unique():
 #                 reg_in) # region label, i.e., 'NorthEast'
 
 # subset data to catchment IDs that match the cluster or region being predicted
-region_in = 'EastHghlnds'
+region_in = 'SECstPlain'
 cidtrain_in = df_train_ID[df_train_ID['AggEcoregion'] == region_in]
 cidvalin_in = df_valin_ID[df_valin_ID['AggEcoregion'] == region_in]
 cidvalnit_in = df_valnit_ID[df_valnit_ID['AggEcoregion'] == region_in]

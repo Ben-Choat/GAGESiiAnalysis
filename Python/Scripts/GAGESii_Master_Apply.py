@@ -172,7 +172,7 @@ df_valnit_ID = df_ID[df_ID.STAID.isin(df_valnit_expl.STAID)].reset_index(drop = 
 del(df_train_anWY, df_train_expl, df_valin_anWY, df_valin_expl, df_valnit_anWY, df_valnit_expl)
 
 # %% Define dataframe to append results to as models are generated
-try:
+# try:
 
 df_results = pd.DataFrame({
     'model': [], # specify which model, e.g., 'raw_lasso'
