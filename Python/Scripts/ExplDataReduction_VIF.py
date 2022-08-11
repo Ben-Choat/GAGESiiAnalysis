@@ -140,18 +140,26 @@ df_valnit_ID = df_ID[df_ID.STAID.isin(df_valnit_expl.STAID)].reset_index(drop = 
 del(df_train_anWY, df_train_expl, df_valin_anWY, df_valin_expl, df_valnit_anWY, df_valnit_expl)
 # %% Remove variables until max VIF <= 20
 
+vif_th = 20
+
+Xtrain = df_train_mnexpl.drop(columns = 'STAID')
+
 # calculate all vifs and store in dataframe
-df_vif = VIF(df_train_mnexpl.drop(columns = 'STAID'))
+df_vif = VIF(Xtrain)
 
 # initiate array to hold varibles that have been removed
 df_removed = []
 
-while df_vif.any > 20:
-    # find max vifs
-    maxvif = np.where(df_vif == df_vif.max())
+while any(df_vif > vif_th):
+    # find max vifs and remove. If > 1 max vif, then remove only 
+    # the first one
+    maxvif = np.where(df_vif == df_vif.max())[0][0]
 
     # append inices of max vifs to removed dataframe
-    df_removed = df_removed.append(df_vif.index(maxvif))
+    df_removed.append(df_vif.index[maxvif])
 
+    # drop max vif feature
+    # df_vif.drop(df_vif.index[maxvif], inplace = True)
+    
     # calculate new vifs
-    df_vif = df_vif.drop(df_vif.index(maxvif))
+    df_vif = VIF(Xtrain.drop(df_removed, axis = 1))

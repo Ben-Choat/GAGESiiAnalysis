@@ -15,7 +15,8 @@ import xgboost as xgb
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-import plotnine as p9
+from Regression_PerformanceMetrics_Functs import VIF
+# import plotnine as p9
 
 # %% Load Data
 
@@ -36,6 +37,9 @@ df_ts_all = pd.read_csv(
     f'{dir_expl}/gagesii_ts/GAGESts_InterpYrs_Wide.csv',
     dtype = {'STAID': 'string'}
 )
+
+# subset to years of interest 1998 - 2012
+df_ts_all = df_ts_all[df_ts_all['year'].isin(np.arange(1998, 2013, 1))]
 
 # merge static and ts vars
 df_expl_all = pd.merge(
@@ -58,9 +62,15 @@ df_expl_all = df_expl_all.iloc[
     :, ~df_expl_all.columns.str.contains('NWALT')
 ]
 
-# drop lat, long, class, hydro_dist_indx, and baseflow index columns
+# drop lat, long, class, hydro_dist_indx, baseflow index, relief mean
+# # and fragmentation columns
 df_expl_all = df_expl_all.drop(
-    ['LAT_GAGE', 'LNG_GAGE', 'CLASS', 'HYDRO_DISTURB_INDX', 'BFI_AVE'], 
+    ['LAT_GAGE', 
+    'LNG_GAGE', 
+    'CLASS', 
+    'HYDRO_DISTURB_INDX', 
+    'BFI_AVE', 
+    'RRMEAN'],# 'FRAGUN_BASIN'], 
     axis = 1
 )
 
@@ -83,9 +93,79 @@ df_ID = pd.read_csv(
     dtype = {'STAID': 'string'}
 )
 
+###################
 
+# %% Investigate correlation between variables
 
+# calculate mean variables
+
+df_expl_all_mn = df_expl_all.groupby('STAID').mean().reset_index()
+
+#####
+# Remove variables with a pearsons r > defined threshold
+#####
+
+# # define threshold
+# th_in = 0.95
+
+# # using algorith found here:
+# # https://stackoverflow.com/questions/29294983/how-to-calculate-correlation-between-all-columns-and-remove-highly-correlated-on
+# # define working data
+# Xtrain = df_expl_all_mn.drop(
+#     ['STAID', 'year'], axis = 1
+# )
+# # Xtrain = Xtrain_dr
+
+# # calculate correlation
+# df_cor = Xtrain.corr(method = 'pearson').abs()
+
+# # Select upper triangle of correlation matrix
+# upper = df_cor.where(np.triu(np.ones(df_cor.shape), k = 1).astype(bool))
+
+# # Find features with correlation greater than 0.95
+# to_drop = [column for column in upper.columns if any(upper[column] > th_in)]
+
+# # Drop features 
+# Xtrain_dr = Xtrain.drop(to_drop, axis=1) #, inplace=True)
 ##################
+
+#####
+# Remove variables with a VIF > defined threshold
+#####
+
+X_in = df_expl_all_mn.drop(
+    ['STAID', 'year'], axis = 1
+)
+
+vif_th = 10 # 20
+
+# calculate all vifs and store in dataframe
+df_vif = VIF(X_in)
+
+# initiate array to hold varibles that have been removed
+df_removed = []
+
+while any(df_vif > vif_th):
+    # find max vifs and remove. If > 1 max vif, then remove only 
+    # the first one
+    maxvif = np.where(df_vif == df_vif.max())[0][0]
+
+    # append inices of max vifs to removed dataframe
+    df_removed.append(df_vif.index[maxvif])
+
+    # drop max vif feature
+    # df_vif.drop(df_vif.index[maxvif], inplace = True)
+    
+    # calculate new vifs
+    df_vif = VIF(X_in.drop(df_removed, axis = 1))
+
+# redefine mean explanatory var df by dropping 'df_removed' vars and year column
+df_removed.append('year')
+
+df_expl_all_mn = df_expl_all_mn.drop(
+    df_removed, axis = 1
+)
+
 
 # %% Investigate partitinionings with various random seeds
 
@@ -112,31 +192,29 @@ for rs in np.arange(100, 1100, 100):
     X_tr, X_other = train_test_split(
         df_ID,
         train_size = 0.60,
-        random_state = random_state
+        random_state = random_state,
+        stratify = df_ID['AGGECOREGION']
     )
 
     X_vnit, X_tnit = train_test_split(
         X_other,
         train_size = 0.70,
-        random_state = random_state
+        random_state = random_state,
+        stratify = X_other['AGGECOREGION']
     )
 
     # calculate mean of explanatory variables through time for each catchment
-    X_train_mn = df_expl_all[(df_expl_all['STAID'].isin(
-        X_tr['STAID'])) & 
-        (df_expl_all['year'].isin(
-            np.arange(1998, 2008, 1)
-        ))].groupby('STAID').mean().drop('year', axis = 1).reset_index()
+    X_train_mn = df_expl_all_mn[(df_expl_all_mn['STAID'].isin(
+        X_tr['STAID']))
+        ].reset_index(drop = True)
 
-    X_valnit_mn = df_expl_all[(df_expl_all['STAID'].isin(
-        X_vnit['STAID'])) & (df_expl_all['year'].isin(
-            np.arange(1998, 2008, 1)
-        ))].groupby('STAID').mean().drop('year', axis = 1).reset_index()
+    X_valnit_mn = df_expl_all_mn[(df_expl_all_mn['STAID'].isin(
+        X_vnit['STAID']))
+        ].reset_index(drop = True)
 
-    X_testnit_mn = df_expl_all[df_expl_all['STAID'].isin(
-        X_tnit['STAID']) & (df_expl_all['year'].isin(
-            np.arange(1998, 2008, 1)
-        ))].groupby('STAID').mean().drop('year', axis = 1).reset_index()
+    X_testnit_mn = df_expl_all_mn[df_expl_all_mn['STAID'].isin(
+        X_tnit['STAID'])
+        ].reset_index(drop = True)
 
     #####
     # advaserial validation on training and valnit data
@@ -145,7 +223,7 @@ for rs in np.arange(100, 1100, 100):
     # Instantiate classifier object
     xgbClassifier = xgb.XGBClassifier(
         objective = 'binary:logistic',
-        n_estimators = 100,
+        n_estimators = 1000,
         learning_rate = 0.1,
         max_depth = 3,
         random_state = 100,
@@ -219,22 +297,25 @@ for rs in np.arange(100, 1100, 100):
     testnit_cv_stdev = np.round(np.std(classify_cv['test_score']), 3)
 
 
-    cv_results = cv_results.append(
+    cv_results = pd.concat(
+                    [cv_results,
                     pd.DataFrame({
                     'random_seed': [random_state],
                     'cv_mean_valnit': [valnit_cv_mn],
                     'cv_stdev_valnit': [valnit_cv_stdev],
                     'cv_mean_testnit': [testnit_cv_mn],
                     'cv_stdev_testnit': [testnit_cv_stdev]
-                }), ignore_index = True)
+                    })]
+                    , ignore_index = True)
     
 
 
 cv_results
 
-# 400 performed the best
 
-random_state = 400 # rs
+# %% define final split using best performing seed
+
+random_state = 500 # rs
 
 X_tr, X_other = train_test_split(
     df_ID,
@@ -249,18 +330,43 @@ X_vnit, X_tnit = train_test_split(
 )
 
 # Write partitions to csvs
-
+# ID files
 # training
-X_tr.to_csv(f'{dir_expl}/ID_train.csv',
+id_tr = X_tr.sort_values(by = 'STAID')
+id_tr.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/ID_train.csv',
     index = False)
 # valnit
-X_vnit.to_csv(f'{dir_expl}/ID_valnit.csv',
+id_vnit = X_vnit.sort_values(by = 'STAID')
+id_vnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/ID_valnit.csv',
     index = False)
 # testnit
-X_tnit.to_csv(f'{dir_expl}/ID_testnit.csv',
+id_tnit = X_tnit.sort_values(by = 'STAID')
+id_tnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/ID_testnit.csv',
     index = False)
 
+# Explanatory variables
+# ID files
+# training
+X_train = df_expl_all[(df_expl_all['STAID'].isin(X_tr['STAID'])) &
+    df_expl_all['year'].isin(np.arange(1998, 2008, 1))]
+X_train.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_train.csv',
+    index = False)
+# valin
+X_valin = df_expl_all[(df_expl_all['STAID'].isin(X_tr['STAID'])) &
+    df_expl_all['year'].isin(np.arange(2008, 2012, 1))]
+X_valin.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_train.csv',
+    index = False)
+#testing
 
+
+# valnit
+X_valnit = df_expl_all[df_expl_all['STAID'].isin(X_vnit['STAID'])]
+X_valnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_valnit.csv',
+    index = False)
+# testnit
+X_testnit = df_expl_all[df_expl_all['STAID'].isin(X_tnit['STAID'])]
+X_testnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_testnit.csv',
+    index = False)
 
 
 

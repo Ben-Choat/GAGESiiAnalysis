@@ -1,0 +1,5 @@
+"0","color_in <- sample(colors(), length(unique(dt_train_ID$Class)))"
+"0","b <- barplot(table(dt_train_ID$Class), "
+"0","        col = color_in,"
+"0","        main = ""Training"","
+"0","        ylim = c(0, 3000))"

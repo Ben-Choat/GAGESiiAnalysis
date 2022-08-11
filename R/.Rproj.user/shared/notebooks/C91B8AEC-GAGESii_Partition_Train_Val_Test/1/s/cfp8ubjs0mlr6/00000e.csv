@@ -1,0 +1,6 @@
+"0",""
+"0","# Plot the distribution between Classes to ensure relatively consistent "
+"0","# representation between the three subsets of data"
+"0","cat(""Data partitioning by ecoregion:"")"
+"1","Data partitioning by ecoregion:"
+"0","par(mfrow = c(3, 1))"
