@@ -16,6 +16,8 @@ from sklearn.model_selection import cross_validate
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from Regression_PerformanceMetrics_Functs import VIF
+import os # for checking if directories exist and/or making directories
+import shutil # for copying files
 # import plotnine as p9
 
 # %% Load Data
@@ -91,7 +93,7 @@ df_expl_all = pd.get_dummies(df_expl_all)
 df_ID = pd.read_csv(
     f'{dir_expl}/ID_all_avail98_12.csv',
     dtype = {'STAID': 'string'}
-)
+).drop(['CLASS', 'AGGECOREGION'], axis = 1)
 
 ###################
 
@@ -160,9 +162,12 @@ while any(df_vif > vif_th):
     df_vif = VIF(X_in.drop(df_removed, axis = 1))
 
 # redefine mean explanatory var df by dropping 'df_removed' vars and year column
-df_removed.append('year')
-
+# drop columns from mean and timeseries explanatory vars
 df_expl_all_mn = df_expl_all_mn.drop(
+    df_removed + ['year'], axis = 1
+)
+
+df_expl_all = df_expl_all.drop(
     df_removed, axis = 1
 )
 
@@ -193,14 +198,14 @@ for rs in np.arange(100, 1100, 100):
         df_ID,
         train_size = 0.60,
         random_state = random_state,
-        stratify = df_ID['AGGECOREGION']
+        stratify = df_ID['AggEcoregion']
     )
 
     X_vnit, X_tnit = train_test_split(
         X_other,
         train_size = 0.70,
         random_state = random_state,
-        stratify = X_other['AGGECOREGION']
+        stratify = X_other['AggEcoregion']
     )
 
     # calculate mean of explanatory variables through time for each catchment
@@ -315,18 +320,21 @@ cv_results
 
 # %% define final split using best performing seed
 
-random_state = 500 # rs
+# 500 and 900 tend to perform similarly well
+random_state = 500
 
 X_tr, X_other = train_test_split(
     df_ID,
     train_size = 0.60,
-    random_state = random_state
+    random_state = random_state,
+    stratify = df_ID['AggEcoregion']
 )
 
 X_vnit, X_tnit = train_test_split(
     X_other,
     train_size = 0.70,
-    random_state = random_state
+    random_state = random_state,
+    stratify = X_other['AggEcoregion']
 )
 
 # Write partitions to csvs
@@ -351,12 +359,11 @@ X_train = df_expl_all[(df_expl_all['STAID'].isin(X_tr['STAID'])) &
     df_expl_all['year'].isin(np.arange(1998, 2008, 1))]
 X_train.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_train.csv',
     index = False)
-# valin
-X_valin = df_expl_all[(df_expl_all['STAID'].isin(X_tr['STAID'])) &
-    df_expl_all['year'].isin(np.arange(2008, 2012, 1))]
-X_valin.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_train.csv',
+# testin
+X_testin = df_expl_all[(df_expl_all['STAID'].isin(X_tr['STAID'])) &
+    df_expl_all['year'].isin(np.arange(2008, 2013, 1))]
+X_testin.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_testin.csv',
     index = False)
-#testing
 
 
 # valnit
@@ -369,163 +376,447 @@ X_testnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_testnit.csv',
     index = False)
 
 
-
-
-# # %% If desired, investigate the important parameters allowing prediction
-# # of valnit, and testnit
-# # investigate importance features
-# # fit classifier
-# xgbClassifier.fit(X_all, y_all)
-
-# # return roc auc score for prediction of training vs valnit
-# ts_pred = np.round(roc_auc_score(y_all, xgbClassifier.predict(X_all)), 3)
-
-
-# # xgb.plot_importance(xgbClassifier, max_num_features = 10)
-
-# perm_imp = permutation_importance(
-#     xgbClassifier,
-#     X = X_all, 
-#     y = y_all, 
-#     scoring = 'roc_auc', #scores,
-#     n_repeats = 10, # 30
-#     n_jobs = -1,
-#     random_state = 100)
-
-
-# df_perm_imp = pd.DataFrame({
-#     'Features': X_all.columns,
-#     'AUC_imp': perm_imp['importances_mean']
-# }).sort_values(by = 'AUC_imp', 
-#                 ascending = False, 
-#                 ignore_index = True)
-
-
-
-# print(f'Mean Test ROC-AUC: {ts_cv}')
-# # auc-roc of 0.79 suggests values are not from the same distribution
-# # a value of 1 means train and valnit can be perfectly identified (this is bad)
-# # a value of 0.5 is desirable and suggests both datasets are from the same
-# # distribution
-# print(f'ROC-AUC from fitted model: {ts_pred}')
-# df_perm_imp.head(10)
-# # df_perm_imp.tail(25)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Explanatory variables
+# %%
+##########################
 # Annual Water yield
+##########################
+# NOTE: this chunk of code partitions data into training, testing, valnit, and 
+# testnit partitions. It also adds a column of water yield with 'ft' as the unit
+
+# define conversion factor for going from acre-ft to ft using sqkm area value
+# 247.105 acres in 1 km2
+vol_conv = 1/247.105
+
+# read in annual water yield vars and partition them
+df_wy_annual = pd.read_csv(
+    'D:/DataWorking/USGS_discharge/annual_WY/Annual_WY_1976_2013.csv',
+    dtype = {'site_no': 'string'}
+)
+
+# subset to years '98 - '12
+df_wy_annual = df_wy_annual[
+    df_wy_annual['yr'].isin(np.arange(1998, 2013, 1))
+]
+
 # training
-# df_train_anWY = pd.read_csv(
-#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_train.csv',
-#     dtype = {"site_no":"string"}
-#     )
-# # drop stations not in explantory vars
-# df_train_anWY = df_train_anWY[
-#     df_train_anWY['site_no'].isin(df_train_expl['STAID'])
-#     ].reset_index(drop = True)
-# # create annual water yield in ft
-# df_train_anWY['Ann_WY_ft'] = df_train_anWY['Ann_WY_ft3']/(
-#     df_train_expl['DRAIN_SQKM']*(3280.84**2)
-#     )
+df_wy_annual_train = pd.merge(
+    id_tr,
+    df_wy_annual,
+    left_on = 'STAID',
+    right_on = 'site_no'
+)
 
-# # val_in
-# df_valin_anWY = pd.read_csv(
-#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_in.csv',
-#     dtype = {"site_no":"string"}
-#     )
-# # drop stations not in explantory vars    
-# df_valin_anWY = df_valin_anWY[
-#     df_valin_anWY['site_no'].isin(df_valin_expl['STAID'])
-#     ].reset_index(drop = True)
-# # create annual water yield in ft
-# df_valin_anWY['Ann_WY_ft'] = df_valin_anWY['Ann_WY_ft3']/(
-#     df_valin_expl['DRAIN_SQKM']*(3280.84**2)
-#     )
+df_wy_annual_train['Ann_WY_ft'] = df_wy_annual_train['Ann_WY_acft']/df_wy_annual_train['DRAIN_SQKM'] * vol_conv
 
-# # val_nit
-# df_valnit_anWY = pd.read_csv(
-#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_nit.csv',
-#     dtype = {"site_no":"string"}
-#     )
-# # drop stations not in explantory vars
-# df_valnit_anWY = df_valnit_anWY[
-#     df_valnit_anWY['site_no'].isin(df_valnit_expl['STAID'])
-#     ].reset_index(drop = True)
-# # subset valint expl and response vars to common years of interest
-# df_valnit_expl = pd.merge(
-#     df_valnit_expl, 
-#     df_valnit_anWY, 
-#     how = 'inner', 
-#     left_on = ['STAID', 'year'], 
-#     right_on = ['site_no', 'yr']).drop(
-#     labels = df_valnit_anWY.columns, axis = 1
-# )
-# df_valnit_anWY = pd.merge(df_valnit_expl, 
-#     df_valnit_anWY, 
-#     how = 'inner', 
-#     left_on = ['STAID', 'year'], 
-#     right_on = ['site_no', 'yr']).drop(
-#     labels = df_valnit_expl.columns, axis = 1
-# )
-# df_valnit_anWY['Ann_WY_ft'] = df_valnit_anWY['Ann_WY_ft3']/(
-#     df_valnit_expl['DRAIN_SQKM']*(3280.84**2)
-#     )
+df_wy_annual_train = df_wy_annual_train.drop(id_tr.columns, axis = 1)
 
-# # mean annual water yield
-# # training
-# df_train_mnanWY = df_train_anWY.groupby(
-#     'site_no', as_index = False
-# ).mean().drop(columns = ["yr"])
-# # val_in
-# df_valin_mnanWY = df_valin_anWY.groupby(
-#     'site_no', as_index = False
-# ).mean().drop(columns = ["yr"])
-# # val_nit
-# df_valnit_mnanWY = df_valnit_anWY.groupby(
-#     'site_no', as_index = False
-# ).mean().drop(columns = ["yr"])
+# split to train and testing
+# testin
+df_wy_annual_testin = df_wy_annual_train[
+    df_wy_annual_train['yr'].isin(np.arange(2008, 2013))
+    ]
+# train
+df_wy_annual_train = df_wy_annual_train[
+    df_wy_annual_train['yr'].isin(np.arange(1998, 2008))
+    ]
 
-# # mean GAGESii explanatory vars
-# # training
-# df_train_mnexpl = df_train_expl.groupby(
-#     'STAID', as_index = False
-# ).mean().drop(columns = ['year'])
-# # val_in
-# df_valin_mnexpl = df_valin_expl.groupby(
-#     'STAID', as_index = False
-# ).mean().drop(columns = ['year'])
-# #val_nit
-# df_valnit_mnexpl = df_valnit_expl.groupby(
-#     'STAID', as_index = False
-# ).mean().drop(columns = ['year'])
+# valnit
+df_wy_annual_valnit = pd.merge(
+    id_vnit,
+    df_wy_annual,
+    left_on = 'STAID',
+    right_on = 'site_no'
+)
 
-# # ID vars (e.g., ecoregion)
-# # vars to color plots with (e.g., ecoregion)
-# df_ID = pd.read_csv(
-#     f'{dir_expl}/GAGES_idVars.csv',
-#     dtype = {'STAID': 'string'}
-# )
+df_wy_annual_valnit['Ann_WY_ft'] = df_wy_annual_valnit['Ann_WY_acft']/df_wy_annual_valnit['DRAIN_SQKM'] * vol_conv
 
-# # training ID
-# df_train_ID = df_ID[df_ID.STAID.isin(df_train_expl.STAID)].reset_index(drop = True)
-# # val_in ID
-# df_valin_ID = df_train_ID
-# # val_nit ID
-# df_valnit_ID = df_ID[df_ID.STAID.isin(df_valnit_expl.STAID)].reset_index(drop = True)
+df_wy_annual_valnit = df_wy_annual_valnit.drop(id_tr.columns, axis = 1)
 
-# del(df_train_anWY, df_train_expl, df_valin_anWY, df_valin_expl, df_valnit_anWY, df_valnit_expl)
+# testnit
+df_wy_annual_testnit = pd.merge(
+    id_tnit,
+    df_wy_annual,
+    left_on = 'STAID',
+    right_on = 'site_no'
+)
 
+df_wy_annual_testnit['Ann_WY_ft'] = df_wy_annual_testnit['Ann_WY_acft']/df_wy_annual_testnit['DRAIN_SQKM'] * vol_conv
+
+df_wy_annual_testnit = df_wy_annual_testnit.drop(id_tr.columns, axis = 1)
+
+
+# Write to csv's
+# see if directory exists - if not - make it
+if not os.path.exists(f'{dir_WY}/annual'):
+    os.mkdir(f'{dir_WY}/annual')
+
+# training
+df_wy_annual_train.to_csv(
+    f'{dir_WY}/annual/WY_Ann_train.csv',
+    index = False
+)
+
+# testin
+df_wy_annual_testin.to_csv(
+    f'{dir_WY}/annual/WY_Ann_testin.csv',
+    index = False
+)
+
+# valnit
+df_wy_annual_valnit.to_csv(
+    f'{dir_WY}/annual/WY_Ann_valnit.csv',
+    index = False
+)
+
+# testnit
+df_wy_annual_testnit.to_csv(
+    f'{dir_WY}/annual/WY_Ann_testnit.csv',
+    index = False
+)
+
+
+#############
+
+
+# %%
+##########################
+# Monthly Water yield
+##########################
+# NOTE: this chunk of code partitions data into training, testing, valnit, and 
+# testnit partitions. It also adds a column of water yield with 'ft' as the unit
+
+# read in annual water yield vars and partition them
+df_wy_monthly = pd.read_csv(
+    'D:/DataWorking/USGS_discharge/monthly_WY/Monthly_WY_1976_2013.csv',
+    dtype = {'site_no': 'string'}
+)
+
+# subset to years '98 - '12
+df_wy_monthly = df_wy_monthly[
+    df_wy_monthly['yr'].isin(np.arange(1998, 2013, 1))
+]
+
+# training
+df_wy_monthly_train = pd.merge(
+    id_tr,
+    df_wy_monthly,
+    left_on = 'STAID',
+    right_on = 'site_no'
+)
+
+df_wy_monthly_train['Mnth_WY_ft'] = df_wy_monthly_train['Mnth_WY_acft']/df_wy_monthly_train['DRAIN_SQKM'] * vol_conv
+
+df_wy_monthly_train = df_wy_monthly_train.drop(id_tr.columns, axis = 1)
+
+# split to train and testing
+# testin
+df_wy_monthly_testin = df_wy_monthly_train[
+    df_wy_monthly_train['yr'].isin(np.arange(2008, 2013))
+    ]
+# train
+df_wy_monthly_train = df_wy_monthly_train[
+    df_wy_monthly_train['yr'].isin(np.arange(1998, 2008))
+    ]
+
+# valnit
+df_wy_monthly_valnit = pd.merge(
+    id_vnit,
+    df_wy_monthly,
+    left_on = 'STAID',
+    right_on = 'site_no'
+)
+
+df_wy_monthly_valnit['Mnth_WY_ft'] = df_wy_monthly_valnit['Mnth_WY_acft']/df_wy_monthly_valnit['DRAIN_SQKM'] * vol_conv
+
+df_wy_monthly_valnit = df_wy_monthly_valnit.drop(id_tr.columns, axis = 1)
+
+# testnit
+df_wy_monthly_testnit = pd.merge(
+    id_tnit,
+    df_wy_monthly,
+    left_on = 'STAID',
+    right_on = 'site_no'
+)
+
+df_wy_monthly_testnit['Mnth_WY_ft'] = df_wy_monthly_testnit['Mnth_WY_acft']/df_wy_monthly_testnit['DRAIN_SQKM'] * vol_conv
+
+df_wy_monthly_testnit = df_wy_monthly_testnit.drop(id_tr.columns, axis = 1)
+
+
+# Write to csv's
+# see if directory exists - if not - make it
+if not os.path.exists(f'{dir_WY}/monthly'):
+    os.mkdir(f'{dir_WY}/monthly')
+
+# training
+df_wy_monthly_train.to_csv(
+    f'{dir_WY}/monthly/WY_Mnth_train.csv',
+    index = False
+)
+
+# testin
+df_wy_monthly_testin.to_csv(
+    f'{dir_WY}/monthly/WY_Mnth_testin.csv',
+    index = False
+)
+
+# valnit
+df_wy_monthly_valnit.to_csv(
+    f'{dir_WY}/monthly/WY_Mnth_valnit.csv',
+    index = False
+)
+
+# testnit
+df_wy_monthly_testnit.to_csv(
+    f'{dir_WY}/monthly/WY_Mnth_testnit.csv',
+    index = False
+)
+
+######################
+
+# %%
+##########################
+# Daily Water yield
+##########################
+# NOTE: this chunk of code partitions data into training, testing, valnit, and 
+# testnit partitions. 
+
+#  make daily_WY folder if it does not exist
+# see if directory exists - if not - make it
+if not os.path.exists(f'{dir_WY}/daily'):
+    os.mkdir(f'{dir_WY}/daily')
+if not os.path.exists(f'{dir_WY}/daily/train'):
+    os.mkdir(f'{dir_WY}/daily/train')
+if not os.path.exists(f'{dir_WY}/daily/testin'):
+    os.mkdir(f'{dir_WY}/daily/testin')
+if not os.path.exists(f'{dir_WY}/daily/valnit'):
+    os.mkdir(f'{dir_WY}/daily/valnit')    
+if not os.path.exists(f'{dir_WY}/daily/testnit'):
+    os.mkdir(f'{dir_WY}/daily/testnit')
+
+#define conversion factor for converting from sqkm to ft2
+# 1 km2 = (1000 m)^2 * (3.28084 ft)^2 = 10,763,911.1056 ft2
+conv_fct = ((1000 ** 2) * (3.28084 ** 2))
+
+
+# Training and testin
+
+# loop through training ID's and copy years '98-'07 from training catchments
+# to training folder and years '08-'12 to testin folder.
+
+for gg_id in id_tr['STAID']:
+    
+    # read in csv
+    temp_df = pd.read_csv(
+        f'D:/DataWorking/USGS_discharge/daily_WY/Daily_WY_1976_2013_{gg_id}.csv',
+        dtype = {'site_no': 'string'}
+    )
+
+    # keep only columns of interestdrop columns not to keep 
+    temp_df = temp_df[['site_no', 'yr', 'mnth', 'day', 'wtryr', 'dlyWY_cfd']]
+
+    
+    # calculate daily water yield as ft using cfd column and area from id vars
+    # round to 6 sig figs
+    temp_df['dlyWY_ft'] = np.round(temp_df['dlyWY_cfd']/(
+        float(id_tr.loc[id_tr['STAID'] == gg_id, 'DRAIN_SQKM']) * conv_fct
+        ), 6)
+
+    # write training years from temp_df to daily/training directory
+    temp_df[temp_df['yr'].isin(np.arange(1998, 2008, 1))].to_csv(
+        f'{dir_WY}/daily/train/WY_daily_train_{gg_id}.csv',
+        index = False
+    )
+
+    # write testnit years from temp_df to daily/testnit directory
+    temp_df[temp_df['yr'].isin(np.arange(2008, 2013, 1))].to_csv(
+        f'{dir_WY}/daily/testin/WY_daily_testin_{gg_id}.csv',
+        index = False
+    )
+
+
+# valnit
+
+for gg_id in id_vnit['STAID']:
+    
+    # read in csv
+    temp_df = pd.read_csv(
+        f'D:/DataWorking/USGS_discharge/daily_WY/Daily_WY_1976_2013_{gg_id}.csv',
+        dtype = {'site_no': 'string'}
+    )
+
+    # keep only columns of interestdrop columns not to keep 
+    temp_df = temp_df[['site_no', 'yr', 'mnth', 'day', 'wtryr', 'dlyWY_cfd']]
+    
+    # calculate daily water yield as ft using cfd column and area from id vars
+    # round to 6 sig figs
+    temp_df['dlyWY_ft'] = np.round(temp_df['dlyWY_cfd']/(
+        float(id_vnit.loc[id_vnit['STAID'] == gg_id, 'DRAIN_SQKM']) * conv_fct
+        ), 6)
+
+    # write training years from temp_df to daily/training directory
+    temp_df[temp_df['yr'].isin(np.arange(1998, 2013, 1))].to_csv(
+        f'{dir_WY}/daily/valnit/WY_daily_valnit_{gg_id}.csv',
+        index = False
+    )
+
+# testnit
+
+for gg_id in id_tnit['STAID']:
+    
+    # read in csv
+    temp_df = pd.read_csv(
+        f'D:/DataWorking/USGS_discharge/daily_WY/Daily_WY_1976_2013_{gg_id}.csv',
+        dtype = {'site_no': 'string'}
+    )
+
+    # keep only columns of interestdrop columns not to keep 
+    temp_df = temp_df[['site_no', 'yr', 'mnth', 'day', 'wtryr', 'dlyWY_cfd']]
+    
+    # calculate daily water yield as ft using cfd column and area from id vars
+    # round to 6 sig figs
+    temp_df['dlyWY_ft'] = np.round(temp_df['dlyWY_cfd']/(
+        float(id_tnit.loc[id_tnit['STAID'] == gg_id, 'DRAIN_SQKM']) * conv_fct
+        ), 6)
+
+    # write training years from temp_df to daily/training directory
+    temp_df[temp_df['yr'].isin(np.arange(1998, 2013, 1))].to_csv(
+        f'{dir_WY}/daily/testnit/WY_daily_testnit_{gg_id}.csv',
+        index = False
+    )
+
+##################
+
+
+# %%
+##########################
+# Annual DAYMET data
+##########################
+
+dir_DMT = 'D:/DataWorking/Daymet/train_val_test'
+
+# make annual_DAYMET folder if it does not exist
+# see if directory exists - if not - make it
+if not os.path.exists(f'{dir_DMT}/annual'):
+    os.mkdir(f'{dir_DMT}/annual')
+
+# read in annual daymet data
+df_dmt_annual = pd.read_csv(
+    'D:/DataWorking/Daymet/Daymet_Annual.csv',
+    dtype = {'site_no': 'string'}
+)
+
+df_dmt_annual['year'] = df_dmt_annual['year'].astype(int)
+
+# write annual water yield
+# training
+temp_df = df_dmt_annual[
+    (df_dmt_annual['site_no'].isin(id_tr['STAID'])) &
+    (df_dmt_annual['year'].isin(np.arange(1998, 2008, 1)))
+]
+
+# write to csv
+temp_df.to_csv(
+    f'{dir_DMT}/annual/DAYMET_Annual_train.csv',
+    index = False
+)
+
+# testin
+temp_df = df_dmt_annual[
+    (df_dmt_annual['site_no'].isin(id_tr['STAID'])) &
+    (df_dmt_annual['year'].isin(np.arange(2008, 2013, 1)))
+]
+
+# write to csv
+temp_df.to_csv(
+    f'{dir_DMT}/annual/DAYMET_Annual_testin.csv',
+    index = False
+)
+
+# valnit
+temp_df = df_dmt_annual[
+    df_dmt_annual['site_no'].isin(id_vnit['STAID'])
+]
+
+# write to csv
+temp_df.to_csv(
+    f'{dir_DMT}/annual/DAYMET_Annual_valnit.csv',
+    index = False
+)
+
+# testnit
+temp_df = df_dmt_annual[
+    df_dmt_annual['site_no'].isin(id_tnit['STAID'])
+]
+
+# write to csv
+temp_df.to_csv(
+    f'{dir_DMT}/annual/DAYMET_Annual_testnit.csv',
+    index = False
+)
+
+# %%
+##########################
+# Monthly DAYMET data
+##########################
+
+# make monthly_DAYMET folder if it does not exist
+# see if directory exists - if not - make it
+if not os.path.exists(f'{dir_DMT}/monthly'):
+    os.mkdir(f'{dir_DMT}/monthly')
+
+# read in monthly daymet data
+df_dmt_monthly = pd.read_csv(
+    'D:/DataWorking/Daymet/Daymet_monthly.csv',
+    dtype = {'site_no': 'string'}
+)
+
+df_dmt_monthly['year'] = df_dmt_monthly['year'].astype(int)
+
+# write monthly water yield
+# training
+temp_df = df_dmt_monthly[
+    (df_dmt_monthly['site_no'].isin(id_tr['STAID'])) &
+    (df_dmt_monthly['year'].isin(np.arange(1998, 2008, 1)))
+]
+
+# write to csv
+temp_df.to_csv(
+    f'{dir_DMT}/monthly/DAYMET_monthly_train.csv',
+    index = False
+)
+
+# testin
+temp_df = df_dmt_monthly[
+    (df_dmt_monthly['site_no'].isin(id_tr['STAID'])) &
+    (df_dmt_monthly['year'].isin(np.arange(2008, 2013, 1)))
+]
+
+# write to csv
+temp_df.to_csv(
+    f'{dir_DMT}/monthly/DAYMET_monthly_testin.csv',
+    index = False
+)
+
+# valnit
+temp_df = df_dmt_monthly[
+    df_dmt_monthly['site_no'].isin(id_vnit['STAID'])
+]
+
+# write to csv
+temp_df.to_csv(
+    f'{dir_DMT}/monthly/DAYMET_monthly_valnit.csv',
+    index = False
+)
+
+# testnit
+temp_df = df_dmt_monthly[
+    df_dmt_monthly['site_no'].isin(id_tnit['STAID'])
+]
+
+# write to csv
+temp_df.to_csv(
+    f'{dir_DMT}/monthly/DAYMET_monthly_testnit.csv',
+    index = False
+)
 # %%

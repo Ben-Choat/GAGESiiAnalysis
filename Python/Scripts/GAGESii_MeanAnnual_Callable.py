@@ -45,18 +45,16 @@ from sklearn.metrics import mean_squared_error
 # import umap
 
 
-
-
 # %% DEFINE FUNCTION TO APPLY ALL REGRESSION MODELS AND ASK FOR USER INPUT WHERE NEEDED
 
 def regress_fun(df_train_expl, # training data explanatory variables. Expects STAID to be a column
-                df_valin_expl, # validation data explanatory variables using same catchments that were trained on
+                df_testin_expl, # validation data explanatory variables using same catchments that were trained on
                 df_valnit_expl, # validation data explanatory variables using different catchments than were trained on
                 train_resp, # training data response variables. NOTE: this should be a series, not a dataframe
-                valin_resp, # validation data response variables using same catchments that were trained on
+                testin_resp, # validation data response variables using same catchments that were trained on
                 valnit_resp, # validation data response variables using different catchments than were trained on
                 train_ID, # training data id's (e.g., clusters or ecoregions)
-                valin_ID, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
+                testin_ID, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
                 valnit_ID, # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
                 clust_meth, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
                 reg_in # region label, i.e., 'NorthEast'
@@ -76,7 +74,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     except:
         df_results_temp = pd.DataFrame({
             'model': [], # specify which model, e.g., 'raw_lasso'
-            'train_val': [], # specify if results from training, validation (i.e., valin or valint)
+            'train_val': [], # specify if results from training, validation (i.e., testin or testint)
             'parameters': [], # any hyperparameters (e.g., alpha penalty in lasso regression)
             'n_features': [], # number of explanatory variables (i.e., featuers)
             'ssr': [], # sum of squared residuals
@@ -93,9 +91,12 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
     # Define features not to transform
-    not_tr_in = ['GEOL_REEDBUSH_DOM_gneiss', 'GEOL_REEDBUSH_DOM_granitic', 
-                'GEOL_REEDBUSH_DOM_quarternary', 'GEOL_REEDBUSH_DOM_sedimentary', 
-                'GEOL_REEDBUSH_DOM_ultramafic', 'GEOL_REEDBUSH_DOM_volcanic']
+    not_tr_in = ['GEOL_REEDBUSH_DOM_granitic', 
+                'GEOL_REEDBUSH_DOM_quarternary', 
+                'GEOL_REEDBUSH_DOM_sedimentary', 
+                'GEOL_REEDBUSH_DOM_ultramafic', 
+                'GEOL_REEDBUSH_DOM_volcanic']
+                # 'GEOL_REEDBUSH_DOM_gneiss', 
 
 
 
@@ -185,13 +186,13 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
         #####
-        # valin data
-        train_val = 'valin'
+        # testin data
+        train_val = 'testin'
         print(train_val)
 
         # define explanatory and response vars
-        expl_in = np.array(df_valin_expl['PPTAVG_BASIN']).reshape(-1,1)
-        resp_in = valin_resp
+        expl_in = np.array(df_testin_expl['PPTAVG_BASIN']).reshape(-1,1)
+        resp_in = testin_resp
 
         model = model
         y_predicted = model.predict(expl_in)
@@ -231,7 +232,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_in = pd.DataFrame({
             'observed': resp_in,
             'predicted': y_predicted,
-            'ID': valin_ID
+            'ID': testin_ID
         })
 
         
@@ -449,15 +450,15 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
         #####
-        train_val = 'valin'
+        train_val = 'testin'
         print(train_val)
 
         # return prediction metrics for validation data from stations that were trained on
         # plot regression
         mdl_in = mdl_in
-        expl_in = df_valin_expl.drop(columns = 'STAID')
-        resp_in = valin_resp
-        id_in = valin_ID
+        expl_in = df_testin_expl.drop(columns = 'STAID')
+        resp_in = testin_resp
+        id_in = testin_ID
 
         regr.pred_plot(
             model_in = mdl_in,
@@ -614,17 +615,17 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             )
 
         ##### 
-        train_val= 'valin'
+        train_val= 'testin'
         print(train_val)
-        # Apply to validation catchments used in training (i.e., valin)
+        # Apply to validation catchments used in training (i.e., testin)
         # Subset appropriate explanatory variables to columns of interest
-        expl_in = df_valin_expl[features_in]
+        expl_in = df_testin_expl[features_in]
 
         # define response variable
-        resp_in = valin_resp
+        resp_in = testin_resp
 
         # define id vars
-        id_in = valin_ID
+        id_in = testin_ID
 
         # OLS regression predict
         # specifiy input model
@@ -819,17 +820,17 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             )
 
         #####
-        train_val = 'valin'
+        train_val = 'testin'
         print(train_val)
         # return prediction metrics for validation data from stations that were trained on
         # plot regression
         mdl_in = mdl_in
-        expl_in = pd.DataFrame(regr.scaler_.transform(df_valin_expl.drop(columns = 'STAID')))
+        expl_in = pd.DataFrame(regr.scaler_.transform(df_testin_expl.drop(columns = 'STAID')))
         expl_in.columns = regr.expl_vars.columns
         expl_in[not_tr_in] = regr.expl_vars[not_tr_in]
-        resp_in = valin_resp
+        resp_in = testin_resp
         # resp_in = train_mnanWY_tr
-        id_in = valin_ID
+        id_in = testin_ID
 
         regr.pred_plot(
             model_in = mdl_in,
@@ -994,17 +995,17 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             )
 
         ##### 
-        train_val = 'valin'
+        train_val = 'testin'
         print(train_val)
-        # Apply to validation catchments used in training (i.e., valin)
+        # Apply to validation catchments used in training (i.e., testin)
         # Subset appropriate explanatory variables to columns of interest
-        expl_in = df_valin_expl[features_in]
+        expl_in = df_testin_expl[features_in]
 
         # define response variable
-        resp_in = valin_resp
+        resp_in = testin_resp
 
         # define id vars
-        id_in = valin_ID
+        id_in = testin_ID
 
         # OLS regression predict
         # specifiy input model
@@ -1246,14 +1247,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # return prediction metrics for validation data from stations that were trained on
         # plot regression
-        train_val = 'valin'
+        train_val = 'testin'
         print(train_val)
 
         # define model in
         mdl_in = regr.lasso_reg_
         # standardize explantory vars, give columns names, and replace vars not to be transformed
         # define expl vars to work with
-        df_in = df_valin_expl.drop(columns = 'STAID')
+        df_in = df_testin_expl.drop(columns = 'STAID')
         expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
         expl_in.columns = df_in.columns
         expl_in[not_tr_in] = df_in[not_tr_in]
@@ -1267,9 +1268,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # subset to number of components used in model (e.g., 38)
         expl_in_pcatr = expl_in_pcatr.iloc[:, 0:max_comp]
         expl_in = expl_in_pcatr
-        resp_in = valin_resp
+        resp_in = testin_resp
         # resp_in = train_mnanWY_tr
-        id_in = valin_ID
+        id_in = testin_ID
 
         regr.pred_plot(
             model_in = mdl_in,
@@ -1372,11 +1373,41 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # update model count
         mdl_count = mdl_count + 1
         
-        # define klim  (how many variables to consider in moder)
-        klim_in = max_comp # int(input('How many variables do you want to consider (0<klim<NC): '))
+        # PCA
+        # define cluster/reducer object
+        clust = Clusterer(clust_vars = df_train_expl.drop(columns = ['STAID']),
+            id_vars = df_train_expl['STAID'])
 
-        # model_name = 'stdrd_PCA_mlr'
-        # param_name = 'forward_klim38'
+        # standardize data
+        clust.stand_norm(method = 'standardize', # 'normalize'
+            not_tr = not_tr_in) 
+
+        # perform PCA on training data and plot
+        clust.pca_reducer(
+            nc = None, # None option includes all components
+            color_in = train_ID, # 'blue'
+            plot_out = True
+        )
+
+        
+        # regression on transformed explanatory variables
+
+        # define explanatory variables - subset to first 38 components
+        # since they explain 95% of the variance in the explanatory variables
+        # max_comp = int(input('based on those results, how many components do you want to consider? (e.g., 38): '))
+        max_comp = clust.pca95
+        expl_vars_in = clust.df_pca_embedding_.iloc[:, 0:max_comp]
+        
+        # define klim  (how many variables to consider in moder)
+        klim_in = int(max_comp) # int(input('How many variables do you want to consider (0<klim<NC): '))
+
+        # define model name and parameter name(s) to be written to files and used in file names
+        param_name = f'forwardklim{klim_in}'
+
+        # Instantiate a Regressor object 
+        regr = Regressor(expl_vars = expl_vars_in,
+            resp_var = train_resp)
+
 
         regr.lin_regression_select(
             sel_meth = 'forward', # 'forward', 'backward', or 'exhaustive'
@@ -1446,12 +1477,12 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             )
 
         ##### 
-        train_val = 'valin'
+        train_val = 'testin'
         print(train_val)
-        # Apply to validation catchments used in training (i.e., valin)
+        # Apply to validation catchments used in training (i.e., testin)
         # standardize explantory vars, give columns names, and replace vars not to be transformed
         # define expl vars to work with
-        df_in = df_valin_expl.drop(columns = 'STAID')
+        df_in = df_testin_expl.drop(columns = 'STAID')
         expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
         expl_in.columns = df_in.columns
         expl_in[not_tr_in] = df_in[not_tr_in]
@@ -1465,15 +1496,15 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # subset to number of components used in model (e.g., 38)
         expl_in_pcatr = expl_in_pcatr[features_in]
         expl_in = expl_in_pcatr
-        resp_in = valin_resp
+        resp_in = testin_resp
         # resp_in = train_mnanWY_tr
-        id_in = valin_ID
+        id_in = testin_ID
 
         # define response variable
-        resp_in = valin_resp
+        resp_in = testin_resp
 
         # define id vars
-        id_in = valin_ID
+        id_in = testin_ID
 
         # OLS regression predict
         # specifiy input model
@@ -1782,14 +1813,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     #     # return prediction metrics for validation data from stations that were trained on
     #     # plot regression
 
-    #     train_val = 'valin'
+    #     train_val = 'testin'
     #     print(train_val)
 
     #     # define model in
     #     mdl_in = mdl_in
     #     # standardize explantory vars, give columns names, and replace vars not to be transformed
     #     # define expl vars to work with
-    #     df_in = df_valin_expl.drop(columns = 'STAID')
+    #     df_in = df_testin_expl.drop(columns = 'STAID')
     #     expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
     #     expl_in.columns = df_in.columns
     #     expl_in[not_tr_in] = df_in[not_tr_in]
@@ -1801,9 +1832,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     #     # umap reduced data column names
     #     expl_in_umaptr.columns = [f'Emb{i}' for i in np.arange(0, expl_in_umaptr.shape[1], 1)]
     #     expl_in = expl_in_umaptr
-    #     resp_in = valin_resp
+    #     resp_in = testin_resp
     #     # resp_in = train_mnanWY_tr
-    #     id_in = valin_ID
+    #     id_in = testin_ID
 
     #     regr.pred_plot(
     #         model_in = mdl_in,
@@ -1991,14 +2022,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
     #     ##### 
     #     # %%
-    #     # Apply to validation catchments used in training (i.e., valin)
+    #     # Apply to validation catchments used in training (i.e., testin)
 
-    #     train_val = 'valin'
+    #     train_val = 'testin'
     #     print(train_val)
 
     #     # standardize explantory vars, give columns names, and replace vars not to be transformed
     #     # define expl vars to work with
-    #     df_in = df_valin_expl.drop(columns = 'STAID')
+    #     df_in = df_testin_expl.drop(columns = 'STAID')
     #     expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
     #     expl_in.columns = df_in.columns
     #     expl_in[not_tr_in] = df_in[not_tr_in]
@@ -2011,15 +2042,15 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     #     expl_in_umaptr.columns = [f'Emb{i}' for i in np.arange(0, expl_in_umaptr.shape[1], 1)]
     #     expl_in_umaptr = expl_in_umaptr[features_in]
     #     expl_in = expl_in_umaptr
-    #     resp_in = valin_resp
+    #     resp_in = testin_resp
     #     # resp_in = train_mnanWY_tr
-    #     id_in = valin_ID
+    #     id_in = testin_ID
 
     #     # define response variable
-    #     resp_in = valin_resp
+    #     resp_in = testin_resp
 
     #     # define id vars
-    #     id_in = valin_ID
+    #     id_in = testin_ID
 
     #     # OLS regression predict
     #     # specifiy input model
@@ -2127,7 +2158,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'clust_method'] = clust_meth
 
     # Write results to csv
-    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
+    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv', index = False)
 
 
     print('------------Job complete------------')

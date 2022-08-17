@@ -232,9 +232,10 @@ for rs in np.arange(100, 1100, 100):
 
 cv_results
 
-# 400 performed the best
+# %% perminantly parition data
+# 900 performed the best
 
-random_state = 400 # rs
+random_state = 900 # rs
 
 X_tr, X_other = train_test_split(
     df_ID,
