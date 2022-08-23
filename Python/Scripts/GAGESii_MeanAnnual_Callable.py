@@ -38,6 +38,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import mean_squared_error
+from os.path import exists
 # from sklearn.linear_model import Lasso
 # from sklearn.model_selection import GridSearchCV
 # from sklearn.pipeline import Pipeline
@@ -70,7 +71,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # %% Load or define dataframe to append results to as models are generated
     # %% Define dataframe to append results to as models are generated
     try:
-        df_results_temp = pd.read_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv')
+        df_results_temp = pd.read_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv')
     except:
         df_results_temp = pd.DataFrame({
             'model': [], # specify which model, e.g., 'raw_lasso'
@@ -98,6 +99,10 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 'GEOL_REEDBUSH_DOM_volcanic']
                 # 'GEOL_REEDBUSH_DOM_gneiss', 
 
+    # subset not_tr_in to those columns remaining in dataframe
+    # in case any were removed due to high VIFs
+    not_tr_in = df_train_expl.columns.intersection(not_tr_in)
+
 
 
 
@@ -111,8 +116,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
     model_name = 'regr_precip' # input('enter name for model (e.g., regr_precip):') # regr_precip'
 
-    if model_name not in df_results_temp['model'].values:
-
+    if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+        (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
         # update model count
         mdl_count = mdl_count + 1
         
@@ -358,7 +363,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # model name for saving in csv
     model_name = 'raw_lasso' # input('enter name for model (e.g., raw_lasso):') 
     
-    if model_name not in df_results_temp['model'].values:
+    if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+        (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
         # update model count
         mdl_count = mdl_count + 1
@@ -443,7 +449,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
         df_vif = df_vif.rename(columns = {0: 'VIF'})
         df_vif.to_csv(
-            f'{dir_expl}/Results/VIF_dfs/VIF_dfs_TEMP/{model_name}_{param_name}_VIF.csv',
+            f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
             index = True, 
             index_label = 'feature'
             )
@@ -530,7 +536,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # model name for saving in csv
     model_name = 'raw_mlr' # input('enter name for model (e.g., raw_mlr):') 
 
-    if model_name not in df_results_temp['model'].values:
+    if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+        (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
         # update model count
         mdl_count = mdl_count + 1
@@ -609,7 +616,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
         df_vif = df_vif.rename(columns = {0: 'VIF'})
         df_vif.to_csv(
-            f'{dir_expl}/Results/VIF_dfs/VIF_dfs_TEMP/{model_name}_{param_name}_VIF.csv',
+            f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
             index = True, 
             index_label = 'feature'
             )
@@ -738,7 +745,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # model name for saving in csv
     model_name = 'strd_lasso' # input('enter name for model (e.g., strd_lasso):') 
 
-    if model_name not in df_results_temp['model'].values:
+    if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+        (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
         # update model count
         mdl_count = mdl_count + 1
@@ -814,7 +822,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
         df_vif = df_vif.rename(columns = {0: 'VIF'})
         df_vif.to_csv(
-            f'{dir_expl}/Results/VIF_dfs/VIF_dfs_TEMP/{model_name}_{param_name}_VIF.csv',
+            f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
             index = True, 
             index_label = 'feature'
             )
@@ -904,7 +912,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # model name for saving in csv
     model_name = 'strd_mlr' # input('enter name for model (e.g., stdrd_mlr):') 
     
-    if model_name not in df_results_temp['model'].values:
+    if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+        (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
         # update model count
         mdl_count = mdl_count + 1
@@ -989,7 +998,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
         df_vif = df_vif.rename(columns = {0: 'VIF'})
         df_vif.to_csv(
-            f'{dir_expl}/Results/VIF_dfs/VIF_dfs_TEMP/{model_name}_{param_name}_VIF.csv',
+            f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
             index = True, 
             index_label = 'feature'
             )
@@ -1121,7 +1130,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     model_name = 'strd_PCA_lasso' # input('enter name for model (e.g., stdrd_PCA_lasso):') 
 
 
-    if model_name not in df_results_temp['model'].values:
+    if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+        (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
         # update model count
         mdl_count = mdl_count + 1
@@ -1238,7 +1248,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # Max VIF is 1, so no need to write to csv
         df_vif.to_csv(
-            f'{dir_expl}/Results/VIF_dfs/VIF_dfs_TEMP/{model_name}_{param_name}_VIF.csv',
+            f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
             index = True, 
             index_label = 'feature'
             )
@@ -1368,7 +1378,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # model name for saving in csv
     model_name = 'strd_PCA_mlr' # input('enter name for model (e.g., stdrd_PCA_mlr):') 
 
-    if model_name not in df_results_temp['model'].values:
+    if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+        (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
         # update model count
         mdl_count = mdl_count + 1
@@ -1471,7 +1482,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
         df_vif = df_vif.rename(columns = {0: 'VIF'})
         df_vif.to_csv(
-            f'{dir_expl}/Results/VIF_dfs/VIF_dfs_TEMP/{model_name}_{param_name}_VIF.csv',
+            f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
             index = True, 
             index_label = 'feature'
             )
@@ -1629,7 +1640,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # # model name for saving in csv
     # model_name = 'strd_UMAP_lasso' # input('enter name for model (e.g., stdrd_UMAP_lasso):') 
 
-    # if model_name not in df_results_temp['model'].values:
+    # if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+    #    (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
         # # update model count
         # mdl_count = mdl_count + 1
@@ -1802,7 +1814,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
     #     # Max VIF is 1, so no need to write to csv
     #     df_vif.to_csv(
-    #         f'{dir_expl}/Results/VIF_dfs/VIF_dfs_TEMP/{model_name}_{param_name}_VIF.csv',
+    #         f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
     #         index = True, 
     #         index_label = 'feature'
     #         )
@@ -1935,7 +1947,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # # model name for saving in csv
     # model_name = 'strd_UMAP_mlr' # input('enter name for model (e.g., stdrd_UMAP_mlr):') 
 
-    # if model_name not in df_results_temp['model'].values:
+    # (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+    #    (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
         # # update model count
         # mdl_count = mdl_count + 1
@@ -2015,7 +2028,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     #     df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
     #     df_vif = df_vif.rename(columns = {0: 'VIF'})
     #     df_vif.to_csv(
-    #         f'{dir_expl}/Results/VIF_dfs/VIF_dfs_TEMP/{model_name}_{param_name}_VIF.csv',
+    #         f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
     #         index = True, 
     #         index_label = 'feature'
     #         )
@@ -2158,7 +2171,12 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'clust_method'] = clust_meth
 
     # Write results to csv
-    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv', index = False)
+    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv', 
+        index = False)
+
+    # write to TEMP file to for investigation if needed
+    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', 
+        index = False)
 
 
     print('------------Job complete------------')

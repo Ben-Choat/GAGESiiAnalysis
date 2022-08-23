@@ -8,7 +8,6 @@
 
 # %% Import libraries
 
-import numpy as np # matrix operations/data manipulation
 from sklearn.preprocessing import StandardScaler # standardizing data
 from sklearn.preprocessing import MinMaxScaler # normalizing data (0 to 1)
 from sklearn.cluster import KMeans # kmeans
@@ -35,7 +34,7 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from mlxtend.feature_selection import ExhaustiveFeatureSelector as EFS
 from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs # plot sfs results
 
-import xgboost as xg
+import xgboost as xgb
 import skfuzzy as fuzz # for fuzzy c-means
 
 import umap # for umap training and projection (dimension reduction)
@@ -49,7 +48,9 @@ import matplotlib.pyplot as plt # plotting
 import plotnine as p9
 import seaborn as sns # easier interactive plots
 
+import numpy as np # matrix operations/data manipulation
 import pandas as pd # data wrangling
+import time
 from Regression_PerformanceMetrics_Functs import *
 
 
@@ -1502,6 +1503,206 @@ class Regressor:
             # assign performance metric dataframe to self
             self.df_lasso_regr_performance_ = df_perfmetr
             return(df_perfmetr)
+
+
+    def xgb_regression(self,
+                       n_splits_in = 5,
+                       grid_in = {
+                        'n_estimators': [100], # [100, 250, 500], # [10], # 
+                        'colsample_bytree': [1], # [0.7, 1], 
+                        'max_depth': [6], # [4, 6, 8],
+                        'gamma': [0], # [0, 1], 
+                        'reg_lambda': [0], # [0, 1, 2]
+                        'learning_rate': [0.3] # [0.02, 0.1, 0.3]
+                        },
+                       timeseries = False,
+                       n_jobs_in = -1,
+                       dir_save = 'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json'):
+        # using info from here as guide: 
+        # https://machinelearningmastery.com/lasso-regression-with-python/
+        """
+        Parameters
+        -------------
+        n_splits_in: integer
+            Nunmber of folds for k-fold CV
+        grid_in: dictionary
+            holds hyperparameters and a range of values for each hyperparameter
+            to consider in tuning.
+            Okay to enter only one value for each hyperparameter to simply set
+            the hyperparameters to those values
+        random_state_in: integer
+            random seed for stochastic processes (helps ensure reproducability)
+        timeseries: Boolean
+            If set to True, then also calculate NSE, KGE, and % bias metrics
+        n_jobs_in: -1 or positive integer
+            -1 means run on all available cores
+
+        Attributes
+        -------------
+        xgb_reg_: XGBoost regression object using sklearn API
+            output model from lasso regression
+        df_xgbcv_results_: pandas dataframe
+            output results from cross validation
+        
+        """
+        try:
+            X_train, y_train = self.expl_vars_tr_, self.resp_var
+        except:
+            X_train, y_train = self.expl_vars, self.resp_var
+
+        # define xgboost model
+        self.xgb_reg_ = xgb.XGBRegressor(
+            objective = 'reg:squarederror',
+            tree_method = 'hist', # 'gpu_hist',
+            verbosity = 1, # 0 = silent, 1 = warning (default), 2 = info, 3 = debug
+            sampling_method = 'uniform', # 'gradient_based', # default is 'uniform'
+            # nthread = 8 # defaults to maximum number available, only use for less threads
+            )
+
+        
+        # define gridsearch cross-validation object
+        gsCV = GridSearchCV(
+                    estimator = self.xgb_reg_,
+                    param_grid = grid_in,
+                    scoring = 'neg_root_mean_squared_error',
+                    cv = 5, # default = 5
+                    return_train_score = False, # True, # default = False
+                    verbose = 2,
+                    n_jobs = -1
+                )
+
+        # apply gridsearch cross-validation
+        time_st = time.perf_counter()
+        cv_fitted = gsCV.fit(X_train, y_train)
+
+        time_end = time.perf_counter()
+        print(f'\n grid search took {time_end - time_st: .2f} seconds \n')
+
+        # print results
+        self.df_xgbcv_results_ = pd.DataFrame(cv_fitted.cv_results_).sort_values(by = 'rank_test_score')
+
+        # print best parameters
+        print(f'\n {cv_fitted.best_params_} \n')
+
+        # redefine grid_in as cv_fitted.best_params_ if it exists
+        if isinstance(cv_fitted.best_params_, dict):
+            grid_in = cv_fitted.best_params_
+        
+        # apply XGBOOST using best parameters from cross-validation
+
+        # define xgboost model
+        xgb_reg = xgb.XGBRegressor(
+            objective = 'reg:squarederror',
+            tree_method = 'hist', # 'gpu_hist',
+            verbosity = 1, # 0 = silent, 1 = warning (default), 2 = info, 3 = debug
+            sampling_method = 'uniform', # 'gradient_based', # default is 'uniform'
+            # nthread = 4 defaults to maximum number available, only use for less threads
+            n_estimators = grid_in['n_estimators'],
+            colsample_bytree = grid_in['colsample_bytree'],
+            max_depth = grid_in['max_depth'],
+            gamma = grid_in['gamma'],
+            reg_lambda = grid_in['reg_lambda'],
+            learning_rate = grid_in['learning_rate']
+        )
+
+        # train model
+        xgb_reg.fit(X_train, y_train)
+
+        # return fit from training
+        train_pred = xgb_reg.predict(X_train)
+        rmse = mean_squared_error(y_train, train_pred)
+        mae = mean_absolute_error(y_train, train_pred)
+        r2 = r2_score(y_train, train_pred)
+
+        # print(
+        #     '---TRAINING--- \n'
+        #     f'RMSE: {rmse: .2f} \n'
+        #     f'mae: {mae: .2f} \n'
+        #     f'R2: {r2: .2f}'
+        #     )
+
+        # Save Model and reload model
+        # save model
+        xgb_reg.save_model(dir_save)
+
+        # calculate performance metrics# sample size
+#         n_k_out = X_train.shape[0]
+#         # number of features
+#         n_f_out = self.df_lasso_features_coef_.shape[0] - 1
+#         # sum of squared residuals
+#         ssr_out = ssr(ypred_out, y_train)
+#         # unadjusted R-squared
+#         r2_out = r2_score(y_train, ypred_out)
+#         # Adjusted R-squared
+#         r2adj_out = R2adj(n_k_out, n_f_out, r2_out)
+#         # Mean absolute error
+#         mae_out = mean_absolute_error(y_train, ypred_out)
+#         # Root mean squared error
+#         rmse_out = mean_squared_error(y_train, ypred_out, squared = False)
+#         # Akaike Information Criterion
+#         AIC_out = AIC(n_k_out, ssr_out, n_f_out)
+#         # Bayesian Information Criterion
+#         BIC_out = BIC(n_k_out, ssr_out, n_f_out)
+#         # Mallows' Cp
+#         # apply linear regression using all explanatory variables
+#         # this object is used in feature selection just below and
+#         # results from this will be used to calculate Mallows' Cp
+#         reg_all = LinearRegression().fit(X_train, y_train)
+#         # calc sum of squared residuals for all data for use in
+#         # Mallows' Cp calc
+#         reg_all_ssr = ssr(y_train, reg_all.predict(X_train))
+#         M_Cp_out = M_Cp(reg_all_ssr, ssr_out, n_k_out, n_f_out)
+#         # VIF
+#         VIF_out = VIF(expl_out)
+#         # Percent Bias
+#         percBias_out = PercentBias(ypred_out, y_train)
+# # 
+#         if timeseries:
+#             # Nash-Sutcliffe Efficeincy
+#             NSE_out = NSE(ypred_out, y_train)
+#             # Kling Gupta Efficiency
+#             KGE_out = KGE(ypred_out, y_train)
+#     # 
+#         # write performance metrics to dataframe
+#         if timeseries:
+#             df_perfmetr = pd.DataFrame({
+#                 'n_features': n_f_out,
+#                 'ssr': ssr_out,
+#                 'r2': r2_out,
+#                 'r2adj': r2adj_out,
+#                 'mae': mae_out,
+#                 'rmse': rmse_out,
+#                 'AIC': AIC_out,
+#                 'BIC': BIC_out,
+#                 'M_Cp': M_Cp_out,
+#                 'VIF': [VIF_out],
+#                 'percBias': percBias_out,
+#                 'NSE': NSE_out,
+#                 'KGE': KGE_out
+#             })
+#         else:
+#             df_perfmetr = pd.DataFrame({
+#                 'n_features': n_f_out,
+#                 'ssr': ssr_out,
+#                 'r2': r2_out,
+#                 'r2adj': r2adj_out,
+#                 'mae': mae_out,
+#                 'rmse': rmse_out,
+#                 'AIC': AIC_out,
+#                 'BIC': BIC_out,
+#                 'M_Cp': M_Cp_out,
+#                 'VIF': [VIF_out],
+#                 'percBias': percBias_out
+#             })
+
+
+
+
+
+
+
+
+        ######################
 
 
     def pred_plot(self,

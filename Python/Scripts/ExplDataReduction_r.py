@@ -143,13 +143,17 @@ del(df_train_anWY, df_train_expl, df_valin_anWY, df_valin_expl, df_valnit_anWY, 
 # using algorith found here:
 # https://stackoverflow.com/questions/29294983/how-to-calculate-correlation-between-all-columns-and-remove-highly-correlated-on
 # define working data
-Xtrain = df_train_mnexpl.drop(columns = ['STAID', 'FRAGUN_BASIN'])
+Xtrain = df_train_mnexpl.drop(columns = ['STAID'])
 
 # calculate correlation
 df_cor = Xtrain.corr().abs()
 
 # Select upper triangle of correlation matrix
 upper = df_cor.where(np.triu(np.ones(df_cor.shape), k=1).astype(bool))
+
+# sort upper columns so largest variables with largest max correlation are 
+# seen first in the loop below
+# upper = upper.loc[:, upper.max().sort_values(ascending=False).index]
 
 # Find features with correlation greater than 0.95
 to_drop = [column for column in upper.columns if any(upper[column] > 0.95)]

@@ -13,6 +13,7 @@ from GAGESii_MeanAnnual_Callable import *
 # from GAGESii_Class import Regressor
 # from Regression_PerformanceMetrics_Functs import *
 import pandas as pd
+import os
 # import plotnine as p9
 # import plotly.express as px # easier interactive plots
 # from scipy import stats
@@ -27,7 +28,10 @@ import pandas as pd
 dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
 
 # explantory var (and other data) directory
-dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_VIF10_Filtered'
+dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+
+# directory to write csv holding removed columns (due to high VIF)
+dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
 
 # GAGESii explanatory vars
 # training
@@ -107,6 +111,7 @@ df_valnit_ID = pd.read_csv(f'{dir_expl}/ID_valnit.csv',
     dtype = {'STAID': 'string'})
 
 del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY, df_valnit_expl)
+
 
 # %% read or create a results dataframe to append new results to
 # explantory var (and other data) directory
@@ -259,8 +264,12 @@ del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY
 # subset data to catchment IDs that match the cluster or region being predicted
 ########
 
+# define clustering method used
+# this variable is only used for keeping track fo results
+clust_meth_in = 'None'
 
 # list of possible AggEcoregions:
+# 'All
 # 'NorthEast', 'SECstPlain', 'SEPlains', 'EastHghlnds', 'CntlPlains',
 #       'MxWdShld', 'WestMnts', 'WestPlains', 'WestXeric'
 # set region_in = 'All' to include all data
@@ -310,6 +319,68 @@ valnit_ID_in = pd.merge(
     )['AggEcoregion'] # ['ECO3_Site']
 ##########
 
+# %%
+#####
+# Remove variables with a VIF > defined threshold (e.g., 10)
+#####
+ 
+X_in = train_expl_in.drop(
+    ['STAID'], axis = 1
+)
+
+vif_th = 10 # 20
+
+# calculate all vifs and store in dataframe
+df_vif = VIF(X_in)
+
+# initiate array to hold varibles that have been removed
+df_removed = []
+
+while any(df_vif > vif_th):
+    # find max vifs and remove. If > 1 max vif, then remove only 
+    # the first one
+    maxvif = np.where(df_vif == df_vif.max())[0][0]
+
+    # append inices of max vifs to removed dataframe
+    df_removed.append(df_vif.index[maxvif])
+
+    # drop max vif feature
+    # df_vif.drop(df_vif.index[maxvif], inplace = True)
+    
+    # calculate new vifs
+    df_vif = VIF(X_in.drop(df_removed, axis = 1))
+
+# redefine mean explanatory var df by dropping 'df_removed' vars and year column
+# drop columns from mean and timeseries explanatory vars
+# training data
+train_expl_in.drop(
+    df_removed, axis = 1, inplace = True
+)
+# testin data
+testin_expl_in.drop(
+    df_removed, axis = 1, inplace = True
+)
+# valnit data
+valnit_expl_in.drop(
+    df_removed, axis = 1, inplace = True
+)
+
+# print columns removed
+print(df_removed)
+
+# write csv with removed columns
+import os
+if not os.path.exists(dir_VIF):
+    os.mkdir(dir_VIF)
+
+df_vif_write = pd.DataFrame({
+    'Columns_Removed': df_removed
+})
+
+df_vif_write.to_csv(f'{dir_VIF}/VIF_ClmnsRemoved_{clust_meth_in}_{region_in}.csv')
+
+
+
 # %% 
 # Call function to perform modeling
 
@@ -322,9 +393,9 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             train_ID = train_ID_in, # training data id's (e.g., clusters or ecoregions; df_train_ID['AggEcoregion'])
             testin_ID = testin_ID_in, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
             valnit_ID = valnit_ID_in, # # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
-            clust_meth = 'AggEcoregions', # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
+            clust_meth = clust_meth_in, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
             reg_in = region_in # region label, i.e., 'NorthEast'
-            )       
+            )
 
 
 # %%

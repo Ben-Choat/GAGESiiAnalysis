@@ -131,45 +131,45 @@ df_expl_all_mn = df_expl_all.groupby('STAID').mean().reset_index()
 # Xtrain_dr = Xtrain.drop(to_drop, axis=1) #, inplace=True)
 ##################
 
-#####
-# Remove variables with a VIF > defined threshold
-#####
+# #####
+# # Remove variables with a VIF > defined threshold
+# #####
 
-X_in = df_expl_all_mn.drop(
-    ['STAID', 'year'], axis = 1
-)
+# X_in = df_expl_all_mn.drop(
+#     ['STAID', 'year'], axis = 1
+# )
 
-vif_th = 10 # 20
+# vif_th = 10 # 20
 
-# calculate all vifs and store in dataframe
-df_vif = VIF(X_in)
+# # calculate all vifs and store in dataframe
+# df_vif = VIF(X_in)
 
-# initiate array to hold varibles that have been removed
-df_removed = []
+# # initiate array to hold varibles that have been removed
+# df_removed = []
 
-while any(df_vif > vif_th):
-    # find max vifs and remove. If > 1 max vif, then remove only 
-    # the first one
-    maxvif = np.where(df_vif == df_vif.max())[0][0]
+# while any(df_vif > vif_th):
+#     # find max vifs and remove. If > 1 max vif, then remove only 
+#     # the first one
+#     maxvif = np.where(df_vif == df_vif.max())[0][0]
 
-    # append inices of max vifs to removed dataframe
-    df_removed.append(df_vif.index[maxvif])
+#     # append inices of max vifs to removed dataframe
+#     df_removed.append(df_vif.index[maxvif])
 
-    # drop max vif feature
-    # df_vif.drop(df_vif.index[maxvif], inplace = True)
+#     # drop max vif feature
+#     # df_vif.drop(df_vif.index[maxvif], inplace = True)
     
-    # calculate new vifs
-    df_vif = VIF(X_in.drop(df_removed, axis = 1))
+#     # calculate new vifs
+#     df_vif = VIF(X_in.drop(df_removed, axis = 1))
 
-# redefine mean explanatory var df by dropping 'df_removed' vars and year column
-# drop columns from mean and timeseries explanatory vars
-df_expl_all_mn = df_expl_all_mn.drop(
-    df_removed + ['year'], axis = 1
-)
+# # redefine mean explanatory var df by dropping 'df_removed' vars and year column
+# # drop columns from mean and timeseries explanatory vars
+# df_expl_all_mn = df_expl_all_mn.drop(
+#     df_removed + ['year'], axis = 1
+# )
 
-df_expl_all = df_expl_all.drop(
-    df_removed, axis = 1
-)
+# df_expl_all = df_expl_all.drop(
+#     df_removed, axis = 1
+# )
 
 
 # %% Investigate partitinionings with various random seeds
@@ -320,8 +320,8 @@ cv_results
 
 # %% define final split using best performing seed
 
-# 500 and 900 tend to perform similarly well
-random_state = 500
+# set seed
+random_state = 200
 
 X_tr, X_other = train_test_split(
     df_ID,
@@ -341,15 +341,15 @@ X_vnit, X_tnit = train_test_split(
 # ID files
 # training
 id_tr = X_tr.sort_values(by = 'STAID')
-id_tr.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/ID_train.csv',
+id_tr.to_csv(f'{dir_expl}/AllVars_Partitioned/ID_train.csv',
     index = False)
 # valnit
 id_vnit = X_vnit.sort_values(by = 'STAID')
-id_vnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/ID_valnit.csv',
+id_vnit.to_csv(f'{dir_expl}/AllVars_Partitioned/ID_valnit.csv',
     index = False)
 # testnit
 id_tnit = X_tnit.sort_values(by = 'STAID')
-id_tnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/ID_testnit.csv',
+id_tnit.to_csv(f'{dir_expl}/AllVars_Partitioned/ID_testnit.csv',
     index = False)
 
 # Explanatory variables
@@ -357,22 +357,22 @@ id_tnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/ID_testnit.csv',
 # training
 X_train = df_expl_all[(df_expl_all['STAID'].isin(X_tr['STAID'])) &
     df_expl_all['year'].isin(np.arange(1998, 2008, 1))]
-X_train.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_train.csv',
+X_train.to_csv(f'{dir_expl}/AllVars_Partitioned/Expl_train.csv',
     index = False)
 # testin
 X_testin = df_expl_all[(df_expl_all['STAID'].isin(X_tr['STAID'])) &
     df_expl_all['year'].isin(np.arange(2008, 2013, 1))]
-X_testin.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_testin.csv',
+X_testin.to_csv(f'{dir_expl}/AllVars_Partitioned/Expl_testin.csv',
     index = False)
 
 
 # valnit
 X_valnit = df_expl_all[df_expl_all['STAID'].isin(X_vnit['STAID'])]
-X_valnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_valnit.csv',
+X_valnit.to_csv(f'{dir_expl}/AllVars_Partitioned/Expl_valnit.csv',
     index = False)
 # testnit
 X_testnit = df_expl_all[df_expl_all['STAID'].isin(X_tnit['STAID'])]
-X_testnit.to_csv(f'{dir_expl}/AllVars_VIF10_Filtered/Expl_testnit.csv',
+X_testnit.to_csv(f'{dir_expl}/AllVars_Partitioned/Expl_testnit.csv',
     index = False)
 
 

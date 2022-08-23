@@ -106,7 +106,7 @@ param_grid = {
 search = GridSearchCV(pipe, param_grid, n_jobs = -1)
 # %%
 """
-# %% Define parameter grid and gridsearch (random)
+# Define parameter grid and gridsearch (random)
 
 # # parameters for the pipeline search
 # param_grid = {
