@@ -72,7 +72,7 @@ def BIC(n_k, ssr_k, n_f):
     """
     # bic = n_k * np.log(ssr_k/n_k) + n_f * np.log(n_k)
     # below formulation from Helsel et al. 2020 - Statistical Methods in Water Resources
-    bic = n_k + n_k * np.log(2 * np.pi) + n_k * np.log(ssr_k/n_k) + np.log(n_k) * (n_f + 2)
+    bic = n_k + n_k * np.log(2 * np.pi) + n_k * np.log(ssr_k/n_k) + np.log(n_k) * (n_f + 1)
     return(bic)
 
 # Mallows' Cp

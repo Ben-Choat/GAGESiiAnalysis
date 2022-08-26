@@ -14,6 +14,8 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV
+from sklearn.experimental import enable_halving_search_cv
+from sklearn.model_selection import HalvingGridSearchCV
 from sklearn.model_selection import cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -21,6 +23,7 @@ from sklearn.metrics import roc_auc_score
 import umap
 import plotnine as p9
 from Regression_PerformanceMetrics_Functs import *
+import time
 
 # %% Info about XGBoost parameters
 # XGBOOST parameters and hyperparameters 
@@ -184,13 +187,13 @@ from Regression_PerformanceMetrics_Functs import *
 
 
 # water yield directory
-dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+dir_WY = 'E:/DataWorking/USGS_discharge/train_val_test'
 
 # explantory var (and other data) directory
-dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+dir_expl = 'E:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
 
 # directory to write csv holding removed columns (due to high VIF)
-dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
+dir_VIF = 'E:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
 
 # GAGESii explanatory vars
 # training
@@ -312,7 +315,7 @@ yvalnit = df_valnit_mnanWY['Ann_WY_ft']
 # define xgboost model
 xgb_reg = xgb.XGBRegressor(
     objective = 'reg:squarederror',
-    tree_method = 'hist', # 'gpu_hist',
+    tree_method =  'hist', #'gpu_hist', # 
     # colsample_bytree = 0.7, # 0.3, # default = 1
     # learning_rate = 0.1, # default = 0.3
     # max_depth = 5, # default = 6
@@ -343,8 +346,8 @@ xgb_reg = xgb.XGBRegressor(
 
 
 grid = {
-    'n_estimators': [100, 250, 500], # [10], # 
-    'colsample_bytree': [0.7, 1], # [0.3, 0.7, 1],
+    'n_estimators': [500, 1000], #, 250, 500], # [10], # 
+    'colsample_bytree': [0.7], #, 1], # [0.3, 0.7, 1],
     'max_depth': [4, 6, 8], # [6], # 
     'gamma': [0, 1], 
     # 'reg_alpha': [1.1, 1.2, 1.3],
@@ -352,23 +355,58 @@ grid = {
     'learning_rate': [0.02, 0.1, 0.2]
 }
 
-gsCV = GridSearchCV(
+# gsCV = GridSearchCV(
+#     estimator = xgb_reg,
+#     param_grid = grid,
+#     scoring = 'neg_root_mean_squared_error',
+#     cv = 5, # default = 5
+#     return_train_score = False, # True, # default = False
+#     verbose = 2,
+#     n_jobs = -1,
+#     refit = False
+# )
+
+gshCV = HalvingGridSearchCV(
     estimator = xgb_reg,
     param_grid = grid,
+    factor = 2, # (half of canddiates chosen each subsequent iteration)
+    cv = 5,
     scoring = 'neg_root_mean_squared_error',
-    cv = 5, # default = 5
     return_train_score = False, # True, # default = False
+    random_state = 100,
     verbose = 2,
-    n_jobs = -1
+    n_jobs = -1,
+    refit = False
 )
 
-cv_fitted = gsCV.fit(Xtrain, ytrain)
+
+# import time
+# time_st = time.perf_counter()
+
+# cv_fitted = gsCV.fit(Xtrain, ytrain)
+
+# time_end = time.perf_counter()
+# print(f'grid search took {time_end - time_st: .2f} seconds')
+
+import time
+time_st = time.perf_counter()
+
+cvh_fitted = gshCV.fit(Xtrain, ytrain)
+
+time_end = time.perf_counter()
+print(f'halving grid search took {time_end - time_st: .2f} seconds')
+
+# # print results
+# df_cv_results = pd.DataFrame(cv_fitted.cv_results_).sort_values(by = 'rank_test_score')
+
+# # print best parameters
+# print(cv_fitted.best_params_)
 
 # print results
-df_cv_results = pd.DataFrame(cv_fitted.cv_results_).sort_values(by = 'rank_test_score')
+df_cvh_results = pd.DataFrame(cvh_fitted.cv_results_).sort_values(by = 'rank_test_score')
 
 # print best parameters
-print(cv_fitted.best_params_)
+print(cvh_fitted.best_params_)
 
 # %% apply XGBOOST using best parameters from cross-validation
 
@@ -376,17 +414,46 @@ print(cv_fitted.best_params_)
 xgb_reg = xgb.XGBRegressor(
     objective = 'reg:squarederror',
     tree_method = 'hist', # 'gpu_hist',
-    colsample_bytree = 1, # 0.7, # 0.3, # default = 1
-    learning_rate = 0.1, # default = 0.3
-    max_depth = 4, # 4, #5, # default = 6
-    gamma = 0, # default = 0
+    colsample_bytree = cvh_fitted.best_params_['colsample_bytree'], # 0.7, # 1, # 0.7, # 0.3, # default = 1
+    learning_rate = cvh_fitted.best_params_['learning_rate'], # default = 0.3
+    max_depth = cvh_fitted.best_params_['max_depth'], # 4, #5, # default = 6
+    gamma = cvh_fitted.best_params_['gamma'], # default = 0
     # reg_alpha = 10, # default = 0
-    reg_lambda = 1, # 2, # default = 1
-    n_estimators = 250,
+    reg_lambda = cvh_fitted.best_params_['reg_lambda'], # 1, # 2, # default = 1
+    n_estimators = cvh_fitted.best_params_['n_estimators'],
     verbosity = 1, # 0 = silent, 1 = warning (default), 2 = info, 3 = debug
     sampling_method = 'uniform', # 'gradient_based', # default is 'uniform'
     # nthread = 4 defaults to maximum number available, only use for less threads
 )
+
+# # calculate 10-fold cross validation scores
+# scores = cross_validate(
+#     estimator = xgb_reg,
+#     X = Xtrain,
+#     y = ytrain,
+#     scoring = ['neg_root_mean_squared_error', 
+#                 'neg_mean_absolute_error', 'r2'],
+#     cv = 10,
+#     n_jobs = -1
+# )
+
+# # print scores
+# print(f'CV accuracy scores: {scores}')
+# # RMSE
+# rmse_in = -np.mean(scores['test_neg_root_mean_squared_error'])
+# rmsesd_in = np.std(scores['test_neg_root_mean_squared_error'])
+# # MAE
+# mae_in = -np.mean(scores['test_neg_mean_absolute_error'])
+# maesd_in = np.std(scores['test_neg_mean_absolute_error'])
+# # r2
+# r2_in = np.mean(scores['test_r2'])
+# r2sd_in = np.std(scores['test_r2'])
+# print(f'\n CV accuracy RMSE: {rmse_in:.3f} ')
+# print(f'+/- {rmsesd_in:.3f}')
+# print(f'\n CV accuracy MSE: {mae_in:.3f} ')
+# print(f'+/- {maesd_in:.3f}')
+# print(f'\n CV accuracy RMSE: {r2_in:.3f} ')
+# print(f'+/- {r2sd_in:.3f}')
 
 # train model
 xgb_reg.fit(Xtrain, ytrain)

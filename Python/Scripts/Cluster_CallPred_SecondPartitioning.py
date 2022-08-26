@@ -113,135 +113,6 @@ df_valnit_ID = pd.read_csv(f'{dir_expl}/ID_valnit.csv',
 del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY, df_valnit_expl)
 
 
-# %% read or create a results dataframe to append new results to
-# explantory var (and other data) directory
-
- # DELETE THIS CODE UNLESS YOU FIND IT IS NEED (2022/08/17)
-# dir_res = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results'
-
-# try:
-#     df_results = pd.read_csv(f'{dir_expl}/Results_AllRegionsNonTimeSeries.csv')
-# except:
-#     df_results = pd.DataFrame({
-#         'model': [], # specify which model, e.g., 'raw_lasso'
-#         'train_val': [], # specify if results from training, validation (i.e., testin or testint)
-#         'parameters': [], # any hyperparameters (e.g., alpha penalty in lasso regression)
-#         'n_features': [], # number of explanatory variables (i.e., featuers)
-#         'ssr': [], # sum of squared residuals
-#         'r2': [], # unadjusted R2
-#         'r2adj': [], # adjusted R2
-#         'mae': [], # mean absolute error
-#         'rmse': [], # root mean square error
-#         'VIF': [], # variance inflation factor (vector of all included featuers and related VIFs)
-#         'percBias': [] # percent bias
-#     })
-
-
-
-
-
-
-
-
-
-
-
-# %% k-means clustering
-
-# not_tr_in = ['GEOL_REEDBUSH_DOM_gneiss', 'GEOL_REEDBUSH_DOM_granitic', 
-#             'GEOL_REEDBUSH_DOM_quarternary', 'GEOL_REEDBUSH_DOM_sedimentary', 
-#             'GEOL_REEDBUSH_DOM_ultramafic', 'GEOL_REEDBUSH_DOM_volcanic']
-
-# test = Clusterer(clust_vars = df_train_mnexpl.drop(columns = ['STAID']),
-#     id_vars = df_train_mnexpl['STAID'])
-
-# # note that once input data is transformed, the transformed
-# # version will be used automatically in all functions related to
-# # Clusterer object
-# test.stand_norm(method = 'standardize', # 'normalize'
-#     not_tr = not_tr_in)
-
-# test.k_clust(
-#     ki = 2, kf = 20, 
-#     method = 'kmeans', 
-#     plot_mean_sil = True, 
-#     plot_distortion = True)
-
-# #####
-# # Based on results from previous chunk, chose k = 10
-# # Here defining the test object to have a k-means model of k = 10 for projecting new data
-# test.k_clust(
-#     ki = 10, kf = 10, 
-#     method = 'kmeans', 
-#     plot_mean_sil = False, 
-#     plot_distortion = False)
-
-# #######
-# # data to project into k-means (or k-medoids) space
-# df_valnit_trnsfrmd = pd.DataFrame(test.scaler_.transform(df_valnit_mnexpl.drop(
-#     columns = ['STAID'])
-#     ))
-# # give column names to transformed dataframe
-# df_valnit_trnsfrmd.columns = df_valnit_mnexpl.drop(
-#     columns = ['STAID']
-# ).columns
-
-# # replace ohe columns with untransformed data
-# df_valnit_trnsfrmd[not_tr_in] = df_valnit_mnexpl[not_tr_in]
-# #########
-# # get predicted k's for each catchment           
-# km_valnit_pred = pd.DataFrame(
-#     {'STAID': df_valnit_mnexpl['STAID'],
-#     'K': test.km_clusterer_.predict(
-#             df_valnit_trnsfrmd
-#             )
-#     }
-# )
-# ##########
-# # K-medoids
-
-# test.k_clust(
-#     ki = 2, kf = 30, 
-#     method = 'kmedoids', 
-#     plot_mean_sil = True, 
-#     plot_distortion = True,
-#     kmed_method = 'alternate')
-
-# for i in range(19, 23):
-#     test.plot_silhouette_vals(k = i)
-# #####
-# # Based on results from previous chunk, chose k = 8
-# # Here defining the test object to have a k-means model of k = 8 for projecting new data
-# test.k_clust(
-#     ki = 8, kf = 8, 
-#     method = 'kmedoids', 
-#     plot_mean_sil = False, 
-#     plot_distortion = False)
-
-# # get predicted k's for each catchment           
-# km_valnit_pred = test.km_clusterer_.predict(
-#     df_valnit_trnsfrmd
-#     )
-# # predicted clusters dataframe
-# df_km_valnit_pred = pd.DataFrame({
-#     'STAID': df_valnit_mnexpl['STAID'],
-#     'K_predicted': km_valnit_pred
-# })
-
-
-
-
-# %% AggEcoregions as clusters
-
-# for i in df_train_ID['AggEcoregion'].unique():
-#     print(i)
-
-
-
-
-
-
-
 
 
 # %% 
@@ -266,14 +137,14 @@ del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY
 
 # define clustering method used
 # this variable is only used for keeping track fo results
-clust_meth_in = 'None'
+clust_meth_in = 'AggEcoregion'
 
 # list of possible AggEcoregions:
 # 'All
 # 'NorthEast', 'SECstPlain', 'SEPlains', 'EastHghlnds', 'CntlPlains',
 #       'MxWdShld', 'WestMnts', 'WestPlains', 'WestXeric'
 # set region_in = 'All' to include all data
-region_in = 'All'
+region_in = 'NorthEast'
 
 if region_in == 'All':
     cidtrain_in = df_train_ID
@@ -378,6 +249,31 @@ df_vif_write = pd.DataFrame({
 })
 
 df_vif_write.to_csv(f'{dir_VIF}/VIF_ClmnsRemoved_{clust_meth_in}_{region_in}.csv')
+
+
+
+# %% ###################
+# UMAP followed by HDBSCAN
+########################
+
+# Standardize data
+
+# define list of columns not to transform
+# these columns are OHE so already either 0 or 1. 
+# for distance metrics, use Manhattan which lends itself to capturing 
+not_tr_in = ['GEOL_REEDBUSH_DOM_gneiss', 'GEOL_REEDBUSH_DOM_granitic', 
+            'GEOL_REEDBUSH_DOM_quarternary', 'GEOL_REEDBUSH_DOM_sedimentary', 
+            'GEOL_REEDBUSH_DOM_ultramafic', 'GEOL_REEDBUSH_DOM_volcanic']
+
+# define clusterer object
+cl_obj = Clusterer(clust_vars = df_train_mnexpl.drop(columns = ['STAID']),
+    id_vars = df_train_mnexpl['STAID'])
+
+# note that once input data is transformed, the transformed
+# version will be used automatically in all functions related to
+# Clusterer object
+cl_obj.stand_norm(method = 'standardize', # 'normalize'
+    not_tr = not_tr_in)
 
 
 

@@ -19,6 +19,8 @@ from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV # for hyperparameter tuning
+from sklearn.experimental import enable_halving_search_cv
+from sklearn.model_selection import HalvingGridSearchCV # for hyperparameter tuning
 from sklearn.model_selection import RepeatedKFold # for repeated k-fold validation
 # from sklearn.model_selection import cross_val_score # only returns a single score (e.g., MAE)
 from sklearn.model_selection import cross_validate # can be used to return multiple scores 
@@ -1275,7 +1277,7 @@ class Regressor:
                         alpha_in = 1, 
                         max_iter_in = 1000,
                         n_splits_in = 10,
-                        n_repeats_in = 3,
+                        n_repeats_in = 1,
                         random_state_in = 100,
                         timeseries = False,
                         n_jobs_in = 1):
@@ -1337,7 +1339,7 @@ class Regressor:
             grid = dict()
             grid['alpha'] = alpha_in
             # define search
-            search = GridSearchCV(self.lasso_reg_,
+            search = HalvingGridSearchCV(self.lasso_reg_,
                 grid,
                 scoring = ['neg_root_mean_squared_error', 
                             'neg_mean_absolute_error', 'r2'],
@@ -1506,7 +1508,9 @@ class Regressor:
 
 
     def xgb_regression(self,
-                       n_splits_in = 5,
+                       n_splits_in = 10,
+                       n_repeats_in = 1,
+                       random_state_in = 100,
                        grid_in = {
                         'n_estimators': [100], # [100, 250, 500], # [10], # 
                         'colsample_bytree': [1], # [0.7, 1], 
@@ -1530,6 +1534,8 @@ class Regressor:
             to consider in tuning.
             Okay to enter only one value for each hyperparameter to simply set
             the hyperparameters to those values
+        n_repeats_in: integer
+           Number of times to repreat k-fold CV
         random_state_in: integer
             random seed for stochastic processes (helps ensure reproducability)
         timeseries: Boolean
@@ -1559,24 +1565,35 @@ class Regressor:
             # nthread = 8 # defaults to maximum number available, only use for less threads
             )
 
-        
+
+
+        # define model evaluation method
+        cv = RepeatedKFold(
+                    n_splits = n_splits_in, 
+                    n_repeats = n_repeats_in, 
+                    random_state = random_state_in)
+
         # define gridsearch cross-validation object
-        gsCV = GridSearchCV(
+        gsCV = HalvingGridSearchCV(
                     estimator = self.xgb_reg_,
                     param_grid = grid_in,
+                    factor = 2,
                     scoring = 'neg_root_mean_squared_error',
-                    cv = 5, # default = 5
+                    cv = cv, # default = 5
                     return_train_score = False, # True, # default = False
+                    random_state = random_state_in,
                     verbose = 2,
-                    n_jobs = -1
+                    n_jobs = -1,
+                    refit = False
                 )
+
 
         # apply gridsearch cross-validation
         time_st = time.perf_counter()
         cv_fitted = gsCV.fit(X_train, y_train)
 
         time_end = time.perf_counter()
-        print(f'\n grid search took {time_end - time_st: .2f} seconds \n')
+        print(f'\n grid search took {(time_end - time_st)/60: .2f} minutes \n')
 
         # print results
         self.df_xgbcv_results_ = pd.DataFrame(cv_fitted.cv_results_).sort_values(by = 'rank_test_score')

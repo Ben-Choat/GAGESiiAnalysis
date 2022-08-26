@@ -379,7 +379,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             alpha_in = list(np.arange(0.01, 1.01, 0.01)), # must be single integer or list
             max_iter_in = 1000,
             n_splits_in = 10,
-            n_repeats_in = 3,
+            n_repeats_in = 1,
             random_state_in = 100,
             n_jobs_in = -1
         )
@@ -410,7 +410,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             alpha_in = float(a_in), # 0.01, # must be single float or list
             max_iter_in = 1000,
             n_splits_in = 10,
-            n_repeats_in = 3,
+            n_repeats_in = 1,
             random_state_in = 100
         )
 
@@ -756,7 +756,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             alpha_in = list(np.arange(0.01, 1.01, 0.01)), # must be single integer or list
             max_iter_in = 1000,
             n_splits_in = 10,
-            n_repeats_in = 3,
+            n_repeats_in = 1,
             random_state_in = 100,
             n_jobs_in = -1
         )
@@ -787,7 +787,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             alpha_in = float(a_in), # must be single integer or list
             max_iter_in = 1000,
             n_splits_in = 10,
-            n_repeats_in = 3,
+            n_repeats_in = 1,
             random_state_in = 100
         )
 
@@ -1174,7 +1174,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             alpha_in = list(np.arange(0.01, 1.01, 0.01)), # must be single integer or list
             max_iter_in = 1000,
             n_splits_in = 10,
-            n_repeats_in = 3,
+            n_repeats_in = 1,
             random_state_in = 100,
             n_jobs_in = -1
         )
@@ -1211,7 +1211,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             alpha_in = float(a_in), # must be single integer or list
             max_iter_in = 1000,
             n_splits_in = 10,
-            n_repeats_in = 3,
+            n_repeats_in = 1,
             random_state_in = 100
         )
 
@@ -1735,7 +1735,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     #         alpha_in = list(np.arange(0.01, 1.01, 0.01)), # must be single integer or list
     #         max_iter_in = 1000,
     #         n_splits_in = 10,
-    #         n_repeats_in = 3,
+    #         n_repeats_in = 1,
     #         random_state_in = 100,
     #         n_jobs_in = -1
     #     )
@@ -1777,7 +1777,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     #         alpha_in = float(a_in), # must be single integer or list
     #         max_iter_in = 1000,
     #         n_splits_in = 10,
-    #         n_repeats_in = 3,
+    #         n_repeats_in = 1,
     #         random_state_in = 100
     #     )
 
