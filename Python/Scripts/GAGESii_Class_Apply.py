@@ -2,6 +2,7 @@
 # from statistics import LinearRegression
 from GAGESii_Class import Clusterer
 from GAGESii_Class import Regressor
+from Regression_PerformanceMetrics_Functs import *
 import pandas as pd
 import plotnine as p9
 import plotly.express as px # easier interactive plots
@@ -11,71 +12,53 @@ from sklearn.linear_model import LinearRegression
 
 # %% load data
 
-# # water yield directory
-dir_WY = 'E:/DataWorking/USGS_discharge/train_val_test'
-# dir_WY = 'D:/GAGES_Work/AnnualWY'
-# # explantory var (and other data) directory
-dir_expl = 'E:/Projects/GAGESii_ANNstuff/Data_Out'
-# dir_expl = 'D:/GAGES_Work/ExplVars_Model_In'
+
+# water yield directory
+dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+
+# explantory var (and other data) directory
+dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+
+# directory to write csv holding removed columns (due to high VIF)
+dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
 
 # GAGESii explanatory vars
 # training
 df_train_expl = pd.read_csv(
-    f'{dir_expl}/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv',
+    f'{dir_expl}/Expl_train.csv',
     dtype = {'STAID': 'string'}
-).drop(columns = ['LAT_GAGE', 'LNG_GAGE'])
-# val_in
-df_valin_expl = pd.read_csv(
-    f'{dir_expl}/ExplVars_Model_In/All_ExplVars_ValIn_Interp_98_12.csv',
+)
+# test_in
+df_testin_expl = pd.read_csv(
+    f'{dir_expl}/Expl_testin.csv',
     dtype = {'STAID': 'string'}
-).drop(columns = ['LAT_GAGE', 'LNG_GAGE', 'GEOL_REEDBUSH_DOM_anorthositic'])
+)
 # val_nit
 df_valnit_expl = pd.read_csv(
-    f'{dir_expl}/ExplVars_Model_In/All_ExplVars_ValNit_Interp_98_12.csv',
+    f'{dir_expl}/Expl_valnit.csv',
     dtype = {'STAID': 'string'}
-).drop(columns = ['LAT_GAGE', 'LNG_GAGE'])
+)
 
 
-# Explanatory variables
+# Water yield variables
 # Annual Water yield
-
-# training water yield
+# training
 df_train_anWY = pd.read_csv(
-    f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_train.csv',
+    f'{dir_WY}/annual/WY_Ann_train.csv',
     dtype = {"site_no":"string"}
     )
-df_train_anWY = df_train_anWY[df_train_anWY['site_no'].isin(df_train_expl['STAID'])].reset_index(drop = True)
-df_train_anWY['Ann_WY_ft'] = df_train_anWY['Ann_WY_ft3']/(df_train_expl['DRAIN_SQKM']*(3280.84**2))
-# validation water yield for gauges used in training
-df_valin_anWY = pd.read_csv(
-    f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_in.csv',
+
+# val_in
+df_testin_anWY = pd.read_csv(
+    f'{dir_WY}/annual/WY_Ann_testin.csv',
     dtype = {"site_no":"string"}
     )
-df_valin_anWY = df_valin_anWY[df_valin_anWY['site_no'].isin(df_valin_expl['STAID'])].reset_index(drop = True)
-df_valin_anWY['Ann_WY_ft'] = df_valin_anWY['Ann_WY_ft3']/(df_valin_expl['DRAIN_SQKM']*(3280.84**2))
-# validation water yield for gauges not used in training
+
+# val_nit
 df_valnit_anWY = pd.read_csv(
-    f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_nit.csv',
+    f'{dir_WY}/annual/WY_Ann_valnit.csv',
     dtype = {"site_no":"string"}
     )
-df_valnit_anWY = df_valnit_anWY[df_valnit_anWY['site_no'].isin(df_valnit_expl['STAID'])].reset_index(drop = True)
-df_valnit_expl = pd.merge(
-    df_valnit_expl, 
-    df_valnit_anWY, 
-    how = 'inner', 
-    left_on = ['STAID', 'year'], 
-    right_on = ['site_no', 'yr']).drop(
-    labels = df_valnit_anWY.columns, axis = 1
-)
-df_valnit_anWY = pd.merge(df_valnit_expl, df_valnit_anWY, how = 'inner', left_on = ['STAID', 'year'], right_on = ['site_no', 'yr']).drop(
-    labels = df_valnit_expl.columns, axis = 1
-)
-df_valnit_anWY['Ann_WY_ft'] = df_valnit_anWY['Ann_WY_ft3']/(df_valnit_expl['DRAIN_SQKM']*(3280.84**2))
-# Option for when files saved in different directory
-# df_train_anWY = pd.read_csv(
-#     f'{dir_WY}/Ann_WY_train.csv',
-#     dtype = {"site_no":"string"}
-#     )
 
 # mean annual water yield
 # training
@@ -83,13 +66,129 @@ df_train_mnanWY = df_train_anWY.groupby(
     'site_no', as_index = False
 ).mean().drop(columns = ["yr"])
 # val_in
-df_valin_mnanWY = df_valin_anWY.groupby(
+df_testin_mnanWY = df_testin_anWY.groupby(
     'site_no', as_index = False
 ).mean().drop(columns = ["yr"])
 # val_nit
 df_valnit_mnanWY = df_valnit_anWY.groupby(
     'site_no', as_index = False
 ).mean().drop(columns = ["yr"])
+
+# mean GAGESii explanatory vars
+# training
+df_train_mnexpl = df_train_expl.groupby(
+    'STAID', as_index = False
+).mean().drop(columns = ['year'])
+# val_in
+df_testin_mnexpl = df_testin_expl.groupby(
+    'STAID', as_index = False
+).mean().drop(columns = ['year'])
+#val_nit
+df_valnit_mnexpl = df_valnit_expl.groupby(
+    'STAID', as_index = False
+).mean().drop(columns = ['year'])
+
+# ID vars (e.g., ecoregion)
+
+# training ID
+df_train_ID = pd.read_csv(f'{dir_expl}/ID_train.csv',
+    dtype = {'STAID': 'string'})
+# val_in ID
+df_testin_ID = df_train_ID
+# val_nit ID
+df_valnit_ID = pd.read_csv(f'{dir_expl}/ID_valnit.csv',
+    dtype = {'STAID': 'string'})
+
+# Read in categories to be used in specified hierarchical clustering
+df_cats = pd.read_csv(
+    'D:/Projects/GAGESii_ANNstuff/Data_Out/FeatureCategories.csv',
+    usecols = ['Custom_Cat', 'Features', 'Category', 'Coarse_Cat', 'Coarsest_Cat']
+).drop([0, 82], axis = 0)
+
+del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY, df_valnit_expl)
+
+#############
+# %%
+# old data reads from initial paritioning which has been redone
+# # # water yield directory
+# dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+# # dir_WY = 'D:/GAGES_Work/AnnualWY'
+# # # explantory var (and other data) directory
+# dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out'
+# # dir_expl = 'D:/GAGES_Work/ExplVars_Model_In'
+
+# # GAGESii explanatory vars
+# # training
+# df_train_expl = pd.read_csv(
+#     f'{dir_expl}/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv',
+#     dtype = {'STAID': 'string'}
+# ).drop(columns = ['LAT_GAGE', 'LNG_GAGE'])
+# # val_in
+# df_valin_expl = pd.read_csv(
+#     f'{dir_expl}/ExplVars_Model_In/All_ExplVars_ValIn_Interp_98_12.csv',
+#     dtype = {'STAID': 'string'}
+# ).drop(columns = ['LAT_GAGE', 'LNG_GAGE', 'GEOL_REEDBUSH_DOM_anorthositic'])
+# # val_nit
+# df_valnit_expl = pd.read_csv(
+#     f'{dir_expl}/ExplVars_Model_In/All_ExplVars_ValNit_Interp_98_12.csv',
+#     dtype = {'STAID': 'string'}
+# ).drop(columns = ['LAT_GAGE', 'LNG_GAGE'])
+
+
+# # Explanatory variables
+# # Annual Water yield
+
+# # training water yield
+# df_train_anWY = pd.read_csv(
+#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_train.csv',
+#     dtype = {"site_no":"string"}
+#     )
+# df_train_anWY = df_train_anWY[df_train_anWY['site_no'].isin(df_train_expl['STAID'])].reset_index(drop = True)
+# df_train_anWY['Ann_WY_ft'] = df_train_anWY['Ann_WY_ft3']/(df_train_expl['DRAIN_SQKM']*(3280.84**2))
+# # validation water yield for gauges used in training
+# df_valin_anWY = pd.read_csv(
+#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_in.csv',
+#     dtype = {"site_no":"string"}
+#     )
+# df_valin_anWY = df_valin_anWY[df_valin_anWY['site_no'].isin(df_valin_expl['STAID'])].reset_index(drop = True)
+# df_valin_anWY['Ann_WY_ft'] = df_valin_anWY['Ann_WY_ft3']/(df_valin_expl['DRAIN_SQKM']*(3280.84**2))
+# # validation water yield for gauges not used in training
+# df_valnit_anWY = pd.read_csv(
+#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_nit.csv',
+#     dtype = {"site_no":"string"}
+#     )
+# df_valnit_anWY = df_valnit_anWY[df_valnit_anWY['site_no'].isin(df_valnit_expl['STAID'])].reset_index(drop = True)
+# df_valnit_expl = pd.merge(
+#     df_valnit_expl, 
+#     df_valnit_anWY, 
+#     how = 'inner', 
+#     left_on = ['STAID', 'year'], 
+#     right_on = ['site_no', 'yr']).drop(
+#     labels = df_valnit_anWY.columns, axis = 1
+# )
+# df_valnit_anWY = pd.merge(df_valnit_expl, df_valnit_anWY, how = 'inner', left_on = ['STAID', 'year'], right_on = ['site_no', 'yr']).drop(
+#     labels = df_valnit_expl.columns, axis = 1
+# )
+# df_valnit_anWY['Ann_WY_ft'] = df_valnit_anWY['Ann_WY_ft3']/(df_valnit_expl['DRAIN_SQKM']*(3280.84**2))
+# # Option for when files saved in different directory
+# # df_train_anWY = pd.read_csv(
+# #     f'{dir_WY}/Ann_WY_train.csv',
+# #     dtype = {"site_no":"string"}
+# #     )
+
+# # mean annual water yield
+# # training
+# df_train_mnanWY = df_train_anWY.groupby(
+#     'site_no', as_index = False
+# ).mean().drop(columns = ["yr"])
+# # val_in
+# df_valin_mnanWY = df_valin_anWY.groupby(
+#     'site_no', as_index = False
+# ).mean().drop(columns = ["yr"])
+# # val_nit
+# df_valnit_mnanWY = df_valnit_anWY.groupby(
+#     'site_no', as_index = False
+# ).mean().drop(columns = ["yr"])
 
 # Taking out GEOL_REEDBUSH_DOM_intermediate (n = 1) from validation data 
 # (gauges not in training data) and GEOL_REEDBUSH_DOM_anorthositic from 
@@ -108,39 +207,40 @@ df_valnit_mnanWY = df_valnit_anWY.groupby(
 # df_valnit_expl = df_valnit_expl.drop(columns = ['Unnamed: 0'])
 
 # # # write csv's
-# df_train_expl.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_in/All_ExplVars_train_Interp_98_12.csv',
-#     index = False)
-# df_valin_expl.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_in/All_ExplVars_ValIn_Interp_98_12.csv',
-#     index = False)
-# df_valnit_expl.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_in/All_ExplVars_ValNIT_Interp_98_12.csv',
-#     index = False)
+# # df_train_expl.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_in/All_ExplVars_train_Interp_98_12.csv',
+# #     index = False)
+# # df_valin_expl.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_in/All_ExplVars_ValIn_Interp_98_12.csv',
+# #     index = False)
+# # df_valnit_expl.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/ExplVars_Model_in/All_ExplVars_ValNIT_Interp_98_12.csv',
+# #     index = False)
 
-# mean GAGESii explanatory vars
-# training
-df_train_mnexpl = df_train_expl.groupby(
-    'STAID', as_index = False
-).mean().drop(columns = ['year'])
-# val_in
-df_valin_mnexpl = df_valin_expl.groupby(
-    'STAID', as_index = False
-).mean().drop(columns = ['year'])
-#val_nit
-df_valnit_mnexpl = df_valnit_expl.groupby(
-    'STAID', as_index = False
-).mean().drop(columns = ['year'])
+# # mean GAGESii explanatory vars
+# # training
+# # df_train_mnexpl = df_train_expl.groupby(
+# #     'STAID', as_index = False
+# # ).mean().drop(columns = ['year'])
+# # # val_in
+# # df_valin_mnexpl = df_valin_expl.groupby(
+# #     'STAID', as_index = False
+# # ).mean().drop(columns = ['year'])
+# # #val_nit
+# # df_valnit_mnexpl = df_valnit_expl.groupby(
+# #     'STAID', as_index = False
+# # ).mean().drop(columns = ['year'])
 
-# vars to color plots with (e.g., ecoregion)
-df_ID = pd.read_csv(
-    f'{dir_expl}/GAGES_idVars.csv',
-    dtype = {'STAID': 'string'}
-)
+# # # vars to color plots with (e.g., ecoregion)
+# # df_ID = pd.read_csv(
+# #     f'{dir_expl}/GAGES_idVars.csv',
+# #     dtype = {'STAID': 'string'}
+# # )
 
-# training ID
-df_train_ID = df_ID[df_ID.STAID.isin(df_train_expl.STAID)].reset_index(drop = True)
-# val_in ID
-df_valin_ID = df_train_ID
-# val_nit ID
-df_valnit_ID = df_ID[df_ID.STAID.isin(df_valnit_expl.STAID)].reset_index(drop = True)
+# # training ID
+# df_train_ID = df_ID[df_ID.STAID.isin(df_train_expl.STAID)].reset_index(drop = True)
+# # val_in ID
+# df_valin_ID = df_train_ID
+# # val_nit ID
+# df_valnit_ID = df_ID[df_ID.STAID.isin(df_valnit_expl.STAID)].reset_index(drop = True)
+##########
 
 # %%
 # define list of columns not to transform
@@ -619,3 +719,67 @@ dist_flow_tr = (
 
 dist_flow_tr
 
+
+
+
+
+
+
+
+# %% XGBOOST
+
+# not_tr_in = ['GEOL_REEDBUSH_DOM_gneiss', 'GEOL_REEDBUSH_DOM_granitic', 
+#             'GEOL_REEDBUSH_DOM_quarternary', 'GEOL_REEDBUSH_DOM_sedimentary', 
+#             'GEOL_REEDBUSH_DOM_ultramafic', 'GEOL_REEDBUSH_DOM_volcanic']
+
+# regression on untransformed explanatory variables
+# Instantiate a Regressor object 
+testreg = Regressor(expl_vars = df_train_mnexpl.drop(columns = ['STAID']),
+    resp_var = df_train_mnanWY['Ann_WY_ft'])
+
+testreg.xgb_regression(
+    n_splits_in = 10,
+    n_repeats_in = 1,
+    random_state_in = 100,
+    grid_in = {
+     'n_estimators': [100, 500], #  [100, 500], # [100, 250, 500], # [10], # 
+     'colsample_bytree': [1], # [1], # [0.7, 1], 
+     'max_depth': [6], # [6], # [4, 6, 8],
+     'gamma': [0], # [0], # [0, 1], 
+     'reg_lambda': [0], # [0], # [0, 1, 2]
+     'learning_rate': [0.3], # [0.3] # [0.02, 0.1, 0.3]
+     },
+    timeseries = False,
+    n_jobs_in = -1,
+    dir_save = 'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_classlearn_model.json'   
+)
+
+# predict train WY values
+testreg.pred_plot(
+    model_in = testreg.xgb_reg_, 
+    X_pred = df_train_mnexpl.drop('STAID', axis = 1), 
+    y_obs = df_train_mnanWY['Ann_WY_ft'],
+    id_vars = df_train_ID['AggEcoregion'])
+
+# predict testin WY values
+testreg.pred_plot(
+    model_in = testreg.xgb_reg_, 
+    X_pred = df_testin_mnexpl.drop('STAID', axis = 1), 
+    y_obs = df_testin_mnanWY['Ann_WY_ft'],
+    id_vars = df_testin_ID['AggEcoregion'])
+
+# predict valnit WY values
+testreg.pred_plot(
+    model_in = testreg.xgb_reg_, 
+    X_pred = df_valnit_mnexpl.drop('STAID', axis = 1), 
+    y_obs = df_valnit_mnanWY['Ann_WY_ft'],
+    id_vars = df_valnit_ID['AggEcoregion'])
+
+
+# predict testnit WY values
+ypred_testin = testreg.xgb_reg_.predict(df_testin_mnexpl.drop('STAID', axis = 1))
+# predict valnit WY values
+ypred_valnit = testreg.xgb_reg_.predict(df_valnit_mnexpl.drop('STAID', axis = 1))
+
+
+# %%

@@ -129,7 +129,8 @@ del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY
 #                 testin_ID, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
 #                 valnit_ID, # # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
 #                 clust_meth, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
-#                 reg_in) # region label, i.e., 'NorthEast'
+#                 reg_in, # region label, i.e., 'NorthEast'
+#                 grid_in) # dict with XGBoost parameters
 
 ########
 # subset data to catchment IDs that match the cluster or region being predicted
@@ -275,7 +276,7 @@ cl_obj = Clusterer(clust_vars = df_train_mnexpl.drop(columns = ['STAID']),
 cl_obj.stand_norm(method = 'standardize', # 'normalize'
     not_tr = not_tr_in)
 
-
+# see UMAP_HDBSCAN.py for code
 
 # %% 
 # Call function to perform modeling
@@ -290,7 +291,15 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             testin_ID = testin_ID_in, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
             valnit_ID = valnit_ID_in, # # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
             clust_meth = clust_meth_in, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
-            reg_in = region_in # region label, i.e., 'NorthEast'
+            reg_in = region_in, # region label, i.e., 'NorthEast'
+            grid_in = { # dict with XGBoost parameters
+                'n_estimators': 500, #  [100, 500], # [100, 250, 500], # [10], # 
+                'colsample_bytree': 1, # [1], # [0.7, 1], 
+                'max_depth': 6, # [6], # [4, 6, 8],
+                'gamma': 0, # [0], # [0, 1], 
+                'reg_lambda': 0, # [0], # [0, 1, 2]
+                'learning_rate': 0.3, # [0.3] # [0.02, 0.1, 0.3]
+                }
             )
 
 

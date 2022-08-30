@@ -606,4 +606,22 @@ df_results = pd.concat([df_results, to_append], ignore_index = True)
 # to_append['parameters'] = [('backward', 'klim_in = 1')]
 
 # df_results = pd.concat([df_results, to_append], ignore_index = True)
-# %%
+# %% Check assumptions of linear regerssion and explore transformations
+# plot histogram of flow data
+dist_flow = (
+    p9.ggplot(data = df_train_mnanWY) +
+    p9.geom_histogram(p9.aes(x = 'Ann_WY_ft'))
+)
+
+dist_flow
+
+# apply box-cox transformation
+df_train_mnanWY_tr, best_lambda = stats.boxcox(df_train_mnanWY['Ann_WY_ft'])
+
+dist_flow_tr = (
+    p9.ggplot() +
+    p9.geom_histogram(p9.aes(x = df_train_mnanWY_tr))
+)
+
+dist_flow_tr
+

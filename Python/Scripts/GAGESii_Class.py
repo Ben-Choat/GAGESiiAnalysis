@@ -368,10 +368,10 @@ class Clusterer:
 
     def hdbscanner(self,
         min_clustsize = 20,
-        # min_sample = 20
+        min_sample = None,
         gm_spantree = True,
         metric_in = 'euclidean',
-        # clust_seleps = 0,
+        clust_seleps = 0,
         clustsel_meth = 'leaf'):
 
         """
@@ -392,8 +392,8 @@ class Clusterer:
             distance for later analysis
         clust_seleps: float between 0 and 1
             default value is 0. E.g., if set to 0.5 then DBSCAN clusters will be extracted
-            for epsilon = 0.5, and clusters that emereved at distances greater than 0.5 will
-            be untouched
+            for epsilon = 0.5, and clusters that emerged at distances greater than 0.5 will
+            be untouched (helps allow small clusters w/o splitting large clusters)
         clustsel_meth: string
             'leaf' or 'eom' - Excess of Mass
             which cluster method to use
@@ -412,12 +412,13 @@ class Clusterer:
                 is to be an outlier)
 
         """    
+        min_sample = min_clustsize if min_sample is None else min_sample
 
         hd_clusterer = hdbscan.HDBSCAN(min_cluster_size = min_clustsize,
-                                # min_samples = 20, 
+                                min_samples = min_sample, 
                                 gen_min_span_tree = gm_spantree,
                                 metric = metric_in,
-                                # cluster_selection_epsilon = clust_seleps,
+                                cluster_selection_epsilon = clust_seleps,
                                 cluster_selection_method = clustsel_meth,
                                 prediction_data = True)
 
@@ -463,13 +464,14 @@ class Clusterer:
     
         # Other potential plots of interest
 
-        # plot the spanning tree
-        plt.figure()
-        plot1 = hd_clusterer.minimum_spanning_tree_.plot(edge_cmap = 'viridis',
-                                             edge_alpha = 0.6,
-                                             node_size = 1,
-                                             edge_linewidth = 0.1)
-        print(plot1)
+        # plot the spanning tree if gm_spantree = True
+        if gm_spantree == True:
+            plt.figure()
+            plot1 = hd_clusterer.minimum_spanning_tree_.plot(edge_cmap = 'viridis',
+                                                edge_alpha = 0.6,
+                                                node_size = 1,
+                                                edge_linewidth = 0.1)
+            print(plot1)
         # plot1.show()
 
         # plot cluster heirarchy
@@ -1314,6 +1316,8 @@ class Regressor:
             features with non-zero coefficients and the coefficients
         df_lasso_features_coef_: pandas DataFrame
             features and coefficients from lasso regression
+        df_lasso_reg_performance_: pandas DataFrame
+            performance metrics for training data
         """
         try:
             X_train, y_train = self.expl_vars_tr_, self.resp_var
@@ -1549,7 +1553,9 @@ class Regressor:
             output model from lasso regression
         df_xgbcv_results_: pandas dataframe
             output results from cross validation
-        
+            This attribute is not created if all items in grid_in are of length 1
+        df_xgboost_performance_: pandas DataFrame
+            performance metrics for training data
         """
         try:
             X_train, y_train = self.expl_vars_tr_, self.resp_var
@@ -1557,7 +1563,7 @@ class Regressor:
             X_train, y_train = self.expl_vars, self.resp_var
 
         # define xgboost model
-        self.xgb_reg_ = xgb.XGBRegressor(
+        xgb_reg = xgb.XGBRegressor(
             objective = 'reg:squarederror',
             tree_method = 'hist', # 'gpu_hist',
             verbosity = 1, # 0 = silent, 1 = warning (default), 2 = info, 3 = debug
@@ -1566,45 +1572,57 @@ class Regressor:
             )
 
 
+        # if all variables in grid are not of length 1, then perform cross-validation
+        if any(type(grid_in[x]) == list for x in grid_in):
 
-        # define model evaluation method
-        cv = RepeatedKFold(
-                    n_splits = n_splits_in, 
-                    n_repeats = n_repeats_in, 
-                    random_state = random_state_in)
+            try:
+                # define model evaluation method
+                cv = RepeatedKFold(
+                            n_splits = n_splits_in, 
+                            n_repeats = n_repeats_in, 
+                            random_state = random_state_in)
 
-        # define gridsearch cross-validation object
-        gsCV = HalvingGridSearchCV(
-                    estimator = self.xgb_reg_,
-                    param_grid = grid_in,
-                    factor = 2,
-                    scoring = 'neg_root_mean_squared_error',
-                    cv = cv, # default = 5
-                    return_train_score = False, # True, # default = False
-                    random_state = random_state_in,
-                    verbose = 2,
-                    n_jobs = -1,
-                    refit = False
-                )
+                # define gridsearch cross-validation object
+                gsCV = HalvingGridSearchCV(
+                            estimator = xgb_reg,
+                            param_grid = grid_in,
+                            factor = 2,
+                            scoring = 'neg_root_mean_squared_error',
+                            cv = cv, # default = 5
+                            return_train_score = False, # True, # default = False
+                            random_state = random_state_in,
+                            verbose = 2,
+                            n_jobs = -1,
+                            refit = False
+                        )
 
 
-        # apply gridsearch cross-validation
-        time_st = time.perf_counter()
-        cv_fitted = gsCV.fit(X_train, y_train)
+                # apply gridsearch cross-validation
+                time_st = time.perf_counter()
+                cv_fitted = gsCV.fit(X_train, y_train)
 
-        time_end = time.perf_counter()
-        print(f'\n grid search took {(time_end - time_st)/60: .2f} minutes \n')
+                time_end = time.perf_counter()
+                print(f'\n grid search took {(time_end - time_st)/60: .2f} minutes \n')
 
-        # print results
-        self.df_xgbcv_results_ = pd.DataFrame(cv_fitted.cv_results_).sort_values(by = 'rank_test_score')
+                # print results
+                self.df_xgbcv_results_ = pd.DataFrame(cv_fitted.cv_results_).sort_values(by = 'rank_test_score')
 
-        # print best parameters
-        print(f'\n {cv_fitted.best_params_} \n')
+                # print best parameters
+                print(f'\n {cv_fitted.best_params_} \n')
 
-        # redefine grid_in as cv_fitted.best_params_ if it exists
-        if isinstance(cv_fitted.best_params_, dict):
-            grid_in = cv_fitted.best_params_
+                # redefine grid_in as cv_fitted.best_params_ if it exists
+                if isinstance(cv_fitted.best_params_, dict):
+                    grid_in = cv_fitted.best_params_
         
+            except TypeError:
+                print('If cross-validation grid search is desired then enter values into grid as lists.')
+                print('For example using brackets, [], around the value(s).')
+                print('Even if a single value is entered for a variable, it must be entered as a list')
+                print('If cross-validation grid search is not desired, then enter each value as an integer or float')
+
+        # assign parameters used in model to self
+        self.xgboost_params_ = pd.DataFrame.from_dict(grid_in, orient = 'index').T
+
         # apply XGBOOST using best parameters from cross-validation
 
         # define xgboost model
@@ -1625,95 +1643,96 @@ class Regressor:
         # train model
         xgb_reg.fit(X_train, y_train)
 
-        # return fit from training
-        train_pred = xgb_reg.predict(X_train)
-        rmse = mean_squared_error(y_train, train_pred)
-        mae = mean_absolute_error(y_train, train_pred)
-        r2 = r2_score(y_train, train_pred)
+        # return predicted values from training
+        ypred_out = xgb_reg.predict(X_train)
 
-        # print(
-        #     '---TRAINING--- \n'
-        #     f'RMSE: {rmse: .2f} \n'
-        #     f'mae: {mae: .2f} \n'
-        #     f'R2: {r2: .2f}'
-        #     )
 
         # Save Model and reload model
         # save model
         xgb_reg.save_model(dir_save)
 
-        # calculate performance metrics# sample size
-#         n_k_out = X_train.shape[0]
-#         # number of features
-#         n_f_out = self.df_lasso_features_coef_.shape[0] - 1
-#         # sum of squared residuals
-#         ssr_out = ssr(ypred_out, y_train)
-#         # unadjusted R-squared
-#         r2_out = r2_score(y_train, ypred_out)
-#         # Adjusted R-squared
-#         r2adj_out = R2adj(n_k_out, n_f_out, r2_out)
-#         # Mean absolute error
-#         mae_out = mean_absolute_error(y_train, ypred_out)
-#         # Root mean squared error
-#         rmse_out = mean_squared_error(y_train, ypred_out, squared = False)
-#         # Akaike Information Criterion
-#         AIC_out = AIC(n_k_out, ssr_out, n_f_out)
-#         # Bayesian Information Criterion
-#         BIC_out = BIC(n_k_out, ssr_out, n_f_out)
-#         # Mallows' Cp
-#         # apply linear regression using all explanatory variables
-#         # this object is used in feature selection just below and
-#         # results from this will be used to calculate Mallows' Cp
-#         reg_all = LinearRegression().fit(X_train, y_train)
-#         # calc sum of squared residuals for all data for use in
-#         # Mallows' Cp calc
-#         reg_all_ssr = ssr(y_train, reg_all.predict(X_train))
-#         M_Cp_out = M_Cp(reg_all_ssr, ssr_out, n_k_out, n_f_out)
-#         # VIF
-#         VIF_out = VIF(expl_out)
-#         # Percent Bias
-#         percBias_out = PercentBias(ypred_out, y_train)
-# # 
-#         if timeseries:
-#             # Nash-Sutcliffe Efficeincy
-#             NSE_out = NSE(ypred_out, y_train)
-#             # Kling Gupta Efficiency
-#             KGE_out = KGE(ypred_out, y_train)
-#     # 
-#         # write performance metrics to dataframe
-#         if timeseries:
-#             df_perfmetr = pd.DataFrame({
-#                 'n_features': n_f_out,
-#                 'ssr': ssr_out,
-#                 'r2': r2_out,
-#                 'r2adj': r2adj_out,
-#                 'mae': mae_out,
-#                 'rmse': rmse_out,
-#                 'AIC': AIC_out,
-#                 'BIC': BIC_out,
-#                 'M_Cp': M_Cp_out,
-#                 'VIF': [VIF_out],
-#                 'percBias': percBias_out,
-#                 'NSE': NSE_out,
-#                 'KGE': KGE_out
-#             })
-#         else:
-#             df_perfmetr = pd.DataFrame({
-#                 'n_features': n_f_out,
-#                 'ssr': ssr_out,
-#                 'r2': r2_out,
-#                 'r2adj': r2adj_out,
-#                 'mae': mae_out,
-#                 'rmse': rmse_out,
-#                 'AIC': AIC_out,
-#                 'BIC': BIC_out,
-#                 'M_Cp': M_Cp_out,
-#                 'VIF': [VIF_out],
-#                 'percBias': percBias_out
-#             })
+        print(f'model saved at {dir_save}')
+        
+        # calculate performance metrics
+        # sample size
+        n_k_out = X_train.shape[0]
+        # number of features
+        n_f_out = X_train.shape[1]
+        # sum of squared residuals
+        ssr_out = ssr(ypred_out, y_train)
+        # unadjusted R-squared
+        r2_out = r2_score(y_train, ypred_out)
+        # Adjusted R-squared
+        r2adj_out = R2adj(n_k_out, n_f_out, r2_out)
+        # Mean absolute error
+        mae_out = mean_absolute_error(y_train, ypred_out)
+        # Root mean squared error
+        rmse_out = mean_squared_error(y_train, ypred_out, squared = False)
+        # Akaike Information Criterion
+        AIC_out = AIC(n_k_out, ssr_out, n_f_out)
+        # Bayesian Information Criterion
+        BIC_out = BIC(n_k_out, ssr_out, n_f_out)
+        # # Mallows' Cp
+        # # apply linear regression using all explanatory variables
+        # # this object is used in feature selection just below and
+        # # results from this will be used to calculate Mallows' Cp
+        # reg_all = LinearRegression().fit(X_train, y_train)
+        # # calc sum of squared residuals for all data for use in
+        # # Mallows' Cp calc
+        # reg_all_ssr = ssr(y_train, reg_all.predict(X_train))
+        # M_Cp_out = M_Cp(reg_all_ssr, ssr_out, n_k_out, n_f_out)
+        M_Cp_out = np.nan
+        # VIF
+        VIF_out = VIF(X_train)
+        # Percent Bias
+        percBias_out = PercentBias(ypred_out, y_train)
+ 
+        if timeseries:
+            # Nash-Sutcliffe Efficeincy
+            NSE_out = NSE(ypred_out, y_train)
+            # Kling Gupta Efficiency
+            KGE_out = KGE(ypred_out, y_train)
+     
+        # write performance metrics to dataframe
+        if timeseries:
+            df_perfmetr = pd.DataFrame({
+                'n_features': n_f_out,
+                'ssr': ssr_out,
+                'r2': r2_out,
+                'r2adj': r2adj_out,
+                'mae': mae_out,
+                'rmse': rmse_out,
+                'AIC': AIC_out,
+                'BIC': BIC_out,
+                'M_Cp': M_Cp_out,
+                'VIF': [VIF_out],
+                'percBias': percBias_out,
+                'NSE': NSE_out,
+                'KGE': KGE_out
+            })
+        else:
+            df_perfmetr = pd.DataFrame({
+                'n_features': n_f_out,
+                'ssr': ssr_out,
+                'r2': r2_out,
+                'r2adj': r2adj_out,
+                'mae': mae_out,
+                'rmse': rmse_out,
+                'AIC': AIC_out,
+                'BIC': BIC_out,
+                'M_Cp': M_Cp_out,
+                'VIF': [VIF_out],
+                'percBias': percBias_out
+            })
+
+        
+        # save xgb predictor object to self
+        self.xgb_reg_ = xgb_reg
 
 
-
+        # assign performance metric dataframe to self
+        self.df_xgboost_performance_ = df_perfmetr
+        return(df_perfmetr)
 
 
 
@@ -1756,22 +1775,28 @@ class Regressor:
         pred_model_interc_: float
             the intercept from the model used in prediction
         """
-        # output model features, associated coefficeints, and intercept
-        # append intercept to features
-        features_int = np.append(model_in.coef_, model_in.intercept_)
-        # try:
-        features_int_names = np.append(model_in.feature_names_in_, 'intercept')
-        # except:
-        #     features_int_names = np.append([X_pred.name], 'intercept')
-        #     X_pred = pd.DataFrame(np.array(X_pred).reshape(-1,1))
-            
+
+        try:
+            # output model features, associated coefficeints, and intercept
+            # append intercept to features
+            features_int = np.append(model_in.coef_, model_in.intercept_)
+            # try:
+            features_int_names = np.append(model_in.feature_names_in_, 'intercept')
+            # except:
+            #     features_int_names = np.append([X_pred.name], 'intercept')
+            #     X_pred = pd.DataFrame(np.array(X_pred).reshape(-1,1))
 
 
-        # output to self
-        self.df_linreg_features_coef_ = pd.DataFrame({
-            'features': features_int_names,
-            'coef': features_int
-        })
+
+            # output to self
+            self.df_linreg_features_coef_ = pd.DataFrame({
+                'features': features_int_names,
+                'coef': features_int
+            })
+
+        except:
+            print('features and ceofficients unable to be calculated.')
+            print('This is likely due to the model type being used (e.g., xgboost regressor).')
 
         # # return variables with non-zero coeficients
         # self.lasso_features_coef_ = pd.DataFrame({

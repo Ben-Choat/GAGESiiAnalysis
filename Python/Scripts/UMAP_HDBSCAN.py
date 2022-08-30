@@ -233,6 +233,95 @@ df_labels = pd.DataFrame({
     'STAID': df_train_mnexpl['STAID']
 })
 
+#############
+# Clustering using all variables at once
+############
+
+# Standardize data
+
+# define list of columns not to transform
+# these columns are OHE so already either 0 or 1. 
+# for distance metrics, use Manhattan which lends itself to capturing 
+not_tr_in = ['GEOL_REEDBUSH_DOM_granitic', 
+            'GEOL_REEDBUSH_DOM_quarternary', 'GEOL_REEDBUSH_DOM_sedimentary', 
+            'GEOL_REEDBUSH_DOM_ultramafic', 'GEOL_REEDBUSH_DOM_volcanic']
+            # 'GEOL_REEDBUSH_DOM_gneiss', 
+
+
+# define vars to use in clustering
+clust_vars_in = train_expl_in.drop('STAID', axis = 1)
+# define id vars
+id_vars_in = train_expl_in['STAID']
+
+# define clusterer object
+cl_obj = Clusterer(clust_vars = clust_vars_in,
+    id_vars = id_vars_in)
+
+# note that once input data is transformed, the transformed
+# version will be used automatically in all functions related to
+# Clusterer object
+cl_obj.stand_norm(method = 'standardize',
+    not_tr = not_tr_in), # 'normalize'
+    
+
+# try several values for min_clustsize
+
+# HDBSCAN without UMAP
+# HDBSCAN on transformed data
+for mcs in [30, 40, 50, 75, 100, 200, 300]:
+    for ms in [1, 20, 50]:
+        print(f'min clustsize: {mcs}')
+        print(f'min sample: {ms}')
+        cl_obj.hdbscanner(
+            min_clustsize = mcs, # 35,
+            min_sample = ms, # 1, # None,
+            gm_spantree = False,
+            metric_in =  'euclidean', # 'manhattan', #
+            clust_seleps = 0, # 0.5,
+            clustsel_meth = 'leaf' #'leaf', #'eom' #
+        )
+
+#####
+
+# UMAP then HDBSCAN
+cl_obj.umap_reducer(
+    nn = 30, # 10,
+    mind = 0, # 0.01,
+    sprd = 1, # don't use for tuning - leave set to 1
+    nc = 3,
+    color_in = df_train_ID['AggEcoregion'])
+
+
+# new clustering on umap reduced data
+cl_obj_umap = Clusterer(clust_vars =cl_obj.df_embedding_.drop(columns = ['STAID', 'Color', 'ColSize']),
+    id_vars = df_train_mnexpl['STAID'])
+
+cl_obj_umap.hdbscanner(
+    min_clustsize = 50,
+    min_sample =  1, #None, #
+    gm_spantree = False,
+    metric_in =  'euclidean', # 'manhattan', #
+    clust_seleps = 0, # 0.05, # 0.5,
+    clustsel_meth = 'eom' #'leaf', #'leaf' #
+)
+
+# # predict clusters for valin data
+# # assigns output dataframe named df_hd_pred_ to object
+# test.hd_predictor(
+#     points_to_predict = df_valnit_trnsfrmd,
+#     id_vars = df_valnit_mnexpl['STAID']
+# )
+
+# # print output dataframe
+# test.df_hd_pred_
+
+
+
+# %% ############
+# specified hieararchical clustering
+###########
+
+
 # using all variables
 # train, testin, and valnit
 train_expl_in = df_train_mnexpl.reset_index(drop = True)
@@ -260,7 +349,7 @@ for i in range(0, num_Ks):
         df_temp.loc[(chk_size * i)::, 'Area_K'] = i
 
 # print ranges of clusters
-for i in range(0, 4):
+for i in range(0, num_Ks):
     temp_min = df_temp.loc[df_temp['Area_K'] == i, 'DRAIN_SQKM'].min()
     temp_max = df_temp.loc[df_temp['Area_K'] == i, 'DRAIN_SQKM'].max()
     print(f'K = {i}: \n min: {temp_min:.2f} \n max: {temp_max:.2f} \n \n')
@@ -276,24 +365,102 @@ not_tr_in = ['GEOL_REEDBUSH_DOM_granitic',
             'GEOL_REEDBUSH_DOM_ultramafic', 'GEOL_REEDBUSH_DOM_volcanic']
             # 'GEOL_REEDBUSH_DOM_gneiss', 
 
-# loop through area clusters and cluster based on Geology
 
 # define vars to use in clustering
-clust_vars_in = train_expl_in.drop('STAID', axis = 1)
-train_expl_in[]
+clust_vars_in = train_expl_in.loc[
+    :, train_expl_in.columns.isin(df_cats.loc[df_cats['Custom_Cat'] == 'Climate', 'Features'])
+]
+# define id vars
+id_vars_in = train_expl_in['STAID']
 
 # define clusterer object
-cl_obj = Clusterer(clust_vars = ,
-    id_vars = train_expl_in['STAID'])
+cl_obj = Clusterer(clust_vars = clust_vars_in,
+    id_vars = id_vars_in)
 
 # note that once input data is transformed, the transformed
 # version will be used automatically in all functions related to
 # Clusterer object
-cl_obj.stand_norm(method = 'standardize', # 'normalize'
-    not_tr = not_tr_in)
-
-
+cl_obj.stand_norm(method = 'standardize'), # 'normalize'
+    
+# HDBSCAN on transformed data
+cl_obj.hdbscanner(
+    min_clustsize = 300,
+    gm_spantree = True,
+    metric_in = ''
+)
 
 
 
 # %%
+test.hdbscanner(
+    min_clustsize = 10,
+    gm_spantree = True,
+    metric_in = 'manhattan', # 'euclidean' or 'manhattan', #
+    clustsel_meth = 'eom') # 'eom' or 'leaf') #
+
+# predict clusters for valin data
+# assigns output dataframe named df_hd_pred_ to object
+test.hd_predictor(
+    points_to_predict = df_valnit_trnsfrmd,
+    id_vars = df_valnit_mnexpl['STAID']
+)
+
+# print output dataframe
+test.df_hd_pred_
+
+test.umap_reducer(
+    nn = 30, # 10,
+    mind = 0, # 0.01,
+    sprd = 1, # don't use for tuning - leave set to 1
+    nc = 3,
+    color_in = df_train_ID['AggEcoregion'])
+
+# project valnit data into the umap space
+df_umap_valnit_pred = pd.DataFrame(
+    test.umap_embedding_.transform(df_valnit_trnsfrmd)
+)
+
+
+
+
+
+test.umap_reducer(
+    nn = 30, # 10,
+    mind = 0, # 0.01,
+    sprd = 1, # don't use for tuning - leave set to 1
+    nc = 3,
+    color_in = df_train_ID['AggEcoregion'])
+
+# project valnit data into the umap space
+df_umap_valnit_pred = pd.DataFrame(
+    test.umap_embedding_.transform(df_valnit_trnsfrmd)
+)
+df_umap_valnit_pred.columns = [f'Emb{i}' for i in range(0, df_umap_valnit_pred.shape[1])]
+
+df_umap_valnit_pred['STAID'] = df_valin_mnexpl['STAID']
+df_umap_valnit_pred['Color'] = df_valin_ID['AggEcoregion']
+df_umap_valnit_pred['ColSize'] = 0.1
+
+# plot projected embeddings
+fig = px.scatter_3d(df_umap_valnit_pred,
+                    x = 'Emb0',
+                    y = 'Emb1',
+                    z = 'Emb2',
+                    color = 'Color',
+                    size = 'ColSize',
+                    size_max = 10,
+                    title = f"nn: 20",
+                    custom_data = ["STAID"]
+                    )
+# Edit so hover shows station id
+fig.update_traces(
+    hovertemplate = "<br>".join([
+    "STAID: %{customdata[0]}"
+]))
+
+
+##### 
+
+# new clustering on umap reduced data
+test2 = Clusterer(clust_vars = test.df_embedding_.drop(columns = ['STAID', 'Color', 'ColSize']),
+    id_vars = df_train_mnexpl['STAID'])

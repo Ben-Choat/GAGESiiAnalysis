@@ -58,7 +58,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 testin_ID, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
                 valnit_ID, # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
                 clust_meth, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
-                reg_in # region label, i.e., 'NorthEast'
+                reg_in, # region label, i.e., 'NorthEast'
+                grid_in # dict with XGBoost parameters
                 ):
 
     # instantiate counter to know how many rows to edit with the current region label
@@ -1623,6 +1624,196 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
 
+
+
+
+
+
+
+
+
+
+ # %%  XGBoost
+    
+    # print which model is being applied  
+    print('XGBoost Regression')
+    
+    # model name for saving in csv
+    model_name = 'XGBoost' # input('enter name for model (e.g., stdrd_PCA_mlr):') 
+
+    if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
+        (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
+
+        # update model count
+        mdl_count = mdl_count + 1
+
+        
+        # indicate if data is training, validating, testing, etc.
+        train_val = 'train'
+
+        regr = Regressor(expl_vars = df_train_expl.drop('STAID', axis = 1),
+            resp_var = train_resp)
+
+
+        regr.xgb_regression(
+            n_splits_in = 10,
+            n_repeats_in = 1,
+            random_state_in = 100,
+            grid_in = grid_in,
+            timeseries = False,
+            n_jobs_in = -1,
+            dir_save = 'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_classlearn_model.json'   
+        )
+
+        # example grid_in
+        # grid_in = {
+        #     'n_estimators': [100, 500], #  [100, 500], # [100, 250, 500], # [10], # 
+        #     'colsample_bytree': [1], # [1], # [0.7, 1], 
+        #     'max_depth': [6], # [6], # [4, 6, 8],
+        #     'gamma': [0], # [0], # [0, 1], 
+        #     'reg_lambda': [0], # [0], # [0, 1, 2]
+        #     'learning_rate': [0.3], # [0.3] # [0.02, 0.1, 0.3]
+        #     }
+
+        expl_in = df_train_expl.drop('STAID', axis = 1)
+        resp_in = train_resp
+        id_in = train_ID
+
+        # create predict/plot object
+        regr.pred_plot(
+            model_in = regr.xgb_reg_, 
+            X_pred = expl_in, 
+            y_obs = resp_in,
+            id_vars = id_in)
+
+
+
+        # define param_name to write to results indicated what parameter values were used
+        nest = regr.xgboost_params_['n_estimators']
+        colsmpl = regr.xgboost_params_['colsample_bytree']
+        mdpth = regr.xgboost_params_['max_depth']
+        gma = regr.xgboost_params_['gamma']
+        lmbd = regr.xgboost_params_['reg_lambda']
+        lrnrt = regr.xgboost_params_['learning_rate']  
+        param_name = f'n_est{nest}_colsmpl{colsmpl}_mdpth{mdpth}_gma{gma}_lmbda{lmbd}_lrnrt{lrnrt}'
+
+        # append results to df_results_temp
+        to_append = regr.df_pred_performance_.copy()
+        # change VIF to max VIF instead of full array (full array saved to its own file for each model)
+        to_append['VIF'] = to_append['VIF'][0].max()
+        # include model
+        to_append['model'] = model_name
+        # include hyperparameters (tuning parameters)
+        to_append['parameters'] = [param_name]
+        # specify if results are from training data or validation (in) or validation (not it)
+        to_append['train_val'] = train_val
+
+        df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+
+        ##########################
+
+
+        # indicate if data is training, validating, testing, etc.
+        train_val = 'testin'
+
+        # define explanatory and response variables for modeling
+        expl_in = df_testin_expl.drop('STAID', axis = 1)
+        resp_in = testin_resp
+        id_in = valnit_ID
+
+        # create predict/plot object
+        regr.pred_plot(
+            model_in = regr.xgb_reg_, 
+            X_pred = expl_in, 
+            y_obs = resp_in,
+            id_vars = id_in)
+
+        # define param_name to write to results indicated what parameter values were used
+        nest = regr.xgboost_params_['n_estimators']
+        colsmpl = regr.xgboost_params_['colsample_bytree']
+        mdpth = regr.xgboost_params_['max_depth']
+        gma = regr.xgboost_params_['gamma']
+        lmbd = regr.xgboost_params_['reg_lambda']
+        lrnrt = regr.xgboost_params_['learning_rate']  
+        param_name = f'n_est{nest}_colsmpl{colsmpl}_mdpth{mdpth}_gma{gma}_lmbda{lmbd}_lrnrt{lrnrt}'
+
+        # append results to df_results_temp
+        to_append = regr.df_pred_performance_.copy()
+        # change VIF to max VIF instead of full array (full array saved to its own file for each model)
+        to_append['VIF'] = to_append['VIF'][0].max()
+        # include model
+        to_append['model'] = model_name
+        # include hyperparameters (tuning parameters)
+        to_append['parameters'] = [param_name]
+        # specify if results are from training data or validation (in) or validation (not it)
+        to_append['train_val'] = train_val
+
+        df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+
+
+        ############################
+        # indicate if data is training, validating, testing, etc.
+        train_val = 'valnit'
+
+        # define explanatory and response variables for modeling
+        expl_in = df_valnit_expl.drop('STAID', axis = 1)
+        resp_in = valnit_resp
+        id_in = valnit_ID
+
+        # create predict/plot object
+        regr.pred_plot(
+            model_in = regr.xgb_reg_, 
+            X_pred = expl_in, 
+            y_obs = resp_in,
+            id_vars = id_in)
+
+        # define param_name to write to results indicated what parameter values were used
+        nest = regr.xgboost_params_['n_estimators']
+        colsmpl = regr.xgboost_params_['colsample_bytree']
+        mdpth = regr.xgboost_params_['max_depth']
+        gma = regr.xgboost_params_['gamma']
+        lmbd = regr.xgboost_params_['reg_lambda']
+        lrnrt = regr.xgboost_params_['learning_rate']  
+        param_name = f'n_est{nest}_colsmpl{colsmpl}_mdpth{mdpth}_gma{gma}_lmbda{lmbd}_lrnrt{lrnrt}'
+
+        # append results to df_results_temp
+        to_append = regr.df_pred_performance_.copy()
+        # change VIF to max VIF instead of full array (full array saved to its own file for each model)
+        to_append['VIF'] = to_append['VIF'][0].max()
+        # include model
+        to_append['model'] = model_name
+        # include hyperparameters (tuning parameters)
+        to_append['parameters'] = [param_name]
+        # specify if results are from training data or validation (in) or validation (not it)
+        to_append['train_val'] = train_val
+
+        df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+
+
+
+    # %% Append region/cluster label/name to df_results_temp
+    df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'region'] = reg_in
+    # Append clustering method to df_results_temp
+    df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'clust_method'] = clust_meth
+
+    # Write results to csv
+    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv', 
+        index = False)
+
+    # write to TEMP file to for investigation if needed
+    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', 
+        index = False)
+
+
+    print('------------Job complete------------')
+
+    ######################################################################################
+
+
+
     
 
 
@@ -1920,24 +2111,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     #     # Write results to csv
     #     df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
 
-    # %%
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ##### 
-    # %%  Raw -> Rescale (Standardization) -> Reduce (umap) -> Predict (OLS-MLR)
+ # %%  Raw -> Rescale (Standardization) -> Reduce (umap) -> Predict (OLS-MLR)
     # # 
     # # MLR feature selection - 'forward'
 
@@ -2150,36 +2325,3 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
     #     # Write results to csv
     #     df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # %% Append region/cluster label/name to df_results_temp
-    df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'region'] = reg_in
-    # Append clustering method to df_results_temp
-    df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'clust_method'] = clust_meth
-
-    # Write results to csv
-    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv', 
-        index = False)
-
-    # write to TEMP file to for investigation if needed
-    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', 
-        index = False)
-
-
-    print('------------Job complete------------')
-
-    ######################################################################################
-
