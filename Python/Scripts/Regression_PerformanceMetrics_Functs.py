@@ -139,7 +139,7 @@ def VIF(df_X):
     try:
         df = df_X
     
-        X = add_constant(df)
+        X = add_constant(df, has_constant = 'add')
         vifs = pd.Series([variance_inflation_factor(X.values, i)
                 for i in range(X.shape[1])], 
                     index=X.columns)

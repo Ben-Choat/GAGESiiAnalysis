@@ -1,0 +1,32 @@
+name: gagesiienv
+channels:
+  - pytorch 
+  - conda-forge 
+  - defaults 
+
+dependencies: 
+  - cython=0.29.32 
+  - cudatoolkit=11.7.0 
+  - geopandas=0.11.1 
+  - hdbscan=0.8.28 
+  - matplotlib=3.5.3 
+  - mlxtend=0.20.0 
+#  - numpy=1.23.2 
+  -  numpy=1.21 
+  - pandas=1.4.3 
+  - plotnine=0.9.0 
+  - plotly=5.10.0 
+  - pydaymet=0.13.6 
+  - pynhd=0.13.6 
+  - python=3.10.6 
+  - pytorch=1.12.1 
+  - scikit-fuzzy=0.4.2 
+  - scikit-learn=1.1.2 
+  - scikit-learn-extra=0.2.0 
+  - scipy=1.9.1 
+  - seaborn=0.11.2 
+  - statsmodels=0.13.2 
+  - torchaudio=0.12.1 
+  - torchvision=0.13.0 
+  - umap-learn=0.5.3 
+  - xgboost=1.6.1 

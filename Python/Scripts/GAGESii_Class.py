@@ -847,6 +847,8 @@ class Clusterer:
                 'Component' which specifies which PCA component the row refers to
                 'var_expl' which is the total variance explained by that component
                 'ratio_var_expl' which is the ratio of total variance explained by that component
+        pca95_: integer
+            numer of componenets required to capture 95% of variance in explanatory vars
         
         """    
               
@@ -889,6 +891,19 @@ class Clusterer:
         var_95 = np.min(np.where(df_pca_var['Cum_Var'] > 0.95))
         self.df_pca_var_ = df_pca_var
         
+        # return number of components where 50%, 75%, 90%, and 95% of 
+        # variance is explained
+        print(f'50% variance explained at {var_50} components')
+        print(f'75% variance explained at {var_75} components')
+        print(f'90% variance explained at {var_90} components')
+        print(f'95% variance explained at {var_95} components')
+
+        # assign number of components where 95% of variation is explained to a self.variable
+        self.pca95_ = var_95
+
+        # return f'Embedding shape: {df_pca_embedding.shape - 3}'
+
+
         if plot_out:
             # save embeddings as dataframe and add color and colsize
             df_pca_embedding['Color'] = color_in
@@ -940,18 +955,7 @@ class Clusterer:
 
             print(fig3)
             
-            # return number of components where 50%, 75%, 90%, and 95% of 
-            # variance is explained
-            print(f'50% variance explained at {var_50} components')
-            print(f'75% variance explained at {var_75} components')
-            print(f'90% variance explained at {var_90} components')
-            print(f'95% variance explained at {var_95} components')
-
-            # assign number of components where 95% of variation is explained to a self.variable
-            self.pca95 = var_95
-
-        # return f'Embedding shape: {df_pca_embedding.shape - 3}'
-
+       
 
 
 
@@ -1036,7 +1040,8 @@ class Regressor:
         min_k = 1,
         klim_in = 30,
         timeseries = False, 
-        n_jobs_in = 1): #, fl, fh):
+        n_jobs_in = 1,
+        plot_out = False): #, fl, fh):
 
         """
         Using explanatory and response data provided, explore linear regression 
@@ -1243,35 +1248,12 @@ class Regressor:
         
         # assign performance metric dataframe to self, plot, and print results
         self.df_lin_regr_performance_ = df_perfmetr
-        PlotPM(self.df_lin_regr_performance_, timeseries = False)
+        # if plot_out = True then output lots
+        if plot_out:
+            PlotPM(self.df_lin_regr_performance_, timeseries = False)
         print(df_perfmetr.sort_values(by = 'BIC')[0:5])
         
     
-        # self.sfs_features_ = sfs_fit.k_feature_names_
-        # self.sfs_
-        # sfs_coefs = sfs_fit.coef_
-
-        # self.sfs_out_ = pd.DataFrame({
-        #     'feature': sfs_features,
-        #     'coef': sfs_coefs
-        # })
-        
-
-
-        # fig = plot_sfs(sfs_fit.get_metric_dict(), kind = 'std_dev')
-        # print(fig)
-        # plt.title('Performance of Sequential Forward Selection (w. StdErr')
-        # plt.grid()
-        # plt.show()
-
-    
-        # # retrieve the intercept
-        # print('Intercept:') 
-        # self.reg.intercept_
-
-        # # retrieve the coeficients
-        # print(f' Coefficients:')
-        # self.reg.coef_
 
                
 
@@ -1318,6 +1300,12 @@ class Regressor:
             features and coefficients from lasso regression
         df_lasso_reg_performance_: pandas DataFrame
             performance metrics for training data
+        lasso_alpha_: float
+            the alpha value used in the final lasso model
+            if a single alpha value is pvoided to the regressor object then lasso_alpha_ is
+            equal to that value.
+            if a list of alpha values are provided then lasso_alpha_ is equal to the best
+            alpha value from cross validation.
         """
         try:
             X_train, y_train = self.expl_vars_tr_, self.resp_var
@@ -1345,8 +1333,8 @@ class Regressor:
             # define search
             search = HalvingGridSearchCV(self.lasso_reg_,
                 grid,
-                scoring = ['neg_root_mean_squared_error', 
-                            'neg_mean_absolute_error', 'r2'],
+                scoring = 'neg_root_mean_squared_error', 
+                            # 'neg_mean_absolute_error', 'r2'],
                 refit = False,
                 cv = cv,
                 n_jobs = n_jobs_in)
@@ -1355,22 +1343,39 @@ class Regressor:
             self.lassoCV_results = results
             # self.lassoCV_results = pd.DataFrame(self.lassoCV_results.cv_results_)
 
+            # print(pd.DataFrame(self.lassoCV_results.cv_results_))
+            print(search.best_params_)
             # print top 10 performing based on scores
-            self.df_lassoCV_rmse = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
+            self.df_lassoCV_rmse = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_score')[[
                             'param_alpha',
-                            'mean_test_neg_root_mean_squared_error',
-                            'std_test_neg_root_mean_squared_error',
-                            'rank_test_neg_root_mean_squared_error']]
-            self.df_lassoCV_mae = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
-                            'param_alpha',
-                            'mean_test_neg_mean_absolute_error',
-                            'std_test_neg_mean_absolute_error',
-                            'rank_test_neg_mean_absolute_error']]
-            self.df_lassoCV_r2 = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_r2')[[
-                            'param_alpha',
-                            'mean_test_r2',
-                            'std_test_r2',
-                            'rank_test_r2']]
+                            'mean_test_score',
+                            'std_test_score',
+                            'rank_test_score']]
+
+            # redfine alpha as best alpha
+            alpha_in = search.best_params_['alpha']
+            # write best alpha to self
+            self.lasso_alpha_ = search.best_params_['alpha']
+
+            # redfine lasso using update alpha value
+            self.lasso_reg_ = Lasso(alpha = alpha_in,
+                            max_iter = max_iter_in)
+            
+            # self.df_lassoCV_rmse = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
+            #                 'param_alpha',
+            #                 'mean_test_neg_root_mean_squared_error',
+            #                 'std_test_neg_root_mean_squared_error',
+            #                 'rank_test_neg_root_mean_squared_error']]
+            # self.df_lassoCV_mae = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
+            #                 'param_alpha',
+            #                 'mean_test_neg_mean_absolute_error',
+            #                 'std_test_neg_mean_absolute_error',
+            #                 'rank_test_neg_mean_absolute_error']]
+            # self.df_lassoCV_r2 = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_r2')[[
+            #                 'param_alpha',
+            #                 'mean_test_r2',
+            #                 'std_test_r2',
+            #                 'rank_test_r2']]
             
             # return(# self.lassoCV_results.cv_results_, 
             #         self.df_lassoCV_rmse[0:10],
@@ -1380,6 +1385,8 @@ class Regressor:
             # more than 1 scoring metric)
             # print('MAE: %.3f' % results.cv_results_.best_score_)
             # print('Config: %s' % results.cv_results_.best_params_)
+
+            #
 
         else:
             # fit model
@@ -1407,34 +1414,38 @@ class Regressor:
             # predicted water yield from training data
             ypred_out = self.lasso_reg_.predict(X_train)
             
-        
+
+            # NOTE: 
+            # Commenting out k-folds, because not lending itself to progressing through models
+            # was only printing to see the results
+
             #### Apply k-fold cross validation to see how performs across samples
-            # define k-fold model
-            cv = RepeatedKFold(n_splits = n_splits_in,
-                    n_repeats = n_repeats_in,
-                    random_state = random_state_in)
+            # # define k-fold model
+            # cv = RepeatedKFold(n_splits = n_splits_in,
+            #         n_repeats = n_repeats_in,
+            #         random_state = random_state_in)
 
-            #evaluate model
-            scores = cross_validate(self.lasso_reg_,
-                X_train, y_train, 
-                scoring = ('neg_root_mean_squared_error', 
-                'neg_mean_absolute_error', 'r2'), cv = cv, n_jobs = 1,
-                return_train_score = True,
-                return_estimator = False)
+            # #evaluate model
+            # scores = cross_validate(self.lasso_reg_,
+            #     X_train, y_train, 
+            #     scoring = ('neg_root_mean_squared_error', 
+            #     'neg_mean_absolute_error', 'r2'), cv = cv, n_jobs = 1,
+            #     return_train_score = True,
+            #     return_estimator = False)
 
-            self.lasso_scores_ = scores
+            # self.lasso_scores_ = scores
 
 
-            rmse_train = -self.lasso_scores_['train_neg_root_mean_squared_error']
-            rmse_test = -self.lasso_scores_['test_neg_root_mean_squared_error']
-            mae_train = -self.lasso_scores_['train_neg_mean_absolute_error']
-            mae_test = -self.lasso_scores_['test_neg_mean_absolute_error']
-            print('Mean CV training RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_train), np.std(rmse_train)))
-            print('Mean CV testing RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_test), np.std(rmse_test)))
-            print('Mean CV training MAE: %.3f (%.3f)' % (np.mean(mae_train), np.std(mae_train)))
-            print('Mean CV testing MAE: %.3f (%.3f)' % (np.mean(mae_test), np.std(mae_test)))
+            # rmse_train = -self.lasso_scores_['train_neg_root_mean_squared_error']
+            # rmse_test = -self.lasso_scores_['test_neg_root_mean_squared_error']
+            # mae_train = -self.lasso_scores_['train_neg_mean_absolute_error']
+            # mae_test = -self.lasso_scores_['test_neg_mean_absolute_error']
+            # print('Mean CV training RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_train), np.std(rmse_train)))
+            # print('Mean CV testing RMSE (stdev): %.3f (%.3f)' % (np.mean(rmse_test), np.std(rmse_test)))
+            # print('Mean CV training MAE: %.3f (%.3f)' % (np.mean(mae_train), np.std(mae_train)))
+            # print('Mean CV testing MAE: %.3f (%.3f)' % (np.mean(mae_test), np.std(mae_test)))
 
-        #####
+            #####
 
             # sample size
             n_k_out = X_train.shape[0]
@@ -1467,13 +1478,13 @@ class Regressor:
             VIF_out = VIF(expl_out)
             # Percent Bias
             percBias_out = PercentBias(ypred_out, y_train)
-    # 
+    
             if timeseries:
                 # Nash-Sutcliffe Efficeincy
                 NSE_out = NSE(ypred_out, y_train)
                 # Kling Gupta Efficiency
                 KGE_out = KGE(ypred_out, y_train)
-        # 
+        
             # write performance metrics to dataframe
             if timeseries:
                 df_perfmetr = pd.DataFrame({
@@ -1505,7 +1516,7 @@ class Regressor:
                     'VIF': [VIF_out],
                     'percBias': percBias_out
                 })
-    # 
+    
             # assign performance metric dataframe to self
             self.df_lasso_regr_performance_ = df_perfmetr
             return(df_perfmetr)
@@ -1525,6 +1536,7 @@ class Regressor:
                         },
                        timeseries = False,
                        n_jobs_in = -1,
+                       halving_factor = 3,
                        dir_save = 'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json'):
         # using info from here as guide: 
         # https://machinelearningmastery.com/lasso-regression-with-python/
@@ -1546,6 +1558,9 @@ class Regressor:
             If set to True, then also calculate NSE, KGE, and % bias metrics
         n_jobs_in: -1 or positive integer
             -1 means run on all available cores
+        halving_factor: int or float
+            sepcifies portion of candidates chosen for subsequent round in 
+            HalvingGridSearchCV (e.g., 3 means 1/3 of candidates are chosen)
 
         Attributes
         -------------
@@ -1586,7 +1601,7 @@ class Regressor:
                 gsCV = HalvingGridSearchCV(
                             estimator = xgb_reg,
                             param_grid = grid_in,
-                            factor = 2,
+                            factor = halving_factor,
                             scoring = 'neg_root_mean_squared_error',
                             cv = cv, # default = 5
                             return_train_score = False, # True, # default = False
@@ -1746,7 +1761,8 @@ class Regressor:
         X_pred,
         y_obs,
         id_vars,
-        timeseries = False):
+        timeseries = False,
+        plot_out = False):
         """
         Takes ... add description
         
@@ -1764,6 +1780,8 @@ class Regressor:
             Variable used to color points in predicted vs observed plots (e.g., 'aggecoregion')
         timeseries: Boolean
             if True, then KGE and NSE are included in performance metrics
+        plot_out: Boolean
+            if True, then output plots, otherwise, do not
         
         Attributes
         ----------
@@ -1876,27 +1894,28 @@ class Regressor:
                 'percBias': percBias_out
             })
 
-        # prepare dataframe for plotting performance
-        df_in = pd.DataFrame({
-            'observed': y_obs,
-            'predicted': y_pred,
-            'ID': id_vars
-        })
-        # Plot predicted vs observed
-        p = (
-                p9.ggplot(data = df_in) +
-                p9.geom_point(p9.aes(x = 'observed', 
-                                        y = 'predicted', 
-                                        color = 'ID')) +
-                p9.geom_abline(slope = 1) +
-                p9.theme_bw() +
-                p9.theme(axis_text = p9.element_text(size = 14),
-                            axis_title = p9.element_text(size = 14),
-                            aspect_ratio = 1,
-                            legend_text = p9.element_text(size = 14),
-                            legend_title = p9.element_text(size = 14))
-            )
-        print(p)
+        if plot_out:
+            # prepare dataframe for plotting performance
+            df_in = pd.DataFrame({
+                'observed': y_obs,
+                'predicted': y_pred,
+                'ID': id_vars
+            })
+            # Plot predicted vs observed
+            p = (
+                    p9.ggplot(data = df_in) +
+                    p9.geom_point(p9.aes(x = 'observed', 
+                                            y = 'predicted', 
+                                            color = 'ID')) +
+                    p9.geom_abline(slope = 1) +
+                    p9.theme_bw() +
+                    p9.theme(axis_text = p9.element_text(size = 14),
+                                axis_title = p9.element_text(size = 14),
+                                aspect_ratio = 1,
+                                legend_text = p9.element_text(size = 14),
+                                legend_title = p9.element_text(size = 14))
+                )
+            print(p)
         # assign performance metric dataframe to self
         self.df_pred_performance_ = df_perfmetr
         return(df_perfmetr)

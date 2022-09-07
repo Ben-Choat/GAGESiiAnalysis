@@ -8,19 +8,11 @@
 
 # %% import libraries and classes
 
-from GAGESii_Class import Clusterer
-from GAGESii_MeanAnnual_Callable import *
-# from GAGESii_Class import Regressor
-# from Regression_PerformanceMetrics_Functs import *
+# from GAGESii_Class import Clusterer
+from HPC_MeanAnnual_Callable import *
 import pandas as pd
 import os
-# import plotnine as p9
-# import plotly.express as px # easier interactive plots
-# from scipy import stats
-# import numpy as np
-# from sklearn.linear_model import LinearRegression
-# from sklearn.metrics import mean_absolute_error
-# from sklearn.metrics import mean_squared_error
+
 
 # %% load data
 
@@ -130,7 +122,8 @@ del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY
 #                 valnit_ID, # # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
 #                 clust_meth, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
 #                 reg_in, # region label, i.e., 'NorthEast'
-#                 grid_in) # dict with XGBoost parameters
+#                 grid_in, # dict with XGBoost parameters
+#                 plot_out = False # Boolean; outputs plots if True
 
 ########
 # subset data to catchment IDs that match the cluster or region being predicted
@@ -205,19 +198,28 @@ vif_th = 10 # 20
 # calculate all vifs and store in dataframe
 df_vif = VIF(X_in)
 
+
+
 # initiate array to hold varibles that have been removed
 df_removed = []
 
 while any(df_vif > vif_th):
+    
     # find max vifs and remove. If > 1 max vif, then remove only 
     # the first one
     maxvif = np.where(df_vif == df_vif.max())[0][0]
 
-    # append inices of max vifs to removed dataframe
+    # find locations where vif = na due to zero variance in that column
+    navif = np.where(df_vif.isna())
+
+    # append indices of max vifs to removed dataframe
     df_removed.append(df_vif.index[maxvif])
 
-    # drop max vif feature
-    # df_vif.drop(df_vif.index[maxvif], inplace = True)
+    # append df_removed with VIFs of na which represent
+    # columns of zero variancedf_vif.loc[df_vif.isna()].index.values
+    df_removed.extend(df_vif.loc[df_vif.isna()].index.values, )
+    # drop identified columns
+    df_vif.drop(df_vif.index[maxvif], inplace = True)
     
     # calculate new vifs
     df_vif = VIF(X_in.drop(df_removed, axis = 1))
@@ -293,13 +295,14 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             clust_meth = clust_meth_in, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
             reg_in = region_in, # region label, i.e., 'NorthEast'
             grid_in = { # dict with XGBoost parameters
-                'n_estimators': [100, 500, 750], # [100, 250, 500], # [10], # 
+                'n_estimators': [500], # [100, 500, 750], # [100, 250, 500], # [10], # 
                 'colsample_bytree': [0.7, 1], # [1], #
-                'max_depth':  [4, 6, 8], # [6], #
-                'gamma': [0], # [0], # [0, 1], 
-                'reg_lambda': [0], # [0], # [0, 1, 2]
+                'max_depth':  [4, 6], #, 8], # [6], #
+                'gamma': [0, 1], # [0], # 
+                'reg_lambda': [0, 1, 2], # [0], #
                 'learning_rate': [0.02, 0.1, 0.3]
-                }
+                },
+            plot_out = False # Boolean; outputs plots if True
             )
 
 

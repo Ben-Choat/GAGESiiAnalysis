@@ -16,6 +16,10 @@ from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV
 from sklearn.experimental import enable_halving_search_cv
 from sklearn.model_selection import HalvingGridSearchCV
+from sklearn.experimental import enable_halving_search_cv
+from sklearn.model_selection import HalvingRandomSearchCV
+from scipy.stats import randint # for use with HalvingRandomSearchCV
+from scipy.stats import uniform # for use with HalvingRandomSearchCV
 from sklearn.model_selection import cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -57,143 +61,14 @@ import time
 
 # %% Load Data
 
-
-# # water yield directory
-# dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
-
-# # explantory var (and other data) directory
-# dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out'
-
-# # GAGESii explanatory vars
-# # training
-# df_train_expl = pd.read_csv(
-#     f'{dir_expl}/ExplVars_Model_In/All_ExplVars_Train_Interp_98_12.csv',
-#     dtype = {'STAID': 'string'}
-# ).drop(columns = ['LAT_GAGE', 'LNG_GAGE'])
-# # val_in
-# df_testin_expl = pd.read_csv(
-#     f'{dir_expl}/ExplVars_Model_In/All_ExplVars_testin_Interp_98_12.csv',
-#     dtype = {'STAID': 'string'}
-# ).drop(columns = ['LAT_GAGE', 'LNG_GAGE', 'GEOL_REEDBUSH_DOM_anorthositic'])
-# # val_nit
-# df_valnit_expl = pd.read_csv(
-#     f'{dir_expl}/ExplVars_Model_In/All_ExplVars_ValNit_Interp_98_12.csv',
-#     dtype = {'STAID': 'string'}
-# ).drop(columns = ['LAT_GAGE', 'LNG_GAGE'])
-
-
-# # Explanatory variables
-# # Annual Water yield
-# # training
-# df_train_anWY = pd.read_csv(
-#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_train.csv',
-#     dtype = {"site_no":"string"}
-#     )
-# # drop stations not in explantory vars
-# df_train_anWY = df_train_anWY[
-#     df_train_anWY['site_no'].isin(df_train_expl['STAID'])
-#     ].reset_index(drop = True)
-# # create annual water yield in ft
-# df_train_anWY['Ann_WY_ft'] = df_train_anWY['Ann_WY_ft3']/(
-#     df_train_expl['DRAIN_SQKM']*(3280.84**2)
-#     )
-
-# # val_in
-# df_testin_anWY = pd.read_csv(
-#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_in.csv',
-#     dtype = {"site_no":"string"}
-#     )
-# # drop stations not in explantory vars    
-# df_testin_anWY = df_testin_anWY[
-#     df_testin_anWY['site_no'].isin(df_testin_expl['STAID'])
-#     ].reset_index(drop = True)
-# # create annual water yield in ft
-# df_testin_anWY['Ann_WY_ft'] = df_testin_anWY['Ann_WY_ft3']/(
-#     df_testin_expl['DRAIN_SQKM']*(3280.84**2)
-#     )
-
-# # val_nit
-# df_valnit_anWY = pd.read_csv(
-#     f'{dir_WY}/yrs_98_12/annual_WY/Ann_WY_val_nit.csv',
-#     dtype = {"site_no":"string"}
-#     )
-# # drop stations not in explantory vars
-# df_valnit_anWY = df_valnit_anWY[
-#     df_valnit_anWY['site_no'].isin(df_valnit_expl['STAID'])
-#     ].reset_index(drop = True)
-# # subset testint expl and response vars to common years of interest
-# df_valnit_expl = pd.merge(
-#     df_valnit_expl, 
-#     df_valnit_anWY, 
-#     how = 'inner', 
-#     left_on = ['STAID', 'year'], 
-#     right_on = ['site_no', 'yr']).drop(
-#     labels = df_valnit_anWY.columns, axis = 1
-# )
-# df_valnit_anWY = pd.merge(df_valnit_expl, 
-#     df_valnit_anWY, 
-#     how = 'inner', 
-#     left_on = ['STAID', 'year'], 
-#     right_on = ['site_no', 'yr']).drop(
-#     labels = df_valnit_expl.columns, axis = 1
-# )
-# df_valnit_anWY['Ann_WY_ft'] = df_valnit_anWY['Ann_WY_ft3']/(
-#     df_valnit_expl['DRAIN_SQKM']*(3280.84**2)
-#     )
-
-# # mean annual water yield
-# # training
-# df_train_mnanWY = df_train_anWY.groupby(
-#     'site_no', as_index = False
-# ).mean().drop(columns = ["yr"])
-# # val_in
-# df_testin_mnanWY = df_testin_anWY.groupby(
-#     'site_no', as_index = False
-# ).mean().drop(columns = ["yr"])
-# # val_nit
-# df_valnit_mnanWY = df_valnit_anWY.groupby(
-#     'site_no', as_index = False
-# ).mean().drop(columns = ["yr"])
-
-# # mean GAGESii explanatory vars
-# # training
-# df_train_mnexpl = df_train_expl.groupby(
-#     'STAID', as_index = False
-# ).mean().drop(columns = ['year'])
-# # val_in
-# df_testin_mnexpl = df_testin_expl.groupby(
-#     'STAID', as_index = False
-# ).mean().drop(columns = ['year'])
-# #val_nit
-# df_valnit_mnexpl = df_valnit_expl.groupby(
-#     'STAID', as_index = False
-# ).mean().drop(columns = ['year'])
-
-# # ID vars (e.g., ecoregion)
-# # vars to color plots with (e.g., ecoregion)
-# df_ID = pd.read_csv(
-#     f'{dir_expl}/GAGES_idVars.csv',
-#     dtype = {'STAID': 'string'}
-# )
-
-# # training ID
-# df_train_ID = df_ID[df_ID.STAID.isin(df_train_expl.STAID)].reset_index(drop = True)
-# # val_in ID
-# df_testin_ID = df_train_ID
-# # val_nit ID
-# df_valnit_ID = df_ID[df_ID.STAID.isin(df_valnit_expl.STAID)].reset_index(drop = True)
-
-# del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY, df_valnit_expl)
-
-
 # water yield directory
-dir_WY = 'E:/DataWorking/USGS_discharge/train_val_test'
+dir_WY = '/media/bchoat/Local Disk/DataWorking/USGS_discharge/train_val_test'
 
 # explantory var (and other data) directory
-dir_expl = 'E:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+dir_expl = '/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
 
 # directory to write csv holding removed columns (due to high VIF)
-dir_VIF = 'E:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
+dir_VIF = '/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
 
 # GAGESii explanatory vars
 # training
@@ -315,7 +190,7 @@ yvalnit = df_valnit_mnanWY['Ann_WY_ft']
 # define xgboost model
 xgb_reg = xgb.XGBRegressor(
     objective = 'reg:squarederror',
-    tree_method =  'hist', #'gpu_hist', # 
+    tree_method =  'hist', #'gpu_hist', #
     # colsample_bytree = 0.7, # 0.3, # default = 1
     # learning_rate = 0.1, # default = 0.3
     # max_depth = 5, # default = 6
@@ -325,7 +200,7 @@ xgb_reg = xgb.XGBRegressor(
     # n_estimators = 100,
     verbosity = 1, # 0 = silent, 1 = warning (default), 2 = info, 3 = debug
     sampling_method = 'uniform', # 'gradient_based', # default is 'uniform'
-    # nthread = 4 defaults to maximum number available, only use for less threads
+    n_jobs = -1 # defaults to maximum number available, only use for less threads
 )
 
 
@@ -344,16 +219,26 @@ xgb_reg = xgb.XGBRegressor(
 #     'learning_rate': [0.1, 0.3, 0.5]
 # }
 
-
+# grid for grid search
 grid = {
-    'n_estimators': [500, 1000], #, 250, 500], # [10], # 
+    'n_estimators': [250, 500, 750], #, 1000], #, 250, 500], # [10], # 
     'colsample_bytree': [0.7], #, 1], # [0.3, 0.7, 1],
-    'max_depth': [4, 6, 8], # [6], # 
-    'gamma': [0, 1], 
+    'max_depth': [4], # , 6, 8], # [6], # 
+    'gamma': [0], # , 1, 2], 
     # 'reg_alpha': [1.1, 1.2, 1.3],
-    'reg_lambda': [1, 2], # [0, 1, 2]
+    'reg_lambda': [0], # 1, 2], # [0, 1, 2]
     'learning_rate': [0.02, 0.1, 0.2]
 }
+
+# grid for randomsearch
+# grid = {
+#     'n_estimators': [500],
+#     'colsample_bytree': [0.7],
+#     'max_depth': [4],
+#     'gamma': [1, 2],
+#     'reg_lambda': randint(0, 3),
+#     'learning_rate': uniform(0, 0.3)
+# }
 
 # gsCV = GridSearchCV(
 #     estimator = xgb_reg,
@@ -366,11 +251,13 @@ grid = {
 #     refit = False
 # )
 
-gshCV = HalvingGridSearchCV(
+gshCV = HalvingGridSearchCV( # HalvingRandomSearchCV( #
     estimator = xgb_reg,
     param_grid = grid,
-    factor = 2, # (half of canddiates chosen each subsequent iteration)
-    cv = 5,
+    # param_distributions = grid, # (only for randomsearch)
+    # n_iter = 5, # default is 10 (only for randomsearch)
+    factor = 3, # (if factor = 2, half of candidates chosen each subsequent iteration)
+    cv = 10,
     scoring = 'neg_root_mean_squared_error',
     return_train_score = False, # True, # default = False
     random_state = 100,
@@ -413,7 +300,7 @@ print(cvh_fitted.best_params_)
 # define xgboost model
 xgb_reg = xgb.XGBRegressor(
     objective = 'reg:squarederror',
-    tree_method = 'hist', # 'gpu_hist',
+    tree_method =  'hist', #'gpu_hist', #
     colsample_bytree = cvh_fitted.best_params_['colsample_bytree'], # 0.7, # 1, # 0.7, # 0.3, # default = 1
     learning_rate = cvh_fitted.best_params_['learning_rate'], # default = 0.3
     max_depth = cvh_fitted.best_params_['max_depth'], # 4, #5, # default = 6
@@ -504,14 +391,14 @@ print(
 ########################
 
 # save model
-xgb_reg.save_model('D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json')
+xgb_reg.save_model('/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json')
 
 # load model
 
 # first define xgbreg object
 xgb_reg_loaded = xgb.XGBRegressor()
 # reload model into object
-xgb_reg_loaded.load_model('D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json')
+xgb_reg_loaded.load_model('/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json')
 
 # test reloaded correctly by repredicting data as above
 

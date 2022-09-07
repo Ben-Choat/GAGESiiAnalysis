@@ -59,7 +59,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 valnit_ID, # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
                 clust_meth, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
                 reg_in, # region label, i.e., 'NorthEast'
-                grid_in # dict with XGBoost parameters
+                grid_in, # dict with XGBoost parameters
+                plot_out = False # Boolean; outputs plots if True
                 ):
 
     # instantiate counter to know how many rows to edit with the current region label
@@ -72,7 +73,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     # %% Load or define dataframe to append results to as models are generated
     # %% Define dataframe to append results to as models are generated
     try:
-        df_results_temp = pd.read_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv')
+        df_results_temp = pd.read_csv(f'{dir_expl}/Results/Results_AnnualTimeSeries.csv')
     except:
         df_results_temp = pd.DataFrame({
             'model': [], # specify which model, e.g., 'raw_lasso'
@@ -84,6 +85,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             'r2adj': [], # adjusted R2
             'mae': [], # mean absolute error
             'rmse': [], # root mean square error
+            'NSE': [],
+            'KGE': [],
             'VIF': [], # variance inflation factor (vector of all included featuers and related VIFs)
             'percBias': [], # percent bias
             'region': [], # the region or cluster number being modeled
@@ -120,7 +123,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
         (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
-        if 'PPT_AVG_Basin' in df_train_expl.columns:
+        if 'prcp' in df_train_expl.columns:
 
             # update model count
             mdl_count = mdl_count + 1
@@ -132,7 +135,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             print(train_val)
 
             # define explanatory and response vars
-            expl_in = np.array(df_train_expl['PPTAVG_BASIN']).reshape(-1,1)
+            expl_in = np.array(df_train_expl['prcp']).reshape(-1,1)
             resp_in = train_resp
 
             model = LinearRegression().fit(expl_in, resp_in)
@@ -148,6 +151,10 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             mae_out = mean_absolute_error(resp_in, y_predicted)
             # RMSE
             rmse_out = mean_squared_error(resp_in, y_predicted, squared = False)
+            # NSE
+            nse_out = NSE(y_predicted, resp_in)
+            # KGE
+            kge_out = KGE(y_predicted, resp_in)
 
             # % bias
             pbias_out = PercentBias(y_predicted, resp_in)
@@ -162,6 +169,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 'r2adj': r2adj_out,
                 'mae': mae_out,
                 'rmse': rmse_out,
+                'NSE': nse_out,
+                'KGE': kge_out,
                 'VIF': 1,
                 'percBias': pbias_out
             }, index = [0])
@@ -176,22 +185,22 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             })
 
             print('training')
-
-            # Plot predicted vs observed
-            p = (
-                    p9.ggplot(data = df_in) +
-                    p9.geom_point(p9.aes(x = 'observed', 
-                                            y = 'predicted', 
-                                            color = 'ID')) +
-                    p9.geom_abline(slope = 1) +
-                    p9.theme_bw() +
-                    p9.theme(axis_text = p9.element_text(size = 14),
-                                axis_title = p9.element_text(size = 14),
-                                aspect_ratio = 1,
-                                legend_text = p9.element_text(size = 14),
-                                legend_title = p9.element_text(size = 14))
-                )
-            print(p)
+            if plot_out:
+                # Plot predicted vs observed
+                p = (
+                        p9.ggplot(data = df_in) +
+                        p9.geom_point(p9.aes(x = 'observed', 
+                                                y = 'predicted', 
+                                                color = 'ID')) +
+                        p9.geom_abline(slope = 1) +
+                        p9.theme_bw() +
+                        p9.theme(axis_text = p9.element_text(size = 14),
+                                    axis_title = p9.element_text(size = 14),
+                                    aspect_ratio = 1,
+                                    legend_text = p9.element_text(size = 14),
+                                    legend_title = p9.element_text(size = 14))
+                    )
+                print(p)
 
 
             #####
@@ -216,6 +225,10 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             mae_out = mean_absolute_error(resp_in, y_predicted)
             # RMSE
             rmse_out = mean_squared_error(resp_in, y_predicted, squared = False)
+            # NSE
+            nse_out = NSE(y_predicted, resp_in)
+            # KGE
+            kge_out = KGE(y_predicted, resp_in)
 
             # % bias
             pbias_out = PercentBias(y_predicted, resp_in)
@@ -230,6 +243,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 'r2adj': r2adj_out,
                 'mae': mae_out,
                 'rmse': rmse_out,
+                'NSE': nse_out,
+                'KGE': kge_out,
                 'VIF': 1,
                 'percBias': pbias_out
             }, index = [0])
@@ -245,22 +260,22 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             })
 
             
-
-            # Plot predicted vs observed
-            p = (
-                    p9.ggplot(data = df_in) +
-                    p9.geom_point(p9.aes(x = 'observed', 
-                                            y = 'predicted', 
-                                            color = 'ID')) +
-                    p9.geom_abline(slope = 1) +
-                    p9.theme_bw() +
-                    p9.theme(axis_text = p9.element_text(size = 14),
-                                axis_title = p9.element_text(size = 14),
-                                aspect_ratio = 1,
-                                legend_text = p9.element_text(size = 14),
-                                legend_title = p9.element_text(size = 14))
-                )
-            print(p)
+            if plot_out:
+                # Plot predicted vs observed
+                p = (
+                        p9.ggplot(data = df_in) +
+                        p9.geom_point(p9.aes(x = 'observed', 
+                                                y = 'predicted', 
+                                                color = 'ID')) +
+                        p9.geom_abline(slope = 1) +
+                        p9.theme_bw() +
+                        p9.theme(axis_text = p9.element_text(size = 14),
+                                    axis_title = p9.element_text(size = 14),
+                                    aspect_ratio = 1,
+                                    legend_text = p9.element_text(size = 14),
+                                    legend_title = p9.element_text(size = 14))
+                    )
+                print(p)
 
             ####
             # valnit
@@ -285,6 +300,10 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             mae_out = mean_absolute_error(resp_in, y_predicted)
             # RMSE
             rmse_out = mean_squared_error(resp_in, y_predicted, squared = False)
+            # NSE
+            nse_out = NSE(y_predicted, resp_in)
+            # KGE
+            kge_out = KGE(y_predicted, resp_in)
 
             # % bias
             pbias_out = PercentBias(y_predicted, resp_in)
@@ -299,13 +318,15 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 'r2adj': r2adj_out,
                 'mae': mae_out,
                 'rmse': rmse_out,
+                'NSE': nse_out,
+                'KGE': kge_out,
                 'VIF': 1,
                 'percBias': pbias_out
             }, index = [0])
 
             df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
-            df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
+            df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeriesTEMP.csv', index = False)
 
 
 
@@ -316,21 +337,22 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 'ID': valnit_ID
             })
 
-            # Plot predicted vs observed
-            p = (
-                    p9.ggplot(data = df_in) +
-                    p9.geom_point(p9.aes(x = 'observed', 
-                                            y = 'predicted', 
-                                            color = 'ID')) +
-                    p9.geom_abline(slope = 1) +
-                    p9.theme_bw() +
-                    p9.theme(axis_text = p9.element_text(size = 14),
-                                axis_title = p9.element_text(size = 14),
-                                aspect_ratio = 1,
-                                legend_text = p9.element_text(size = 14),
-                                legend_title = p9.element_text(size = 14))
-                )
-            print(p)
+            if plot_out:
+                # Plot predicted vs observed
+                p = (
+                        p9.ggplot(data = df_in) +
+                        p9.geom_point(p9.aes(x = 'observed', 
+                                                y = 'predicted', 
+                                                color = 'ID')) +
+                        p9.geom_abline(slope = 1) +
+                        p9.theme_bw() +
+                        p9.theme(axis_text = p9.element_text(size = 14),
+                                    axis_title = p9.element_text(size = 14),
+                                    aspect_ratio = 1,
+                                    legend_text = p9.element_text(size = 14),
+                                    legend_title = p9.element_text(size = 14))
+                    )
+                print(p)
 
         else:
             to_append = pd.DataFrame({
@@ -438,7 +460,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # print features kept by Lasso regression and the associated coefficients
         # regr.df_lasso_features_coef_.sort_values(by = 'coefficients')
 
-        # plot regression
+        # plot and/or calculate regression metrics
         mdl_in = regr.lasso_reg_
         expl_in = regr.expl_vars # df_train_expl.drop(columns = 'STAID')
         resp_in = train_resp
@@ -450,7 +472,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -491,7 +515,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -511,7 +537,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         train_val = 'valnit'
         print(train_val)
         # return prediction metrics for validation data from stations that were NOT trained on
-        # plot regression
+        # plot and/or calculate regression metrics
         mdl_in = mdl_in
         expl_in = df_valnit_expl.drop(columns = 'STAID')
         resp_in = valnit_resp
@@ -523,7 +549,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
 
@@ -541,7 +569,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeriesTEMP.csv', index = False)
 
 
 
@@ -582,7 +610,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             float_opt = 'True', # 'True' or 'False'
             min_k = klim_in, # only active for 'exhaustive' option
             klim_in = klim_in, # controls max/min number of features for forward/backward selection
-            timeseries = False, # if timeseries = True then NSE and KGE are also calculated
+            timeseries = True, # if timeseries = True then NSE and KGE are also calculated
             n_jobs_in = -1) # number of cores to distribute to
                             # Note, on campus computer, using -1 instead of 1 sped up from about 16 minutes to about 6
 
@@ -616,12 +644,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     expl_in, resp_in
                     )
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -663,12 +693,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # specifiy input model
         mdl_in = mdl_in
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -702,12 +734,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # specifiy input model
         mdl_in = mdl_in
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -725,7 +759,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeriesTEMP.csv', index = False)
 
 
 
@@ -817,7 +851,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             random_state_in = 100
         )
 
-        # plot regression
+        # plot and/or calculate regression metrics
         mdl_in = regr.lasso_reg_
         expl_in = regr.expl_vars_tr_
         resp_in = train_resp
@@ -828,7 +862,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -857,7 +893,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         train_val = 'testin'
         print(train_val)
         # return prediction metrics for validation data from stations that were trained on
-        # plot regression
+        # plot and/or calculate regression metrics
         mdl_in = mdl_in
         expl_in = pd.DataFrame(regr.scaler_.transform(df_testin_expl.drop(columns = 'STAID')))
         expl_in.columns = regr.expl_vars.columns
@@ -870,7 +906,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
 
@@ -891,7 +929,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         train_val = 'valnit'
         print(train_val)
         # return prediction metrics for validation data from stations that were NOT trained on
-        # plot regression
+        # plot and/or calculate regression metrics
         mdl_in = mdl_in
         expl_in = pd.DataFrame(regr.scaler_.transform(df_valnit_expl.drop(columns = 'STAID')))
         expl_in.columns = regr.expl_vars.columns
@@ -904,7 +942,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
 
@@ -922,7 +962,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeriesTEMP.csv', index = False)
 
 
 
@@ -963,7 +1003,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             float_opt = 'True', # 'True' or 'False'
             min_k = klim_in, # only active for 'exhaustive' option
             klim_in = klim_in, # controls max/min number of features for forward/backward selection
-            timeseries = False, # if timeseries = True then NSE and KGE are also calculated
+            timeseries = True, # if timeseries = True then NSE and KGE are also calculated
             n_jobs_in = -1) # number of cores to distribute to
                             # Note, on campus computer, using -1 instead of 1 sped up from about 16 minutes to about 6
 
@@ -1002,12 +1042,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     expl_in, resp_in
                     )
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1052,12 +1094,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     expl_in, resp_in
                     )
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1094,12 +1138,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     expl_in, resp_in
                     )
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1117,7 +1163,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeriesTEMP.csv', index = False)
 
 
 
@@ -1178,7 +1224,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         clust.pca_reducer(
             nc = None, # None option includes all components
             color_in = train_ID, # 'blue'
-            plot_out = True
+            plot_out = plot_out
         )
 
 
@@ -1187,7 +1233,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # define explanatory variables - subset to first 38 components
         # since they explain 95% of the variance in the explanatory variables
         # max_comp = int(input('based on those results, how many components do you want to consider? (e.g., 38): '))
-        max_comp = clust.pca95
+        max_comp = clust.pca95_
         expl_vars_in = clust.df_pca_embedding_.iloc[:, 0:max_comp]
 
         # Instantiate a Regressor object 
@@ -1245,7 +1291,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             random_state_in = 100
         )
 
-        # plot regression
+        # plot and/or calculate regression metrics
         mdl_in = regr.lasso_reg_
         expl_in = regr.expl_vars
         resp_in = train_resp
@@ -1256,7 +1302,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1316,7 +1364,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1334,7 +1384,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         #####
         # return prediction metrics for validation data from stations that were NOT trained on
-        # plot regression
+        # plot and/or calculate regression metrics
         train_val = 'valnit'
         print(train_val)
         
@@ -1361,12 +1411,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # resp_in = train_mnanWY_tr
         id_in = valnit_ID
 
-
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1383,7 +1435,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeriesTEMP.csv', index = False)
 
     
 
@@ -1427,7 +1479,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         clust.pca_reducer(
             nc = None, # None option includes all components
             color_in = train_ID, # 'blue'
-            plot_out = True
+            plot_out = plot_out
         )
 
         
@@ -1436,7 +1488,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # define explanatory variables - subset to first 38 components
         # since they explain 95% of the variance in the explanatory variables
         # max_comp = int(input('based on those results, how many components do you want to consider? (e.g., 38): '))
-        max_comp = clust.pca95
+        max_comp = clust.pca95_
         expl_vars_in = clust.df_pca_embedding_.iloc[:, 0:max_comp]
         
         # define klim  (how many variables to consider in moder)
@@ -1455,7 +1507,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             float_opt = 'True', # 'True' or 'False'
             min_k = klim_in, # only active for 'exhaustive' option
             klim_in = klim_in, # controls max/min number of features for forward/backward selection
-            timeseries = False, # if timeseries = True then NSE and KGE are also calculated
+            timeseries = True, # if timeseries = True then NSE and KGE are also calculated
             n_jobs_in = -1) # number of cores to distribute to
                             
         # define variable holding the selected features and vifs.
@@ -1490,12 +1542,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     expl_in, resp_in
                     )
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1554,12 +1608,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # specifiy input model
         mdl_in = mdl_in
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1610,12 +1666,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # specifiy input model
         mdl_in = mdl_in
 
-        # Create predict-plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
             X_pred =  expl_in,
             y_obs = resp_in,
-            id_vars = id_in
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True
         )
 
         # append results to df_results_temp
@@ -1633,7 +1691,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeriesTEMP.csv', index = False)
 
 
 
@@ -1692,7 +1750,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             n_repeats_in = 1,
             random_state_in = 100,
             grid_in = grid_in,
-            timeseries = False,
+            timeseries = True,
             n_jobs_in = -1,
             dir_save = 'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_classlearn_model.json'   
         )
@@ -1711,22 +1769,24 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         resp_in = train_resp
         id_in = train_ID
 
-        # create predict/plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = regr.xgb_reg_, 
             X_pred = expl_in, 
             y_obs = resp_in,
-            id_vars = id_in)
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True)
 
 
 
         # define param_name to write to results indicated what parameter values were used
-        nest = regr.xgboost_params_['n_estimators']
-        colsmpl = regr.xgboost_params_['colsample_bytree']
-        mdpth = regr.xgboost_params_['max_depth']
-        gma = regr.xgboost_params_['gamma']
-        lmbd = regr.xgboost_params_['reg_lambda']
-        lrnrt = regr.xgboost_params_['learning_rate']  
+        nest = int(regr.xgboost_params_.loc[0, 'n_estimators'])
+        colsmpl = regr.xgboost_params_.loc[0,'colsample_bytree']
+        mdpth = int(regr.xgboost_params_.loc[0,'max_depth'])
+        gma = regr.xgboost_params_.loc[0,'gamma']
+        lmbd = regr.xgboost_params_.loc[0,'reg_lambda']
+        lrnrt = regr.xgboost_params_.loc[0,'learning_rate']  
         param_name = f'n_est{nest}_colsmpl{colsmpl}_mdpth{mdpth}_gma{gma}_lmbda{lmbd}_lrnrt{lrnrt}'
 
         # append results to df_results_temp
@@ -1754,21 +1814,23 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         resp_in = testin_resp
         id_in = testin_ID
 
-        # create predict/plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = regr.xgb_reg_, 
             X_pred = expl_in, 
             y_obs = resp_in,
-            id_vars = id_in)
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True)
 
-        # define param_name to write to results indicated what parameter values were used
-        nest = regr.xgboost_params_['n_estimators']
-        colsmpl = regr.xgboost_params_['colsample_bytree']
-        mdpth = regr.xgboost_params_['max_depth']
-        gma = regr.xgboost_params_['gamma']
-        lmbd = regr.xgboost_params_['reg_lambda']
-        lrnrt = regr.xgboost_params_['learning_rate']  
-        param_name = f'n_est{nest}_colsmpl{colsmpl}_mdpth{mdpth}_gma{gma}_lmbda{lmbd}_lrnrt{lrnrt}'
+        # # define param_name to write to results indicated what parameter values were used
+        # nest = int(regr.xgboost_params_.loc[0, 'n_estimators'])
+        # colsmpl = regr.xgboost_params_.loc[0,'colsample_bytree']
+        # mdpth = int(regr.xgboost_params_.loc[0,'max_depth'])
+        # gma = regr.xgboost_params_.loc[0,'gamma']
+        # lmbd = regr.xgboost_params_.loc[0,'reg_lambda']
+        # lrnrt = regr.xgboost_params_.loc[0,'learning_rate']  
+        # param_name = f'n_est{nest}_colsmpl{colsmpl}_mdpth{mdpth}_gma{gma}_lmbda{lmbd}_lrnrt{lrnrt}'
 
         # append results to df_results_temp
         to_append = regr.df_pred_performance_.copy()
@@ -1794,21 +1856,23 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         resp_in = valnit_resp
         id_in = valnit_ID
 
-        # create predict/plot object
+        # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = regr.xgb_reg_, 
             X_pred = expl_in, 
             y_obs = resp_in,
-            id_vars = id_in)
+            id_vars = id_in,
+            plot_out = plot_out,
+            timeseries = True)
 
-        # define param_name to write to results indicated what parameter values were used
-        nest = regr.xgboost_params_['n_estimators']
-        colsmpl = regr.xgboost_params_['colsample_bytree']
-        mdpth = regr.xgboost_params_['max_depth']
-        gma = regr.xgboost_params_['gamma']
-        lmbd = regr.xgboost_params_['reg_lambda']
-        lrnrt = regr.xgboost_params_['learning_rate']  
-        param_name = f'n_est{nest}_colsmpl{colsmpl}_mdpth{mdpth}_gma{gma}_lmbda{lmbd}_lrnrt{lrnrt}'
+        # # define param_name to write to results indicated what parameter values were used
+        # nest = int(regr.xgboost_params_.loc[0, 'n_estimators'])
+        # colsmpl = regr.xgboost_params_.loc[0,'colsample_bytree']
+        # mdpth = int(regr.xgboost_params_.loc[0,'max_depth'])
+        # gma = regr.xgboost_params_.loc[0,'gamma']
+        # lmbd = regr.xgboost_params_.loc[0,'reg_lambda']
+        # lrnrt = regr.xgboost_params_.loc[0,'learning_rate']   
+        # param_name = f'n_est{nest}_colsmpl{colsmpl}_mdpth{mdpth}_gma{gma}_lmbda{lmbd}_lrnrt{lrnrt}'
 
         # append results to df_results_temp
         to_append = regr.df_pred_performance_.copy()
@@ -1832,11 +1896,11 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'clust_method'] = clust_meth
 
     # Write results to csv
-    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv', 
+    df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeries.csv', 
         index = False)
 
     # write to TEMP file to for investigation if needed
-    df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', 
+    df_results_temp.to_csv(f'{dir_expl}/Results/Results_AnnualTimeSeriesTEMP.csv', 
         index = False)
 
 
@@ -1848,516 +1912,3 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
     
 
-
-
-
-
-
-
-
-    # %%  Raw -> Rescale (Standardization) -> Reduce (UMAP) -> Predict (Lasso)
-    ##############################
-
-    # print('stdrd -> UMAP -> Lasso')
-
-    # # model name for saving in csv
-    # model_name = 'strd_UMAP_lasso' # input('enter name for model (e.g., stdrd_UMAP_lasso):') 
-
-    # if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
-    #    (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
-
-        # # update model count
-        # mdl_count = mdl_count + 1
-
-    #     # UMAP
-    #     # define cluster/reducer object
-    #     clust = Clusterer(clust_vars = df_train_expl.drop(columns = ['STAID']),
-    #         id_vars = df_train_expl['STAID'])
-
-    #     # standardize data
-    #     clust.stand_norm(method = 'standardize', # 'normalize'
-    #         not_tr = not_tr_in) 
-
-    #     # apply UMAP on training data and plot
-
-    #     # apply gridsearch cross validation to identify best parameters for nn and mind
-    #     #########
-    #     print('performing CV to investigate best UMAP parameters with alpha = 0.01')
-    #     # %% Define models and pipeline
-    #     # define standard scaler
-    #     scaler = StandardScaler()
-
-    #     # define umap object
-    #     umap_reducer = umap.UMAP(
-    #                     n_components = 80,
-    #                     spread = 1, 
-    #                     random_state = 100, 
-    #                     n_epochs = 200, 
-    #                     n_jobs = -1)
-
-    #     # define lasso object
-    #     lasso_mod = Lasso(max_iter = 1000)
-
-    #     # define pipline
-    #     pipe = Pipeline(steps = [('scaler', scaler), ('umap_reducer', umap_reducer), ('lasso_mod', lasso_mod)])
-
-    #     # # %% Define parameter grid and gridsearch (exhaustive)
-
-    #     # parameters for the pipeline search
-    #     param_grid = {
-    #         'umap_reducer__n_neighbors': [2, 20, 40, 60, 80, 100], # for initial run do 6 for each
-    #         'umap_reducer__min_dist': np.arange(0.01, 1.1, 0.2),
-    #         'lasso_mod__alpha': [0.01] # np.arange(0.01, 1.01, 0.01)
-    #     }
-
-    #     search = GridSearchCV(pipe, param_grid, n_jobs = -1)
-
-    #     # Apply gridsearch to data and return best fit parameters
-
-    #     search.fit(df_train_expl.drop(columns = 'STAID'), train_resp)
-        
-    #     print(search.best_params_)
-
-    #     # print results
-    #     # print(pd.DataFrame(search.cv_results_))
-
-    #     ########
-
-
-    #     # define numer of components for n_neighbors
-    #     nc_in = 80 # 10
-    #     nn_in = int(input('enter a value for n_neighbors (e.g., 80): ')) 
-    #     mind_in = float(input('enter a value for minimum distance between points (e.g., 0.81): '))
-
-    #     clust.umap_reducer(
-    #         nn = nn_in, # 10
-    #         mind = mind_in,
-    #         sprd = 1, # dont' use for tuning - leave set to 1
-    #         nc = nc_in,
-    #         color_in = train_ID
-    #     )
-
-    #     # regression on transformed explanatory variables
-
-    #     # define explanatory variables - subset df_embedding to only embedding columns
-    #     expl_vars_in = clust.df_embedding_.iloc[:, 3:nc_in + 3]
-
-    #     # Instantiate a Regressor object 
-    #     regr = Regressor(expl_vars = expl_vars_in,
-    #         resp_var = train_resp)
-
-
-
-
-
-    #     # %%
-    #     print('performing CV with UMAP values identified above, and varying alpha')
-    #     #### Lasso regression
-    #     # search via cross validation
-    #     regr.lasso_regression(
-    #         alpha_in = list(np.arange(0.01, 1.01, 0.01)), # must be single integer or list
-    #         max_iter_in = 1000,
-    #         n_splits_in = 10,
-    #         n_repeats_in = 1,
-    #         random_state_in = 100,
-    #         n_jobs_in = -1
-    #     )
-    #     # %%
-    #     # print all results from CV
-    #     print(pd.DataFrame(regr.lassoCV_results.cv_results_))
-    #     # %%
-    #     # print('top 10 results from cross-validation for mae, rmse, and r2')
-    #     # # %%
-    #     # print(regr.df_lassoCV_mae[0:10])
-    #     # # %%
-    #     # print(regr.df_lassoCV_rmse[0:10])
-    #     # # %%
-    #     # print(regr.df_lassoCV_r2[0:10])
-
-    #     # %%
-
-    #     ##### apply best alpha identified in cross validation
-    #     train_val = 'train'
-    #     print(train_val)
-
-    #     # define alpha
-    #     # a_in = float(input('based on those results, what value do you want to use for alpha?'))
-          # a_in = regr.lasso_alpha_
-
-        
-        
-    #     ##### apply best alpha identified in cross validation
-    #     # Lasso with chosen alpha
-
-    #     # define model name and parameter name(s) to be written to files and used in file names
-    #     param_name = f'nn{nn_in}mind{mind_in}nc{nc_in}alpha{a_in}'
-
-    #     # # define model name and parameter name(s) to be written to files and used in file names
-    #     # model_name = 'stdrd_UMAP_lasso'
-    #     # param_name = 'nn80mind0.81nc{nc_in}alpha0.01{a_in}'
-
-    #     # Lasso with alpha = 0.01
-    #     regr.lasso_regression(
-    #         alpha_in = float(a_in), # must be single integer or list
-    #         max_iter_in = 1000,
-    #         n_splits_in = 10,
-    #         n_repeats_in = 1,
-    #         random_state_in = 100
-    #     )
-
-    #     # plot regression
-    #     mdl_in = regr.lasso_reg_
-    #     expl_in = regr.expl_vars
-    #     resp_in = train_resp
-    #     # resp_in = train_mnanWY_tr
-    #     id_in = train_ID
-
-    #     regr.pred_plot(
-    #         model_in = mdl_in,
-    #         X_pred =  expl_in,
-    #         y_obs = resp_in,
-    #         id_vars = id_in
-    #     )
-
-    #     # append results to df_results_temp
-    #     to_append = regr.df_pred_performance_.copy() # NOTE: copy so original df is not edited in place
-    #     # change VIF to max VIF instead of full array (full array saved to its own file for each model)
-    #     to_append['VIF'] = to_append['VIF'][0].max()
-    #     # include model
-    #     to_append['model'] = model_name
-    #     # include hyperparameters (tuning parameters)
-    #     to_append['parameters'] = [param_name]
-    #     # specify if results are from training data or validation (in) or validation (not it)
-    #     to_append['train_val'] = train_val
-
-    #     df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
-
-    #     # write vif results to csv
-    #     df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
-    #     df_vif = df_vif.rename(columns = {0: 'VIF'})
-
-    #     # Max VIF is 1, so no need to write to csv
-    #     df_vif.to_csv(
-    #         f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
-    #         index = True, 
-    #         index_label = 'feature'
-    #         )
-
-    #     #####
-
-    #     # %%
-    #     # return prediction metrics for validation data from stations that were trained on
-    #     # plot regression
-
-    #     train_val = 'testin'
-    #     print(train_val)
-
-    #     # define model in
-    #     mdl_in = mdl_in
-    #     # standardize explantory vars, give columns names, and replace vars not to be transformed
-    #     # define expl vars to work with
-    #     df_in = df_testin_expl.drop(columns = 'STAID')
-    #     expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
-    #     expl_in.columns = df_in.columns
-    #     expl_in[not_tr_in] = df_in[not_tr_in]
-
-    #     # project explanatory variables into umap space and give new df column names
-    #     expl_in_umaptr = pd.DataFrame(
-    #         clust.umap_embedding_.transform(expl_in)
-    #     )
-    #     # umap reduced data column names
-    #     expl_in_umaptr.columns = [f'Emb{i}' for i in np.arange(0, expl_in_umaptr.shape[1], 1)]
-    #     expl_in = expl_in_umaptr
-    #     resp_in = testin_resp
-    #     # resp_in = train_mnanWY_tr
-    #     id_in = testin_ID
-
-    #     regr.pred_plot(
-    #         model_in = mdl_in,
-    #         X_pred =  expl_in,
-    #         y_obs = resp_in,
-    #         id_vars = id_in
-    #     )
-
-
-    #     # append results to df_results_temp
-    #     to_append = regr.df_pred_performance_.copy()
-    #     # change VIF to max VIF instead of full array (full array saved to its own file for each model)
-    #     to_append['VIF'] = to_append['VIF'][0].max()
-    #     # include model
-    #     to_append['model'] = model_name # 'stdrd_lasso'
-    #     # include hyperparameters (tuning parameters)
-    #     to_append['parameters'] = [param_name]
-    #     # specify if results are from training data or validation (in) or validation (not it)
-    #     to_append['train_val'] = train_val
-
-    #     df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
-
-    #     #####
-    #     # return prediction metrics for validation data from stations that were NOT trained on
-    #     # plot regression
-
-    #     train_val = 'valnit'
-    #     print(train_val)
-
-    #     # define model in
-    #     mdl_in = mdl_in
-    #     # standardize explantory vars, give columns names, and replace vars not to be transformed
-    #     # define expl vars to work with
-    #     df_in = df_valnit_expl.drop(columns = 'STAID')
-    #     expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
-    #     expl_in.columns = df_in.columns
-    #     expl_in[not_tr_in] = df_in[not_tr_in]
-
-    #     # project explanatory variables into umap space and give new df column names
-    #     expl_in_umaptr = pd.DataFrame(
-    #         clust.umap_embedding_.transform(expl_in)
-    #     )
-    #     # umap reduced data column names
-    #     expl_in_umaptr.columns = [f'Emb{i}' for i in np.arange(0, expl_in_umaptr.shape[1], 1)]
-    #     expl_in = expl_in_umaptr
-    #     resp_in = valnit_resp
-    #     # resp_in = train_mnanWY_tr
-    #     id_in = valnit_ID
-
-
-    #     regr.pred_plot(
-    #         model_in = mdl_in,
-    #         X_pred =  expl_in,
-    #         y_obs = resp_in,
-    #         id_vars = id_in
-    #     )
-
-    #     # append results to df_results_temp
-    #     to_append = regr.df_pred_performance_.copy()
-    #     # change VIF to max VIF instead of full array (full array saved to its own file for each model)
-    #     to_append['VIF'] = to_append['VIF'][0].max()
-    #     # include model
-    #     to_append['model'] = model_name # 'raw_lasso'
-    #     # include hyperparameters (tuning parameters)
-    #     to_append['parameters'] = [param_name]
-    #     # specify if results are from training data or validation (in) or validation (not it)
-    #     to_append['train_val'] = train_val
-
-    #     df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
-
-    #     # Write results to csv
-    #     df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
-
-
- # %%  Raw -> Rescale (Standardization) -> Reduce (umap) -> Predict (OLS-MLR)
-    # # 
-    # # MLR feature selection - 'forward'
-
-    # print('stdrd -> UMAP -> MLR')
-    # # define model name and parameter name(s) to be written to files and used in file names
-
-    # # model name for saving in csv
-    # model_name = 'strd_UMAP_mlr' # input('enter name for model (e.g., stdrd_UMAP_mlr):') 
-
-    # (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
-    #    (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
-
-        # # update model count
-        # mdl_count = mdl_count + 1
-
-    #     klim_in = nc_in # int(input('input the maximum number of variables you want to consider (0<klim<NC): '))
-    #     param_name = f'nn{nn_in}mind{mind_in}nc{nc_in}forwardklim{klim_in}'
-
-    #     # model_name = 'stdrd_UMAP_mlr'
-    #     # param_name = 'forward_klim80'
-
-    #     regr.lin_regression_select(
-    #         sel_meth = 'forward', # 'forward', 'backward', or 'exhaustive'
-    #         float_opt = 'True', # 'True' or 'False'
-    #         min_k = 1, # only active for 'exhaustive' option
-    #         klim_in = klim_in, # controls max/min number of features for forward/backward selection
-    #         timeseries = False, # if timeseries = True then NSE and KGE are also calculated
-    #         n_jobs_in = -1) # number of cores to distribute to
-
-
-
-    #     # print smallest 5 BIC models
-    #     print(regr.df_lin_regr_performance_.sort_values(by = 'BIC')[0:5])
-
-
-    #     # define variable holding the selected features and vifs.
-    #    n_f_in = int(input('enter the number of features in the model you want to use (e.g., 41): '))
-        # n_f_in = int(regr.df_lin_regr_performance_.loc[
-        #     regr.df_lin_regr_performance_['BIC'] == min(regr.df_lin_regr_performance_['BIC']), 'n_features'
-        #     ])
-    #     vif_in = regr.df_lin_regr_performance_.loc[regr.df_lin_regr_performance_['n_features'] == n_f_in, 'VIF']
-
-    #     # Extract feature names for selecting features
-    #     features_in = pd.DataFrame(dict((vif_in))).index
-
-    #     # %%
-        
-    #     train_val = 'train'
-    #     print(train_val)
-        
-    #     # Subset appropriate explanatory variables to columns of interest
-    #     # validation data from catchments used in training
-    #     expl_in = regr.expl_vars[features_in]
-
-    #     # define response variable
-    #     resp_in = train_resp
-
-    #     # define id vars
-    #     id_in = train_ID
-    #     # id_in = pd.Series(test2.df_hd_pred_['pred_cluster'], dtype = 'category')
-
-    #     # OLS regression predict
-    #     # specifiy input model
-    #     mdl_in = LinearRegression().fit(
-    #                 # df_train_expl[features_in], train_resp
-    #                 expl_in, resp_in
-    #                 )
-
-    #     # Create predict-plot object
-    #     regr.pred_plot(
-    #         model_in = mdl_in,
-    #         X_pred =  expl_in,
-    #         y_obs = resp_in,
-    #         id_vars = id_in
-    #     )
-
-    #     # append results to df_results_temp
-    #     to_append = regr.df_pred_performance_.copy()
-    #     # change VIF to max VIF instead of full array (full array saved to its own file for each model)
-    #     to_append['VIF'] = to_append['VIF'][0].max()
-    #     # include model
-    #     to_append['model'] = model_name
-    #     # include hyperparameters (tuning parameters)
-    #     to_append['parameters'] = [param_name]
-    #     # specify if results are from training data or validation (in) or validation (not it)
-    #     to_append['train_val'] = train_val
-
-    #     df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
-
-    #     # write vif results to csv
-    #     df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
-    #     df_vif = df_vif.rename(columns = {0: 'VIF'})
-    #     df_vif.to_csv(
-    #         f'{dir_expl}/Results/VIF_dfs/{clust_meth}_{reg_in}_{model_name}_{param_name}_VIF.csv',
-    #         index = True, 
-    #         index_label = 'feature'
-    #         )
-
-    #     ##### 
-    #     # %%
-    #     # Apply to validation catchments used in training (i.e., testin)
-
-    #     train_val = 'testin'
-    #     print(train_val)
-
-    #     # standardize explantory vars, give columns names, and replace vars not to be transformed
-    #     # define expl vars to work with
-    #     df_in = df_testin_expl.drop(columns = 'STAID')
-    #     expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
-    #     expl_in.columns = df_in.columns
-    #     expl_in[not_tr_in] = df_in[not_tr_in]
-
-    #     # project explanatory variables into umap space and give new df column names
-    #     expl_in_umaptr = pd.DataFrame(
-    #         clust.umap_embedding_.transform(expl_in)
-    #     )
-    #     # umap reduced data column names
-    #     expl_in_umaptr.columns = [f'Emb{i}' for i in np.arange(0, expl_in_umaptr.shape[1], 1)]
-    #     expl_in_umaptr = expl_in_umaptr[features_in]
-    #     expl_in = expl_in_umaptr
-    #     resp_in = testin_resp
-    #     # resp_in = train_mnanWY_tr
-    #     id_in = testin_ID
-
-    #     # define response variable
-    #     resp_in = testin_resp
-
-    #     # define id vars
-    #     id_in = testin_ID
-
-    #     # OLS regression predict
-    #     # specifiy input model
-    #     mdl_in = mdl_in
-
-    #     # Create predict-plot object
-    #     regr.pred_plot(
-    #         model_in = mdl_in,
-    #         X_pred =  expl_in,
-    #         y_obs = resp_in,
-    #         id_vars = id_in
-    #     )
-
-    #     # append results to df_results_temp
-    #     to_append = regr.df_pred_performance_.copy()
-    #     # change VIF to max VIF instead of full array (full array saved to its own file for each model)
-    #     to_append['VIF'] = to_append['VIF'][0].max()
-    #     # include model
-    #     to_append['model'] = model_name
-    #     # include hyperparameters (tuning parameters)
-    #     to_append['parameters'] = [param_name]
-    #     # specify if results are from training data or validation (in) or validation (not it)
-    #     to_append['train_val'] = train_val
-
-    #     df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
-
-
-    #     #####
-    #     # Apply to validation catchments not used in training (i.e., valnit)
-
-    #     train_val = 'valnit'
-    #     print(train_val)
-
-    #     # standardize explantory vars, give columns names, and replace vars not to be transformed
-    #     # define expl vars to work with
-    #     df_in = df_valnit_expl.drop(columns = 'STAID')
-    #     expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
-    #     expl_in.columns = df_in.columns
-    #     expl_in[not_tr_in] = df_in[not_tr_in]
-
-    #     # project explanatory variables into umap space and give new df column names
-    #     expl_in_umaptr = pd.DataFrame(
-    #         clust.umap_embedding_.transform(expl_in)
-    #     )
-    #     # umap reduced data column names
-    #     expl_in_umaptr.columns = [f'Emb{i}' for i in np.arange(0, expl_in_umaptr.shape[1], 1)]
-    #     expl_in_umaptr = expl_in_umaptr[features_in]
-    #     expl_in = expl_in_umaptr
-    #     resp_in = valnit_resp
-    #     # resp_in = train_mnanWY_tr
-    #     id_in = valnit_ID
-
-    #     # define response variable
-    #     resp_in = valnit_resp
-
-    #     # define id vars
-    #     id_in = valnit_ID
-
-    #     # OLS regression predict
-    #     # specifiy input model
-    #     mdl_in = mdl_in
-
-    #     # Create predict-plot object
-    #     regr.pred_plot(
-    #         model_in = mdl_in,
-    #         X_pred =  expl_in,
-    #         y_obs = resp_in,
-    #         id_vars = id_in
-    #     )
-
-    #     # append results to df_results_temp
-    #     to_append = regr.df_pred_performance_.copy()
-    #     # change VIF to max VIF instead of full array (full array saved to its own file for each model)
-    #     to_append['VIF'] = to_append['VIF'][0].max()
-    #     # include model
-    #     to_append['model'] = model_name
-    #     # include hyperparameters (tuning parameters)
-    #     to_append['parameters'] = [param_name]
-    #     # specify if results are from training data or validation (in) or validation (not it)
-    #     to_append['train_val'] = train_val
-
-    #     df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
-
-
-    #     # Write results to csv
-    #     df_results_temp.to_csv(f'{dir_expl}/Results/Results_NonTimeSeriesTEMP.csv', index = False)
