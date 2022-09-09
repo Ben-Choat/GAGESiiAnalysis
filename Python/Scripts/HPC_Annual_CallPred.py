@@ -289,7 +289,7 @@ df_vif_write.to_csv(f'{dir_VIF}/VIF_ClsRemoved_AnnualTS_{clust_meth_in}_{region_
 # %% 
 # Call function to perform modeling
 
-regress_fun(df_train_expl = train_expl_in, # training data explanatory variables. Expects STAID to be a colu
+regress_fun(df_train_expl = train_expl_in, # training data explanatory variables. Expects STAID to be a column
             df_testin_expl = testin_expl_in, # validation data explanatory variables using same catchments that were trained on
             df_valnit_expl = valnit_expl_in, # validation data explanatory variables using different catchments than were trained on
             train_resp = train_resp_in, # training data response variables NOTE: this should be a series, not a dataframe (e.g., df_train_anWY['Ann_WY_ft'])
@@ -308,8 +308,13 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
                 'reg_lambda': [0, 1, 2], # [0], #
                 'learning_rate': [0.02, 0.1, 0.3]
                 },
-            plot_out = False # Boolean; outputs plots if True
+            plot_out = False, # Boolean; outputs plots if True,
+            train_id_var = train_expl_in['STAID'],
+            testin_id_var = testin_expl_in['STAID'],
+            valnit_id_var = valnit_expl_in['STAID']
             )
 
 
-# %%
+# %% Calculate NSE and KGE for each catchment
+
+

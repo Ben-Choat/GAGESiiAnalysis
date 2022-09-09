@@ -8,6 +8,7 @@
 
 # %% Import libraries
 
+from NSE_KGE_timeseries import NSE_KGE_Apply # NSE and KGE applied to many catchments
 from sklearn.preprocessing import StandardScaler # standardizing data
 from sklearn.preprocessing import MinMaxScaler # normalizing data (0 to 1)
 from sklearn.cluster import KMeans # kmeans
@@ -978,7 +979,6 @@ class Regressor:
     expl_vars: a pandas dataframe of explanatory variables
     resp_var: a pandas core.series.Series (a column from a pandas DataFrame)
         of the response variable
-    id_var: string
 
     Attributes
     -------------
@@ -992,6 +992,7 @@ class Regressor:
         self.expl_vars = expl_vars
         # response variable
         self.resp_var = resp_var
+       
 
     def stand_norm(self, method = 'standardize', not_tr = []):
         """
@@ -1067,6 +1068,9 @@ class Regressor:
             number of features considered if using backward selection
         timeseries: Boolean
             If set to True, then also calculate NSE, KGE, and % bias metrics
+            NOTE: NSE and KGE are not calculated for individual basins here, but all
+            catchments are used in a single calculation of NSE and KGE
+            This application of NSE is equal to RMSE
         n_jobs_in: integer
             Specify number of processors to distribute job to
 
@@ -1149,10 +1153,10 @@ class Regressor:
         VIF_all = []
         percBias_all = []
         if timeseries:
-                # Nash-Sutcliffe Efficeincy
-                NSE_all = []
-                # Kling Gupta Efficiency
-                KGE_all = []
+            # Nash-Sutcliffe Efficeincy
+            NSE_all = []
+            # Kling Gupta Efficiency
+            KGE_all = []
 
         # Apply a regression model using each set of features and report out:
         # performance metrics, coefficients, and intercept.
@@ -1213,6 +1217,7 @@ class Regressor:
                 # append results to vectors holding results
                 NSE_all.append(NSE_out)
                 KGE_all.append(KGE_out)
+
 
         # Create pandas DataFrame and add all results to it
         if timeseries:
@@ -1287,6 +1292,8 @@ class Regressor:
             If set to True, then also calculate NSE, KGE, and % bias metrics
         n_jobs_in: -1 or positive integer
             -1 means run on all available cores
+        id_var: pandas Series or array
+            unique identifiers for catchments (e.g., STAID)
 
         Attributes
         -------------
@@ -1306,6 +1313,9 @@ class Regressor:
             equal to that value.
             if a list of alpha values are provided then lasso_alpha_ is equal to the best
             alpha value from cross validation.
+        df_NSE_KGE_: pandas DataFrame
+            holds output of NSE and KGE for each catchment
+            columns = ['STAID', 'NSE', 'KGE']
         """
         try:
             X_train, y_train = self.expl_vars_tr_, self.resp_var
@@ -1484,6 +1494,20 @@ class Regressor:
                 NSE_out = NSE(ypred_out, y_train)
                 # Kling Gupta Efficiency
                 KGE_out = KGE(ypred_out, y_train)
+
+                # # define input dataframe for NSE and KGE function
+                # df_tempin = pd.DataFrame({
+                #     'y_pred': ypred_out,
+                #     'y_obs': y_train,
+                #     'ID_in': id_var
+                # })
+
+                # # apply function to calc NSE and KGE for all catchments
+                # self.df_NSE_KGE_ = NSE_KGE_Apply(df_in = df_tempin)
+
+                # # assign mean NSE and KGE to variable to be added to output metrics
+                # NSE_out = np.round(np.mean(self.df_NSE_KGE['NSE']), 4)
+                # KGE_out = np.round(np.mean(self.df_NSE_KGE['KGE']), 4)
         
             # write performance metrics to dataframe
             if timeseries:
@@ -1537,7 +1561,8 @@ class Regressor:
                        timeseries = False,
                        n_jobs_in = -1,
                        halving_factor = 3,
-                       dir_save = 'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json'):
+                       dir_save = 'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json',
+                       id_var = ''):
         # using info from here as guide: 
         # https://machinelearningmastery.com/lasso-regression-with-python/
         """
@@ -1703,10 +1728,57 @@ class Regressor:
         percBias_out = PercentBias(ypred_out, y_train)
  
         if timeseries:
-            # Nash-Sutcliffe Efficeincy
-            NSE_out = NSE(ypred_out, y_train)
-            # Kling Gupta Efficiency
-            KGE_out = KGE(ypred_out, y_train)
+            # # Nash-Sutcliffe Efficeincy
+            # NSE_out = NSE(ypred_out, y_train)
+            # # Kling Gupta Efficiency
+            # KGE_out = KGE(ypred_out, y_train)
+
+            # define input dataframe for NSE and KGE function
+            df_tempin = pd.DataFrame({
+                'y_pred': ypred_out,
+                'y_obs': y_train,
+                'ID_in': id_var
+            })
+
+            # apply function to calc NSE and KGE for all catchments
+            self.df_NSE_KGE_ = NSE_KGE_Apply(df_in = df_tempin)
+
+            # assign mean NSE and KGE to variable to be added to output metrics
+            NSE_out = np.round(np.mean(self.df_NSE_KGE_['NSE']), 4)
+            KGE_out = np.round(np.mean(self.df_NSE_KGE_['KGE']), 4)
+            # recalculate percent bias as mean of individual catchments
+            percBias_out = np.round(np.mean(self.df_NSE_KGE_['PercBias']), 4)
+            # calculate RMSE from time series
+            rmsets_out = np.round(np.mean(self.df_NSE_KGE_['RMSE']), 4)
+
+
+        # write performance metrics to dataframe
+        if timeseries:
+            df_perfmetr = pd.DataFrame({
+                'n_features': n_f_out,
+                'ssr': ssr_out,
+                'r2': r2_out,
+                'r2adj': r2adj_out,
+                'mae': mae_out,
+                'rmse': rmse_out,
+                'VIF': [VIF_out],
+                'percBias': percBias_out,
+                'NSE': NSE_out,
+                'KGE': KGE_out,
+                'RMSEts': rmsets_out
+            })
+        else:
+            df_perfmetr = pd.DataFrame({
+                'n_features': n_f_out,
+                'ssr': ssr_out,
+                'r2': r2_out,
+                'r2adj': r2adj_out,
+                'mae': mae_out,
+                'rmse': rmse_out,
+                'VIF': [VIF_out],
+                'percBias': percBias_out
+            })
+            
      
         # write performance metrics to dataframe
         if timeseries:
@@ -1760,9 +1832,10 @@ class Regressor:
         model_in,
         X_pred,
         y_obs,
-        id_vars,
+        id_color,
         timeseries = False,
-        plot_out = False):
+        plot_out = False,
+        id_var = ''):
         """
         Takes ... add description
         
@@ -1775,13 +1848,15 @@ class Regressor:
             and/or conditions associated with the response variable being predicted
         y_obs: numpy array
             Observed response variables to be used for training and validating model
-        id_vars: numeric or character array type object
+        id_color: numeric or character array type object
             e.g., numpy array or pandas.series
             Variable used to color points in predicted vs observed plots (e.g., 'aggecoregion')
         timeseries: Boolean
             if True, then KGE and NSE are included in performance metrics
         plot_out: Boolean
             if True, then output plots, otherwise, do not
+        id_var: pandas series or array
+            unique identifier for catchments (e.g., STAID)
         
         Attributes
         ----------
@@ -1863,10 +1938,29 @@ class Regressor:
 
         # If timeseries = True then also calculate NSE and KGE
         if timeseries:
-            # Nash-Sutcliffe Efficeincy
-            NSE_out = NSE(y_pred, y_obs)
-            # Kling Gupta Efficiency
-            KGE_out = KGE(y_pred, y_obs)
+            # # Nash-Sutcliffe Efficeincy
+            # NSE_out = NSE(y_pred, y_obs)
+            # # Kling Gupta Efficiency
+            # KGE_out = KGE(y_pred, y_obs)
+
+            # define input dataframe for NSE and KGE function
+            df_tempin = pd.DataFrame({
+                'y_pred': y_pred,
+                'y_obs': y_obs,
+                'ID_in': id_var
+            })
+                        
+            # apply function to calc NSE and KGE for all catchments
+            self.df_NSE_KGE_ = NSE_KGE_Apply(df_in = df_tempin)
+
+            # assign mean NSE and KGE to variable to be added to output metrics
+            NSE_out = np.round(np.mean(self.df_NSE_KGE_['NSE']), 4)
+            KGE_out = np.round(np.mean(self.df_NSE_KGE_['KGE']), 4)
+            # recalculate percent bias as mean of individual catchments
+            percBias_out = np.round(np.mean(self.df_NSE_KGE_['PercBias']), 4)
+            # calculate RMSE from time series
+            rmsets_out = np.round(np.mean(self.df_NSE_KGE_['RMSE']), 4)
+
 
         # write performance metrics to dataframe
         if timeseries:
@@ -1880,7 +1974,8 @@ class Regressor:
                 'VIF': [VIF_out],
                 'percBias': percBias_out,
                 'NSE': NSE_out,
-                'KGE': KGE_out
+                'KGE': KGE_out,
+                'RMSEts': rmsets_out
             })
         else:
             df_perfmetr = pd.DataFrame({
@@ -1899,7 +1994,7 @@ class Regressor:
             df_in = pd.DataFrame({
                 'observed': y_obs,
                 'predicted': y_pred,
-                'ID': id_vars
+                'ID': id_color
             })
             # Plot predicted vs observed
             p = (
