@@ -4,8 +4,13 @@
 # the valnit data that are poorly represented by the training data.
 # That is to say, the models perform poorly on those catchments.
 
-# Here I am exploring some moethodologies for comparing the different partitions
-# of data.
+# After my initial partitioning of data in R, some stations have needed to be dropped
+# and because of results indicating the testing data from the original partitioning
+# results in partitions of data from very different distributions ... meaning
+# the training data was not representative of all catchments.
+
+# So, Here I repartition the data using adversarial validation to ensure partitions
+# are from similar distributions
 
 # %% import libraries
 
@@ -17,6 +22,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from Regression_PerformanceMetrics_Functs import VIF
 import os # for checking if directories exist and/or making directories
+import glob # for bash like commands
 import shutil # for copying files
 # import plotnine as p9
 
@@ -79,15 +85,10 @@ df_expl_all = df_expl_all.drop(
 # one hot encode GEOL_REDDBUSH_DOM columns
 df_expl_all = pd.get_dummies(df_expl_all)
 
-# # Read in training ID vars and rewrite as ID_all_avail98_12.csv
-# df_ID_all_avail98_12 = pd.read_csv(
-#     f'{dir_expl}/ID_train.csv',
-#     dtype = {'STAID': 'string'}).drop(columns = 'Unnamed: 0')
+# calculate mean variables
 
-# df_ID_all_avail98_12.to_csv(
-#     f'{dir_expl}/ID_all_avail98_12.csv',
-#     index = False
-# )
+df_expl_all_mn = df_expl_all.groupby('STAID').mean().reset_index()
+
 
 # read in ID file (e.g., holds aggecoregions) with gauges available from '98-'12
 df_ID = pd.read_csv(
@@ -95,81 +96,23 @@ df_ID = pd.read_csv(
     dtype = {'STAID': 'string'}
 ).drop(['CLASS', 'AGGECOREGION'], axis = 1)
 
+
+# read in list of STAIDs that DAYMET API failed to download data for
+
+daily_fails = pd.read_csv(
+    'D:/DataWorking/Daymet/Daymet_Daily/Daymet_daily_fails.csv',
+    dtype = {'site_no': 'string'}
+)
+
+# remove the 271 catchments that failed to download if they are in the df_ID df
+# NOTE: 190 catchments from df_ID were not succesfully downloaded (DAYMET)
+temploc = np.where(df_ID['STAID'].isin(daily_fails['site_no']))
+
+df_ID.drop(df_ID.index[temploc], inplace = True)
+
 ###################
 
-# %% Investigate correlation between variables
 
-# calculate mean variables
-
-df_expl_all_mn = df_expl_all.groupby('STAID').mean().reset_index()
-
-#####
-# Remove variables with a pearsons r > defined threshold
-#####
-
-# # define threshold
-# th_in = 0.95
-
-# # using algorith found here:
-# # https://stackoverflow.com/questions/29294983/how-to-calculate-correlation-between-all-columns-and-remove-highly-correlated-on
-# # define working data
-# Xtrain = df_expl_all_mn.drop(
-#     ['STAID', 'year'], axis = 1
-# )
-# # Xtrain = Xtrain_dr
-
-# # calculate correlation
-# df_cor = Xtrain.corr(method = 'pearson').abs()
-
-# # Select upper triangle of correlation matrix
-# upper = df_cor.where(np.triu(np.ones(df_cor.shape), k = 1).astype(bool))
-
-# # Find features with correlation greater than 0.95
-# to_drop = [column for column in upper.columns if any(upper[column] > th_in)]
-
-# # Drop features 
-# Xtrain_dr = Xtrain.drop(to_drop, axis=1) #, inplace=True)
-##################
-
-# #####
-# # Remove variables with a VIF > defined threshold
-# #####
-
-# X_in = df_expl_all_mn.drop(
-#     ['STAID', 'year'], axis = 1
-# )
-
-# vif_th = 10 # 20
-
-# # calculate all vifs and store in dataframe
-# df_vif = VIF(X_in)
-
-# # initiate array to hold varibles that have been removed
-# df_removed = []
-
-# while any(df_vif > vif_th):
-#     # find max vifs and remove. If > 1 max vif, then remove only 
-#     # the first one
-#     maxvif = np.where(df_vif == df_vif.max())[0][0]
-
-#     # append inices of max vifs to removed dataframe
-#     df_removed.append(df_vif.index[maxvif])
-
-#     # drop max vif feature
-#     # df_vif.drop(df_vif.index[maxvif], inplace = True)
-    
-#     # calculate new vifs
-#     df_vif = VIF(X_in.drop(df_removed, axis = 1))
-
-# # redefine mean explanatory var df by dropping 'df_removed' vars and year column
-# # drop columns from mean and timeseries explanatory vars
-# df_expl_all_mn = df_expl_all_mn.drop(
-#     df_removed + ['year'], axis = 1
-# )
-
-# df_expl_all = df_expl_all.drop(
-#     df_removed, axis = 1
-# )
 
 
 # %% Investigate partitinionings with various random seeds
@@ -177,8 +120,8 @@ df_expl_all_mn = df_expl_all.groupby('STAID').mean().reset_index()
 # NOTE:
 # changing how I am partitioning compared to original partitioning
 # using only the 3214 catchments with continuous data from 1998-2012 (15 years)
-# Of the ~ 3211 60% goes to training
-# of the remaining 40%, ~70% goes to valnit and ~30% goes to testnit
+# Of the ~ 3211 70% goes to training
+# of the remaining 30%, ~70% goes to valnit and ~30% goes to testnit
 
 # define empty dataframe to append results to
 cv_results = pd.DataFrame({
@@ -196,7 +139,7 @@ for rs in np.arange(100, 1100, 100):
 
     X_tr, X_other = train_test_split(
         df_ID,
-        train_size = 0.60,
+        train_size = 0.70,
         random_state = random_state,
         stratify = df_ID['AggEcoregion']
     )
@@ -321,11 +264,11 @@ cv_results
 # %% define final split using best performing seed
 
 # set seed
-random_state = 200
+random_state = 900
 
 X_tr, X_other = train_test_split(
     df_ID,
-    train_size = 0.60,
+    train_size = 0.70,
     random_state = random_state,
     stratify = df_ID['AggEcoregion']
 )
@@ -819,4 +762,80 @@ temp_df.to_csv(
     f'{dir_DMT}/monthly/DAYMET_monthly_testnit.csv',
     index = False
 )
+# %%
+# %%
+##########################
+# Daily DAYMET data
+##########################
+
+# make daily_DAYMET folder if it does not exist
+# see if directory exists - if not - make it
+if not os.path.exists(f'{dir_DMT}/daily'):
+    os.mkdir(f'{dir_DMT}/daily')
+
+# define names to be used to read through files
+name_list = ['nonref_CntlPlains', 'nonref_EastHghlnds', 'nonref_MxWdShld', 
+                'nonref_NorthEast', 'nonref_SECstPlain', 'nonref_SEPlains', 
+                'nonref_WestMnts', 'nonref_WestPlains', 'nonref_WestXeric', 'ref_all']
+
+for name in name_list:
+   
+    # read in daily daymet data
+    df_temp = pd.read_csv(
+        f'D:/DataWorking/Daymet/Daymet_Daily/Daymet_daily_{name}.csv',
+        dtype = {'site_no': 'string'}
+    )
+
+    # split dates by / and assign to individual columns
+    dts_split = np.vstack(df_temp['date'].str.split('/'))
+    df_temp['month'] = dts_split[:, 0]
+    df_temp['day'] = dts_split[:, 1]
+    df_temp['year'] = dts_split[:, 2]
+
+    # write daily water yield
+    # training
+    temp_df = df_temp[
+        (df_temp['site_no'].isin(id_tr['STAID'])) &
+        (pd.to_numeric(df_temp['year']).isin(np.arange(1998, 2008, 1)))
+    ]
+
+    # write to csv
+    temp_df.to_csv(
+        f'{dir_DMT}/daily/DAYMET_daily_{name}_train.csv',
+        index = False
+    )
+
+    # testin
+    temp_df = df_temp[
+        (df_temp['site_no'].isin(id_tr['STAID'])) &
+        (pd.to_numeric(df_temp['year']).isin(np.arange(2008, 2013, 1)))
+    ]
+
+    # write to csv
+    temp_df.to_csv(
+        f'{dir_DMT}/daily/DAYMET_daily_{name}_testin.csv',
+        index = False
+    )
+
+    # valnit
+    temp_df = df_temp[
+        df_temp['site_no'].isin(id_vnit['STAID'])
+    ]
+
+    # write to csv
+    temp_df.to_csv(
+        f'{dir_DMT}/DAYMET_daily_{name}_valnit.csv',
+        index = False
+    )
+
+    # testnit
+    temp_df = df_temp[
+        df_temp['site_no'].isin(id_tnit['STAID'])
+    ]
+
+    # write to csv
+    temp_df.to_csv(
+        f'{dir_DMT}/daily/DAYMET_daily_{name}_testnit.csv',
+        index = False
+    )
 # %%
