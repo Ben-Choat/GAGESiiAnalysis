@@ -12,18 +12,59 @@
 from HPC_MeanAnnual_Callable import *
 import pandas as pd
 import os
+import sys
 
+# %% 
+# Define variables specifying the clustering method used (e.g., AggEcoregion or UMAPHDBDCAN) and
+# the region (e.g., EastHghlnds or 3)
+
+# define clustering method used
+# this variable is only used for keeping track fo results
+clust_meth_in =  sys.argv[1] #  # 'None' # 'AggEcoregion' #
+
+# list of possible AggEcoregions:
+# 'All
+# 'NorthEast', 'SECstPlain', 'SEPlains', 'EastHghlnds', 'CntlPlains',
+#       'MxWdShld', 'WestMnts', 'WestPlains', 'WestXeric'
+# set region_in = 'All' to include all data
+region_in =  sys.argv[2] #  # 'All' #'SEPlains' #
 
 # %% load data
 
+# # water yield directory
+# dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+
+# # explantory var (and other data) directory
+# dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+
+# # directory to write csv holding removed columns (due to high VIF)
+# dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
+
+
+# main working directory
+# NOTE: may need to change '8' below to a different value
+# dir_Work = '/media/bchoat/2706253089/GAGES_Work' 
+dir_Work = os.getcwd()[0:(len(os.getcwd()) - 8)]
+# dir_Work = '/scratch/bchoat'
+
 # water yield directory
-dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+# dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+dir_WY = f'{dir_Work}/data_work/USGS_discharge'
+
+# DAYMET directory
+# dir_DMT = 'D:/DataWorking/Daymet/train_val_test'
+dir_DMT = f'{dir_Work}/data_work/Daymet'
 
 # explantory var (and other data) directory
-dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+# dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+dir_expl = f'{dir_Work}/data_work/GAGESiiVariables'
 
 # directory to write csv holding removed columns (due to high VIF)
-dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
+# dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
+dir_VIF = f'{dir_Work}/data_out/mean_annual/VIF_Removed'
+
+
+
 
 # GAGESii explanatory vars
 # training
@@ -106,48 +147,21 @@ del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY
 
 
 
-
 # %% 
-# Define input variables for modeling
-
-# Here are the function inputs
-# def regress_fun(df_train_expl, # training data explanatory variables. Expects STAID to be a column
-#                 df_testin_expl, # validation data explanatory variables using same catchments that were trained on
-#                 df_valnit_expl, # validation data explanatory variables using different catchments than were trained on
-#                 train_resp, # training data response variables NOTE: this should be a series, not a dataframe (e.g., df_train_mnanWY['Ann_WY_ft'])
-#                 testin_resp, # validation data response variables using same catchments that were trained on
-#                 valnit_resp, # validation data response variables using different catchments than were trained on
-#                 train_ID, # training data id's (e.g., clusters or ecoregions; df_train_ID['AggEcoregion'])
-#                 testin_ID, # validation data id's from catchments used in training (e.g., clusters or ecoregions)
-#                 valnit_ID, # # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
-#                 clust_meth, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
-#                 reg_in, # region label, i.e., 'NorthEast'
-#                 grid_in, # dict with XGBoost parameters
-#                 plot_out = False # Boolean; outputs plots if True
 
 ########
 # subset data to catchment IDs that match the cluster or region being predicted
 ########
 
-# define clustering method used
-# this variable is only used for keeping track fo results
-clust_meth_in = 'AggEcoregion' # 'None' # 
-
-# list of possible AggEcoregions:
-# 'All
-# 'NorthEast', 'SECstPlain', 'SEPlains', 'EastHghlnds', 'CntlPlains',
-#       'MxWdShld', 'WestMnts', 'WestPlains', 'WestXeric'
-# set region_in = 'All' to include all data
-region_in =  'WestPlains' # 'All' #
 
 if region_in == 'All':
     cidtrain_in = df_train_ID
     cidtestin_in = df_testin_ID
     cidvalnit_in = df_valnit_ID
 else:
-    cidtrain_in = df_train_ID[df_train_ID['AggEcoregion'] == region_in]
-    cidtestin_in = df_testin_ID[df_testin_ID['AggEcoregion'] == region_in]
-    cidvalnit_in = df_valnit_ID[df_valnit_ID['AggEcoregion'] == region_in]
+    cidtrain_in = df_train_ID[df_train_ID[clust_meth_in] == region_in]
+    cidtestin_in = df_testin_ID[df_testin_ID[clust_meth_in] == region_in]
+    cidvalnit_in = df_valnit_ID[df_valnit_ID[clust_meth_in] == region_in]
 
 # Water yield
 train_resp_in = pd.merge(
@@ -188,7 +202,7 @@ valnit_ID_in = pd.merge(
 #####
 # Remove variables with a VIF > defined threshold (e.g., 10)
 #####
- 
+
 X_in = train_expl_in.drop(
     ['STAID'], axis = 1
 )
@@ -302,8 +316,14 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
                 'reg_lambda': [0, 1, 2], # [0], #
                 'learning_rate': [0.02, 0.1, 0.3]
                 },
-            plot_out = False # Boolean; outputs plots if True
+            plot_out = False, # Boolean; outputs plots if True
+            train_id_var = train_expl_in['STAID'], # unique identifier for training catchments
+            testin_id_var = testin_expl_in['STAID'], # unique identifier for testin catchments
+            valnit_id_var = valnit_expl_in['STAID'], # unique identifier for valnit catchments
+            dir_expl_in = f'{dir_Work}/data_out/mean_annual' # directory where to write results
             )
 
 
-# %%
+
+
+

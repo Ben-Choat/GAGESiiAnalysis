@@ -30,6 +30,7 @@
 from GAGESii_Class import Clusterer
 from GAGESii_Class import Regressor
 from Regression_PerformanceMetrics_Functs import *
+from NSE_KGE_timeseries import * # NSE_KGE_Apply
 import pandas as pd
 # import plotnine as p9
 # import plotly.express as px # easier interactive plots
@@ -60,7 +61,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 clust_meth, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
                 reg_in, # region label, i.e., 'NorthEast'
                 grid_in, # dict with XGBoost parameters
-                 train_id_var, # unique identifiers (e.g., STAID)
+                train_id_var, # unique identifiers (e.g., STAID)
                 testin_id_var, # unique identifiers (e.g., STAID)
                 valnit_id_var, # unique identifiers (e.g., STAID)
                 plot_out = False, # Boolean; outputs plots if True
@@ -68,35 +69,61 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                 ncores_in = 8 # the number of cores to be used by processes that utilize parallel processing
                 ):
 
-
-
     # instantiate counter to know how many rows to edit with the current region label
     mdl_count = 0
-
+    
     # specify the number of cores you want to use
     ncores = ncores_in
+    
 
     # %% Define variables
     # explantory var (and other data) directory
+    # dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out'
+    # dir_expl = '/media/bchoat/2706253089/GAGES_Work/Data_Out/'
+    # dir_expl = 'E:/GAGES_Work/Data_Out/'
     dir_expl = dir_expl_in
 
     # %% Load or define dataframe to append results to as models are generated
     # %% Define dataframe to append results to as models are generated
+    
+    # df to hold results based on all catchments
     try:
-        df_results_temp = pd.read_csv(f'{dir_expl}/Results_NonTimeSeries_{clust_meth}_{reg_in}.csv')
+        df_results_temp = pd.read_csv(f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}.csv')
     except:
         df_results_temp = pd.DataFrame({
             'model': [], # specify which model, e.g., 'raw_lasso'
             'train_val': [], # specify if results from training, validation (i.e., testin or testint)
             'parameters': [], # any hyperparameters (e.g., alpha penalty in lasso regression)
             'n_features': [], # number of explanatory variables (i.e., featuers)
+            'n_catchments': [], # number of catchments used
             'ssr': [], # sum of squared residuals
             'r2': [], # unadjusted R2
             'r2adj': [], # adjusted R2
             'mae': [], # mean absolute error
             'rmse': [], # root mean square error
+            'NSE': [],
+            'KGE': [],
             'VIF': [], # variance inflation factor (vector of all included featuers and related VIFs)
             'percBias': [], # percent bias
+            'RMSEts': [],
+            'region': [], # the region or cluster number being modeled
+            'clust_method': [] # the clustering method used to generate region
+        })
+
+
+    # df to hold results from individual catchments
+    try:
+        df_results_indc_temp = pd.read_csv(f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_IndCatch.csv')
+    except:
+        df_results_indc_temp = pd.DataFrame({
+            'model': [], # specify which model, e.g., 'raw_lasso'
+            'STAID': [], # the station to which metrics are associated
+            'train_val': [], # specify if results from training, validation (i.e., testin or testint)
+            'parameters': [], # any hyperparameters (e.g., alpha penalty in lasso regression)
+            'NSE': [], # nash-sutcliffe efficiency
+            'KGE': [], # kling-gupta efficiency
+            'percBias': [], # percent bias
+            'RMSEts': [], # RMSE from the timeseries (ts) of each basin
             'region': [], # the region or cluster number being modeled
             'clust_method': [] # the clustering method used to generate region
         })
@@ -123,27 +150,27 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
     #########################
 
-    # %% Mean annual precipitation as only predictor ols
-    print('resp vs. mean annual precipitation')
+    # %% Mean monthly precipitation as only predictor ols
+    print('resp vs. mean monthly precipitation')
 
     model_name = 'regr_precip' # input('enter name for model (e.g., regr_precip):') # regr_precip'
 
     if (not any(df_results_temp.loc[(df_results_temp['model'] == model_name) &
         (df_results_temp['clust_method'] == clust_meth), 'region'] == reg_in)):
 
-        if 'PPT_AVG_Basin' in df_train_expl.columns:
+        if 'prcp' in df_train_expl.columns:
 
             # update model count
             mdl_count = mdl_count + 1
             
-            parameters = 'none'
+            param_name = 'none'
             n_features = 1
 
             train_val = 'train'
             print(train_val)
 
             # define explanatory and response vars
-            expl_in = np.array(df_train_expl['PPTAVG_BASIN']).reshape(-1,1)
+            expl_in = np.array(df_train_expl['prcp']).reshape(-1,1)
             resp_in = train_resp
 
             model = LinearRegression().fit(expl_in, resp_in)
@@ -159,25 +186,72 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             mae_out = mean_absolute_error(resp_in, y_predicted)
             # RMSE
             rmse_out = mean_squared_error(resp_in, y_predicted, squared = False)
+            # NSE
+            # nse_out = NSE(y_predicted, resp_in)
+            # define input dataframe for NSE and KGE function
+            df_tempin = pd.DataFrame({
+                'y_pred': y_predicted,
+                'y_obs': resp_in,
+                'ID_in': train_id_var
+            })
+                        
+            # apply function to calc NSE and KGE for all catchments
+            df_NSE_KGE = NSE_KGE_Apply(df_in = df_tempin)
+
+            # assign mean NSE and KGE to variable to be added to output metrics
+            nse_out = np.round(np.median(df_NSE_KGE['NSE']), 4)
+            kge_out = np.round(np.median(df_NSE_KGE['KGE']), 4)
+            # recalculate percent bias as mean of individual catchments
+            pbias_out = np.round(np.median(df_NSE_KGE['PercBias']), 4)
+            # calculate RMSE from time series
+            rmsets_out = np.round(np.median(df_NSE_KGE['RMSE']), 4)
+            
+            
+            # KGE
+            # kge_out = KGE(y_predicted, resp_in)
 
             # % bias
             pbias_out = PercentBias(y_predicted, resp_in)
 
+            # append metrics based on all catchments
             to_append = pd.DataFrame({
                 'model': model_name,
                 'train_val': train_val,
-                'parameters': parameters,
+                'parameters': param_name,
                 'n_features': n_features,
                 'ssr': ssr_out,
                 'r2': r2_out,
                 'r2adj': r2adj_out,
                 'mae': mae_out,
                 'rmse': rmse_out,
+                'NSE': nse_out,
+                'KGE': kge_out,
                 'VIF': 1,
-                'percBias': pbias_out
+                'percBias': pbias_out,
+                'RMSEts': rmsets_out
             }, index = [0])
 
             df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+            # calculate the number of times to repeat single vars (e.g., model name)
+            nrep = df_train_expl['STAID'].unique().shape[0]
+            # append metrics based on individual catchments
+            to_append = pd.DataFrame({
+                'model': [model_name] * nrep,
+                'STAID': df_train_expl['STAID'].unique(),
+                'train_val': [train_val] * nrep,
+                'parameters': [param_name] * nrep,
+                'NSE': df_NSE_KGE['NSE'],
+                'KGE': df_NSE_KGE['KGE'],
+                'percBias': df_NSE_KGE['PercBias'],
+                'RMSEts': df_NSE_KGE['RMSE']
+            })
+
+            # append results to df
+            df_results_indc_temp = pd.concat(
+                [df_results_indc_temp, to_append], ignore_index = True
+                )
+
             
             # prepare dataframe for plotting performance
             df_in = pd.DataFrame({
@@ -211,7 +285,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             print(train_val)
 
             # define explanatory and response vars
-            expl_in = np.array(df_testin_expl['PPTAVG_BASIN']).reshape(-1,1)
+            expl_in = np.array(df_testin_expl['prcp']).reshape(-1,1)
             resp_in = testin_resp
 
             model = model
@@ -227,6 +301,29 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             mae_out = mean_absolute_error(resp_in, y_predicted)
             # RMSE
             rmse_out = mean_squared_error(resp_in, y_predicted, squared = False)
+                        # NSE
+            # nse_out = NSE(y_predicted, resp_in)
+            # define input dataframe for NSE and KGE function
+            df_tempin = pd.DataFrame({
+                'y_pred': y_predicted,
+                'y_obs': resp_in,
+                'ID_in': testin_id_var
+            })
+                        
+            # apply function to calc NSE and KGE for all catchments
+            df_NSE_KGE = NSE_KGE_Apply(df_in = df_tempin)
+
+            # assign mean NSE and KGE to variable to be added to output metrics
+            nse_out = np.round(np.median(df_NSE_KGE['NSE']), 4)
+            kge_out = np.round(np.median(df_NSE_KGE['KGE']), 4)
+            # recalculate percent bias as model_name] *mean of individual catchments
+            pbias_out = np.round(np.median(df_NSE_KGE['PercBias']), 4)
+            # calculate RMSE from time series
+            rmsets_out = np.round(np.median(df_NSE_KGE['RMSE']), 4)
+            
+            
+            # KGE
+            # kge_out = KGE(y_predicted, resp_in)
 
             # % bias
             pbias_out = PercentBias(y_predicted, resp_in)
@@ -234,18 +331,41 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             to_append = pd.DataFrame({
                 'model': model_name,
                 'train_val': train_val,
-                'parameters': parameters,
+                'parameters': param_name,
                 'n_features': n_features,
                 'ssr': ssr_out,
                 'r2': r2_out,
                 'r2adj': r2adj_out,
                 'mae': mae_out,
                 'rmse': rmse_out,
+                'NSE': nse_out,
+                'KGE': kge_out,
                 'VIF': 1,
-                'percBias': pbias_out
+                'percBias': pbias_out,
+                'RMSEts': rmsets_out
             }, index = [0])
 
             df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+            
+            # calculate the number of times to repeat single vars (e.g., model name)
+            nrep = df_testin_expl['STAID'].unique().shape[0]
+            # append metrics based on individual catchments
+            to_append = pd.DataFrame({
+                'model': [model_name] * nrep,
+                'STAID': df_testin_expl['STAID'].unique(),
+                'train_val': [train_val] * nrep,
+                'parameters': [param_name] * nrep,
+                'NSE': df_NSE_KGE['NSE'],
+                'KGE': df_NSE_KGE['KGE'],
+                'percBias': df_NSE_KGE['PercBias'],
+                'RMSEts': df_NSE_KGE['RMSE']
+            })
+
+            # append results to df
+            df_results_indc_temp = pd.concat(
+                [df_results_indc_temp, to_append], ignore_index = True
+                )
             
             
             # prepare dataframe for plotting performance
@@ -280,7 +400,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             print(train_val)
 
             # define explanatory and response vars
-            expl_in = np.array(df_valnit_expl['PPTAVG_BASIN']).reshape(-1,1)
+            expl_in = np.array(df_valnit_expl['prcp']).reshape(-1,1)
             resp_in = valnit_resp
 
             model = model
@@ -296,6 +416,29 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             mae_out = mean_absolute_error(resp_in, y_predicted)
             # RMSE
             rmse_out = mean_squared_error(resp_in, y_predicted, squared = False)
+            # NSE
+            # nse_out = NSE(y_predicted, resp_in)
+            # define input dataframe for NSE and KGE function
+            df_tempin = pd.DataFrame({
+                'y_pred': y_predicted,
+                'y_obs': resp_in,
+                'ID_in': valnit_id_var
+            })
+                        
+            # apply function to calc NSE and KGE for all catchments
+            df_NSE_KGE = NSE_KGE_Apply(df_in = df_tempin)
+
+            # assign mean NSE and KGE to variable to be added to output metrics
+            nse_out = np.round(np.median(df_NSE_KGE['NSE']), 4)
+            kge_out = np.round(np.median(df_NSE_KGE['KGE']), 4)
+            # recalculate percent bias as mean of individual catchments
+            pbias_out = np.round(np.median(df_NSE_KGE['PercBias']), 4)
+            # calculate RMSE from time series
+            rmsets_out = np.round(np.median(df_NSE_KGE['RMSE']), 4)
+            
+            
+            # KGE
+            # kge_out = KGE(y_predicted, resp_in)
 
             # % bias
             pbias_out = PercentBias(y_predicted, resp_in)
@@ -303,21 +446,48 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             to_append = pd.DataFrame({
                 'model': model_name,
                 'train_val': train_val,
-                'parameters': parameters,
+                'parameters': param_name,
                 'n_features': n_features,
                 'ssr': ssr_out,
                 'r2': r2_out,
                 'r2adj': r2adj_out,
                 'mae': mae_out,
                 'rmse': rmse_out,
+                'NSE': nse_out,
+                'KGE': kge_out,
                 'VIF': 1,
-                'percBias': pbias_out
+                'percBias': pbias_out,
+                'RMSEts': rmsets_out
             }, index = [0])
 
             df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
-            df_results_temp.to_csv(f'{dir_expl}/Results_NonTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+            df_results_temp.to_csv(f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
 
+
+            # calculate the number of times to repeat single vars (e.g., model name)
+            nrep = df_valnit_expl['STAID'].unique().shape[0]
+            # append metrics based on individual catchments
+            to_append = pd.DataFrame({
+                'model': [model_name] * nrep,
+                'STAID': df_valnit_expl['STAID'].unique(),
+                'train_val': [train_val] * nrep,
+                'parameters': [param_name] * nrep,
+                'NSE': df_NSE_KGE['NSE'],
+                'KGE': df_NSE_KGE['KGE'],
+                'percBias': df_NSE_KGE['PercBias'],
+                'RMSEts': df_NSE_KGE['RMSE']
+            })
+
+            # append results to df
+            df_results_indc_temp = pd.concat(
+                [df_results_indc_temp, to_append], ignore_index = True
+                )
+            # write to csv
+            df_results_indc_temp.to_csv(
+                f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_IndCatch.csv',  
+                index = False
+                )
 
 
             # prepare dataframe for plotting performance
@@ -374,16 +544,6 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
 
-
-   
-
-
-
-
-
-
-
-
     ########################
     #########################
     # NEXT MODELING PATH
@@ -397,7 +557,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
     # regression on transformed explanatory variables
     # Instantiate a Regressor object 
-    regr = Regressor(expl_vars = df_train_expl.drop(columns = ['STAID']),
+    regr = Regressor(expl_vars = df_train_expl.drop(['STAID', 'year', 'month'], axis = 1),
         resp_var = train_resp) # train_mnanWY_tr)# 
 
     regr.stand_norm(method = 'standardize', # 'normalize'
@@ -423,8 +583,12 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             n_splits_in = 10,
             n_repeats_in = 1,
             random_state_in = 100,
-            n_jobs_in = ncores
+            n_jobs_in = ncores,
+            timeseries = True,
+            # custom_loss = KGE_Objective,
+            id_var = train_id_var
         )
+        
         # print all results from CV
         pd.DataFrame(regr.lassoCV_results.cv_results_)
 
@@ -454,8 +618,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             max_iter_in = 1000,
             n_splits_in = 10,
             n_repeats_in = 1,
-            random_state_in = 100
-        )
+            random_state_in = 100,
+            id_var = train_id_var,
+            timeseries = True)
 
         # plot and/or calculate regression metrics
         mdl_in = regr.lasso_reg_
@@ -471,9 +636,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
-        )
+            )
 
         # append results to df_results_temp
         to_append = regr.df_pred_performance_.copy() # NOTE: copy so original df is not edited in place
@@ -487,6 +652,27 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         to_append['train_val'] = train_val
 
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+
+         # calculate the number of times to repeat single vars (e.g., model name)
+        nrep = df_train_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_train_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+        
 
         # write vif results to csv
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
@@ -503,13 +689,13 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # return prediction metrics for validation data from stations that were trained on
         # plot and/or calculate regression metrics
         mdl_in = mdl_in
-        expl_in = pd.DataFrame(regr.scaler_.transform(df_testin_expl.drop(columns = 'STAID')))
+        expl_in = pd.DataFrame(regr.scaler_.transform(df_testin_expl.drop(['STAID', 'year', 'month'], axis = 1)))
         expl_in.columns = regr.expl_vars.columns
         expl_in[not_tr_in] = regr.expl_vars[not_tr_in]
         resp_in = testin_resp
         # resp_in = train_mnanWY_tr
         id_in = testin_ID
-        id_var_in = train_id_var
+        id_var_in = testin_id_var
 
         regr.pred_plot(
             model_in = mdl_in,
@@ -517,7 +703,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -535,19 +721,38 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
+        nrep = df_testin_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_testin_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+        
+
         #####
         train_val = 'valnit'
         print(train_val)
         # return prediction metrics for validation data from stations that were NOT trained on
         # plot and/or calculate regression metrics
         mdl_in = mdl_in
-        expl_in = pd.DataFrame(regr.scaler_.transform(df_valnit_expl.drop(columns = 'STAID')))
+        expl_in = pd.DataFrame(regr.scaler_.transform(df_valnit_expl.drop(['STAID', 'year', 'month'], axis = 1)))
         expl_in.columns = regr.expl_vars.columns
         expl_in[not_tr_in] = regr.expl_vars[not_tr_in]
         resp_in = valnit_resp
         # resp_in = train_mnanWY_tr
         id_in = valnit_ID
-        id_var_in = train_id_var
+        id_var_in = valnit_id_var
 
         regr.pred_plot(
             model_in = mdl_in,
@@ -555,7 +760,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -574,7 +779,30 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results_NonTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+
+        nrep = df_valnit_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_valnit_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+        # write to csv
+        df_results_indc_temp.to_csv(
+            f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_IndCatch.csv',  
+            index = False
+            )
 
 
 
@@ -598,7 +826,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
     
         # define klim  (how many variables to consider in model)
         # klim_in = int(input('How many variables do you want to consider (0<klim<81): '))
-        klim_in = (df_train_expl.shape[1] - 2) if df_train_expl.shape[1] < df_train_expl.shape[0] else df_train_expl.shape[0] - 2
+        klim_in = (df_train_expl.shape[1] - 3) if df_train_expl.shape[1] < df_train_expl.shape[0] else df_train_expl.shape[0] - 2
         
         ##### apply best alpha identified in cross validation
         # Lasso with chosen alpha
@@ -615,9 +843,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             float_opt = 'True', # 'True' or 'False'
             min_k = klim_in, # only active for 'exhaustive' option
             klim_in = klim_in, # controls max/min number of features for forward/backward selection
-            timeseries = False, # if timeseries = True then NSE and KGE are also calculated
+            timeseries = True, # if timeseries = True then NSE and KGE are also calculated
             n_jobs_in = ncores, # number of cores to distribute to
-            id_var = train_id_var) # ids (e.g., catchments) to use when dividing for CV
+            id_var = train_id_var) # ids (e.g., catchments) to use when dividing for CV                           
 
         # %%
         train_val = 'train'
@@ -645,7 +873,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # define id vars
         id_in = train_ID
-        id_var_in = train_id_var
+        # id_in = pd.Series(test2.df_hd_pred_['pred_cluster'], dtype = 'category')
 
         # OLS regression predict
         # specifiy input model
@@ -654,6 +882,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     expl_in, resp_in
                     )
 
+        # define unique identifiers
+        id_var_in = train_id_var
+
         # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
@@ -661,7 +892,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -677,6 +908,26 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         to_append['train_val'] = train_val
 
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_train_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_train_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+
 
         # write vif results to csv
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
@@ -699,7 +950,6 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # define id vars
         id_in = testin_ID
-        id_var_in = train_id_var
 
         # OLS regression predict
         # specifiy input model
@@ -707,6 +957,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     # df_train_mnexpl[features_in], df_train_mnanWY
                     expl_in, resp_in
                     )
+        # define unique identifiers
+        id_var_in = testin_id_var
 
         # plot and/or calculate regression metrics
         regr.pred_plot(
@@ -715,7 +967,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -732,6 +984,26 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_testin_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_testin_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+
+
 
         #####
         train_val = 'valnit'
@@ -745,7 +1017,6 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # define id vars
         id_in = valnit_ID
-        id_var_in = train_id_var
 
         # OLS regression predict
         # specifiy input model
@@ -754,6 +1025,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     expl_in, resp_in
                     )
 
+        # define unique identifiers
+        id_var_in = valnit_id_var
+
         # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
@@ -761,7 +1035,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -780,7 +1054,31 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results_NonTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_valnit_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_valnit_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+        # write to csv
+        df_results_indc_temp.to_csv(
+            f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_IndCatch.csv',  
+            index = False
+            )
 
 
 
@@ -830,7 +1128,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # PCA
         # define cluster/reducer object
-        clust = Clusterer(clust_vars = df_train_expl.drop(columns = ['STAID']),
+        clust = Clusterer(clust_vars = df_train_expl.drop(columns = ['STAID', 'year', 'month'], axis = 1),
             id_vars = df_train_expl['STAID'])
 
         # standardize data
@@ -868,7 +1166,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             n_splits_in = 10,
             n_repeats_in = 1,
             random_state_in = 100,
-            n_jobs_in = ncores
+            n_jobs_in = ncores,
+            timeseries = True,
+            id_var = train_id_var
         )
         # print all results from CV
         pd.DataFrame(regr.lassoCV_results.cv_results_)
@@ -905,7 +1205,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             max_iter_in = 1000,
             n_splits_in = 10,
             n_repeats_in = 1,
-            random_state_in = 100
+            random_state_in = 100,
+            timeseries = True,
+            id_var = train_id_var
         )
 
         # plot and/or calculate regression metrics
@@ -914,6 +1216,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         resp_in = train_resp
         # resp_in = train_mnanWY_tr
         id_in = train_ID
+
+        # define unique identifier
         id_var_in = train_id_var
 
         regr.pred_plot(
@@ -922,7 +1226,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -938,6 +1242,26 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         to_append['train_val'] = train_val
 
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_train_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_train_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+
 
         # write vif results to csv
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
@@ -961,7 +1285,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         mdl_in = regr.lasso_reg_
         # standardize explantory vars, give columns names, and replace vars not to be transformed
         # define expl vars to work with
-        df_in = df_testin_expl.drop(columns = 'STAID')
+        df_in = df_testin_expl.drop(columns = ['STAID', 'year', 'month'], axis = 1)
         expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
         expl_in.columns = df_in.columns
         expl_in[not_tr_in] = df_in[not_tr_in]
@@ -978,7 +1302,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         resp_in = testin_resp
         # resp_in = train_mnanWY_tr
         id_in = testin_ID
-        id_var_in = train_id_var
+
+        # define unique identifier
+        id_var_in = testin_id_var
 
         regr.pred_plot(
             model_in = mdl_in,
@@ -986,7 +1312,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -1003,6 +1329,27 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
+
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_testin_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_testin_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+
+
         #####
         # return prediction metrics for validation data from stations that were NOT trained on
         # plot and/or calculate regression metrics
@@ -1014,7 +1361,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         mdl_in = regr.lasso_reg_
         # standardize explantory vars, give columns names, and replace vars not to be transformed
         # define expl vars to work with
-        df_in = df_valnit_expl.drop(columns = 'STAID')
+        df_in = df_valnit_expl.drop(columns = ['STAID', 'year', 'month'])
         expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
         expl_in.columns = df_in.columns
         expl_in[not_tr_in] = df_in[not_tr_in]
@@ -1031,7 +1378,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         resp_in = valnit_resp
         # resp_in = train_mnanWY_tr
         id_in = valnit_ID
-        id_var_in = train_id_var
+
+        # define unique identifier
+        id_var_in = valnit_id_var
 
         # plot and/or calculate regression metrics
         regr.pred_plot(
@@ -1040,7 +1389,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -1058,7 +1407,31 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results_NonTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_valnit_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_valnit_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+        # write to csv
+        df_results_indc_temp.to_csv(
+            f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_IndCatch.csv',  
+            index = False
+            )
 
     
 
@@ -1091,7 +1464,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         
         # PCA
         # define cluster/reducer object
-        clust = Clusterer(clust_vars = df_train_expl.drop(columns = ['STAID']),
+        clust = Clusterer(clust_vars = df_train_expl.drop(columns = ['STAID', 'year', 'month']),
             id_vars = df_train_expl['STAID'])
 
         # standardize data
@@ -1130,9 +1503,9 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             float_opt = 'True', # 'True' or 'False'
             min_k = klim_in, # only active for 'exhaustive' option
             klim_in = klim_in, # controls max/min number of features for forward/backward selection
-            timeseries = False, # if timeseries = True then NSE and KGE are also calculated
+            timeseries = True, # if timeseries = True then NSE and KGE are also calculated
             n_jobs_in = ncores, # number of cores to distribute to
-            id_var = train_id_var) # ids (e.g., catchments) to use when dividing for CV
+            id_var = train_id_var) # id to be used when dividing for grouped K-CV 
                             
         # define variable holding the selected features and vifs.
         # n_f_in = int(input('enter the number of features in the model you want to use (e.g., 41): '))
@@ -1157,7 +1530,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # define id vars
         id_in = train_ID
-        id_var_in = train_id_var
+        # id_in = pd.Series(test2.df_hd_pred_['pred_cluster'], dtype = 'category')
 
         # OLS regression predict
         # specifiy input model
@@ -1166,6 +1539,8 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
                     expl_in, resp_in
                     )
 
+        id_var_in = train_id_var
+
         # plot and/or calculate regression metrics
         regr.pred_plot(
             model_in = mdl_in,
@@ -1173,7 +1548,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -1189,6 +1564,27 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         to_append['train_val'] = train_val
 
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
+
+
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_train_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_train_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+
 
         # # write vif results to csv
         df_vif = pd.DataFrame(dict(regr.df_pred_performance_['VIF']))
@@ -1205,7 +1601,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # Apply to validation catchments used in training (i.e., testin)
         # standardize explantory vars, give columns names, and replace vars not to be transformed
         # define expl vars to work with
-        df_in = df_testin_expl.drop(columns = 'STAID')
+        df_in = df_testin_expl.drop(columns = ['STAID', 'year', 'month'])
         expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
         expl_in.columns = df_in.columns
         expl_in[not_tr_in] = df_in[not_tr_in]
@@ -1228,11 +1624,13 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # define id vars
         id_in = testin_ID
-        id_var_in = train_id_var
 
         # OLS regression predict
         # specifiy input model
         mdl_in = mdl_in
+
+        # define unique identifier
+        id_var_in = testin_id_var
 
         # plot and/or calculate regression metrics
         regr.pred_plot(
@@ -1241,7 +1639,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -1258,6 +1656,25 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_testin_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_testin_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+
 
         #####
         train_val = 'valnit'
@@ -1265,7 +1682,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # Apply to validation catchments not used in training (i.e., valnit)
         # standardize explantory vars, give columns names, and replace vars not to be transformed
         # define expl vars to work with
-        df_in = df_valnit_expl.drop(columns = 'STAID')
+        df_in = df_valnit_expl.drop(columns = ['STAID', 'year', 'month'])
         expl_in = pd.DataFrame(clust.scaler_.transform(df_in))
         expl_in.columns = df_in.columns
         expl_in[not_tr_in] = df_in[not_tr_in]
@@ -1288,11 +1705,13 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
         # define id vars
         id_in = valnit_ID
-        id_var_in = train_id_var
 
         # OLS regression predict
         # specifiy input model
         mdl_in = mdl_in
+
+        # define unique identifier
+        id_var_in = valnit_id_var
 
         # plot and/or calculate regression metrics
         regr.pred_plot(
@@ -1301,7 +1720,7 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
         )
 
@@ -1320,7 +1739,31 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
 
 
         # Write results to csv
-        df_results_temp.to_csv(f'{dir_expl}/Results_NonTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+        df_results_temp.to_csv(f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', index = False)
+
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_valnit_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_valnit_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+        # write to csv
+        df_results_indc_temp.to_csv(
+            f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_IndCatch.csv',  
+            index = False
+            )
 
 
 
@@ -1370,8 +1813,11 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         # indicate if data is training, validating, testing, etc.
         train_val = 'train'
 
-        regr = Regressor(expl_vars = df_train_expl.drop('STAID', axis = 1),
+        regr = Regressor(expl_vars = df_train_expl.drop(['STAID', 'year', 'month'], axis = 1),
             resp_var = train_resp)
+
+        # define unique identifier
+        id_var_in = train_id_var
 
 
         regr.xgb_regression(
@@ -1379,10 +1825,12 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             n_repeats_in = 1,
             random_state_in = 100,
             grid_in = grid_in,
-            timeseries = False,
+            timeseries = True,
             n_jobs_in = ncores,
-            dir_save = f'{dir_expl}/Models/xgbreg_meanannual_{model_name}_{clust_meth}_{reg_in}_model.json', 
-            id_var = id_var_in   
+            dir_save = f'{dir_expl}/Models/xgbreg_meanannual_{model_name}_{clust_meth}_{reg_in}_model.json',
+            # f'/media/bchoat/2706253089/GAGES_Work/Data_Out/Models/xgbreg_{model_name}_{reg_in}_model.json',
+            #   'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_classlearn_model.json'   
+            id_var = id_var_in
         )
 
         # example grid_in
@@ -1395,22 +1843,21 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         #     'learning_rate': [0.3], # [0.3] # [0.02, 0.1, 0.3]
         #     }
 
-        expl_in = df_train_expl.drop('STAID', axis = 1)
+        expl_in = df_train_expl.drop(['STAID', 'year', 'month'], axis = 1)
         resp_in = train_resp
         id_in = train_ID
-        id_var_in = train_id_var
-        mdl_in = regr.xgb_reg_
+
 
         # plot and/or calculate regression metrics
         regr.pred_plot(
-            model_in = mdl_in,
-            X_pred =  expl_in,
+            model_in = regr.xgb_reg_, 
+            X_pred = expl_in, 
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
-        )
+            )
 
 
 
@@ -1437,6 +1884,27 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
 
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_train_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_train_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+        
+
+
         ##########################
 
 
@@ -1444,21 +1912,23 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         train_val = 'testin'
 
         # define explanatory and response variables for modeling
-        expl_in = df_testin_expl.drop('STAID', axis = 1)
+        expl_in = df_testin_expl.drop(['STAID', 'year', 'month'], axis = 1)
         resp_in = testin_resp
         id_in = testin_ID
-        id_var_in = train_id_var
+
+        # define unique identifiers
+        id_var_in = testin_id_var
 
         # plot and/or calculate regression metrics
         regr.pred_plot(
-            model_in = mdl_in,
-            X_pred =  expl_in,
+            model_in = regr.xgb_reg_, 
+            X_pred = expl_in, 
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
-        )
+            )
 
         # # define param_name to write to results indicated what parameter values were used
         # nest = int(regr.xgboost_params_.loc[0, 'n_estimators'])
@@ -1483,27 +1953,49 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
 
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_testin_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_testin_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+       
+
 
         ############################
         # indicate if data is training, validating, testing, etc.
         train_val = 'valnit'
 
         # define explanatory and response variables for modeling
-        expl_in = df_valnit_expl.drop('STAID', axis = 1)
+        expl_in = df_valnit_expl.drop(['STAID', 'year', 'month'], axis = 1)
         resp_in = valnit_resp
         id_in = valnit_ID
-        id_var_in = train_id_var
+
+        # define unique identifier
+        id_var_in = valnit_id_var
 
         # plot and/or calculate regression metrics
         regr.pred_plot(
-            model_in = mdl_in,
-            X_pred =  expl_in,
+            model_in = regr.xgb_reg_, 
+            X_pred = expl_in, 
             y_obs = resp_in,
             id_color = id_in,
             plot_out = plot_out,
-            timeseries = False,
+            timeseries = True,
             id_var = id_var_in
-        )
+            )
 
         # # define param_name to write to results indicated what parameter values were used
         # nest = int(regr.xgboost_params_.loc[0, 'n_estimators'])
@@ -1528,20 +2020,85 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
         df_results_temp = pd.concat([df_results_temp, to_append], ignore_index = True)
 
 
+        # calculate number of times to repeat single variables (e.g., model name)
+        nrep = df_valnit_expl['STAID'].unique().shape[0]
+        # append metrics based on individual catchments
+        to_append = pd.DataFrame({
+            'model': [model_name] * nrep,
+            'STAID': df_valnit_expl['STAID'].unique(),
+            'train_val': [train_val] * nrep,
+            'parameters': [param_name] * nrep,
+            'NSE': regr.df_NSE_KGE_['NSE'],
+            'KGE': regr.df_NSE_KGE_['KGE'],
+            'percBias': regr.df_NSE_KGE_['PercBias'],
+            'RMSEts': regr.df_NSE_KGE_['RMSE']
+        })
+
+        # append results to df
+        df_results_indc_temp = pd.concat(
+            [df_results_indc_temp, to_append], ignore_index = True
+            )
+
+
+
 
 
     # %% Append region/cluster label/name to df_results_temp
-    df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'region'] = reg_in
+    df_results_temp.loc[
+        (df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'region'
+        ] = reg_in
     # Append clustering method to df_results_temp
-    df_results_temp.loc[(df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'clust_method'] = clust_meth
+    df_results_temp.loc[
+        (df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'clust_method'
+        ] = clust_meth
+    
+    # Append sample size to df_results_temp
+    # calc number of catchments
+    n_train = df_train_expl['STAID'].unique().shape[0]
+    n_testin = df_testin_expl['STAID'].unique().shape[0]
+    n_valnit = df_valnit_expl['STAID'].unique().shape[0]
+    # create array with number of catchments 
+    n_array = [n_train, n_testin, n_valnit] * mdl_count
+    # add array to output df
+    df_results_temp.loc[
+        (df_results_temp.shape[0] - 3 * mdl_count): df_results_temp.shape[0], 'n_catchments'
+        ] = n_array
+
+
 
     # Write results to csv
-    df_results_temp.to_csv(f'{dir_expl}/Results_NonTimeSeries_{clust_meth}_{reg_in}.csv', 
+    df_results_temp.to_csv(f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}.csv', 
         index = False)
 
     # write to TEMP file to for investigation if needed
-    df_results_temp.to_csv(f'{dir_expl}/Results_NonTimeSeries_{clust_meth}_{reg_in}_TEMP.csv', 
+    df_results_temp.to_csv(f'{dir_expl}/Results_MonthlyTimeSeriesTEMP.csv', 
         index = False)
+
+
+    # write catchment specific results to csv
+    
+    # calc number of times to repeat single vars (e.g., region)
+    nrep_train = df_train_expl['STAID'].shape[0]
+    nrep_valnit = df_valnit_expl['STAID'].shape[0]
+    region_temp = df_results_indc_temp['region'].dropna()
+    region_temp = region_temp.append(
+        pd.Series([reg_in] * (nrep_train * 2 + nrep_valnit)),
+        ignore_index = True
+        )
+    df_results_indc_temp['region'] = region_temp
+
+    clust_meth_temp = df_results_indc_temp['clust_method'].dropna()
+    clust_meth_temp = clust_meth_temp.append(
+        pd.Series([clust_meth] * (nrep_train * 2 + nrep_valnit)),
+        ignore_index = True
+        )
+    df_results_indc_temp['clust_method'] = clust_meth_temp
+
+    # write to csv
+    df_results_indc_temp.to_csv(
+        f'{dir_expl}/Results_MonthlyTimeSeries_{clust_meth}_{reg_in}_IndCatch.csv',  
+        index = False
+        )
 
 
     print('------------Job complete------------')

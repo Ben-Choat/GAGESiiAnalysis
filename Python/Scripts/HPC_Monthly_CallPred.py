@@ -2,36 +2,32 @@
 
 # Script:
 # perform clustering. For the top two performing clustering results,
-# call GAGESii_MeanAnnual_Callable.py which goes through all regression models of interset 
+# call GAGESii_Monthly_Callable.py which goes through all regression models of interset 
 # and asks for input where needed.
 
 
 # %% import libraries and classes
 
 # from GAGESii_Class import Clusterer
-from HPC_Annual_Callable import *
+from HPC_Monthly_Callable import *
 import pandas as pd
 import os
 import sys
 
 
+# %%
 
-# %% 
-# Define variables specifying the clustering method used (e.g., AggEcoregion or UMAPHDBDCAN) and
-# the region (e.g., EastHghlnds or 3)
 
 # define clustering method used
 # this variable is only used for keeping track fo results
-# clust_meth_in =   'AggEcoregion' #'None' #
-clust_meth_in =  sys.argv[1] # 'AggEcoregion' #
+clust_meth_in = 'AggEcoregion' # sys.argv[1] # 'Class' #'None' # 'AggEcoregion'
 
 # list of possible AggEcoregions:
 # 'All
 # 'NorthEast', 'SECstPlain', 'SEPlains', 'EastHghlnds', 'CntlPlains',
 #       'MxWdShld', 'WestMnts', 'WestPlains', 'WestXeric'
 # set region_in = 'All' to include all data
-# region_in =  'EastHghlnds' # 'All' #
-region_in = sys.argv[2] # 'MxWdShld' #
+region_in = 'MxWdShld' # sys.argv[2] # 'Ref' # 'All' #
 
 
 # %% load data
@@ -56,7 +52,7 @@ dir_expl = f'{dir_Work}/data_work/GAGESiiVariables'
 
 # directory to write csv holding removed columns (due to high VIF)
 # dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
-dir_VIF = f'{dir_Work}/data_out/annual/VIF_Removed'
+dir_VIF = f'{dir_Work}/data_out/monthly/VIF_Removed'
 
 
 # GAGESii explanatory vars
@@ -78,44 +74,58 @@ df_valnit_expl = pd.read_csv(
 
 
 # Water yield variables
-# Annual Water yield
+# Monthly Water yield
 # training
-df_train_anWY = pd.read_csv(
-    f'{dir_WY}/annual/WY_Ann_train.csv',
+df_train_mnthWY = pd.read_csv(
+    f'{dir_WY}/monthly/WY_Mnth_train.csv',
     dtype = {"site_no":"string"}
     )
 
 # val_in
-df_testin_anWY = pd.read_csv(
-    f'{dir_WY}/annual/WY_Ann_testin.csv',
+df_testin_mnthWY = pd.read_csv(
+    f'{dir_WY}/monthly/WY_Mnth_testin.csv',
     dtype = {"site_no":"string"}
     )
 
 # val_nit
-df_valnit_anWY = pd.read_csv(
-    f'{dir_WY}/annual/WY_Ann_valnit.csv',
+df_valnit_mnthWY = pd.read_csv(
+    f'{dir_WY}/monthly/WY_Mnth_valnit.csv',
     dtype = {"site_no":"string"}
     )
 
 
 # DAYMET
 # training
-df_train_anDMT = pd.read_csv(
-    f'{dir_DMT}/annual/DAYMET_Annual_train.csv',
+df_train_mnthDMT = pd.read_csv(
+    f'{dir_DMT}/monthly/DAYMET_Monthly_train.csv',
     dtype = {"site_no":"string"}
     )
 
 # val_in
-df_testin_anDMT = pd.read_csv(
-    f'{dir_DMT}/annual/DAYMET_Annual_testin.csv',
+df_testin_mnthDMT = pd.read_csv(
+    f'{dir_DMT}/monthly/DAYMET_Monthly_testin.csv',
     dtype = {"site_no":"string"}
     )
 
 # val_nit
-df_valnit_anDMT = pd.read_csv(
-    f'{dir_DMT}/annual/DAYMET_Annual_valnit.csv',
+df_valnit_mnthDMT = pd.read_csv(
+    f'{dir_DMT}/monthly/DAYMET_Monthly_valnit.csv',
     dtype = {"site_no":"string"}
     )
+# rename DAYMET columns 
+colnames = [
+    'year',
+    'month',
+    'site_no',
+    'tmin',
+    'tmax',
+    'prcp',
+    'vp',
+    'swe'
+]
+df_train_mnthDMT.columns = colnames
+df_testin_mnthDMT.columns = colnames
+df_valnit_mnthDMT.columns = colnames
 
 # ID vars (e.g., ecoregion)
 
@@ -138,50 +148,54 @@ df_valnit_ID = pd.read_csv(f'{dir_expl}/ID_valnit.csv',
 # subset data to catchment IDs that match the cluster or region being predicted
 ########
 
+
 if region_in == 'All':
     cidtrain_in = df_train_ID
     cidtestin_in = df_testin_ID
     cidvalnit_in = df_valnit_ID
-else:
-    cidtrain_in = df_train_ID[df_train_ID[clust_meth_in] == region_in]
-    cidtestin_in = df_testin_ID[df_testin_ID[clust_meth_in] == region_in]
-    cidvalnit_in = df_valnit_ID[df_valnit_ID[clust_meth_in] == region_in]
+elif clust_meth_in == 'AggEcoregion':
+    cidtrain_in = df_train_ID[df_train_ID['AggEcoregion'] == region_in]
+    cidtestin_in = df_testin_ID[df_testin_ID['AggEcoregion'] == region_in]
+    cidvalnit_in = df_valnit_ID[df_valnit_ID['AggEcoregion'] == region_in]
+elif clust_meth_in == 'Class':
+    cidtrain_in = df_train_ID[df_train_ID['Class'] == region_in]
+    cidtestin_in = df_testin_ID[df_testin_ID['Class'] == region_in]
+    cidvalnit_in = df_valnit_ID[df_valnit_ID['Class'] == region_in]
+
 
 # Water yield
 train_resp_in = pd.merge(
-    df_train_anWY, cidtrain_in, left_on = 'site_no', right_on = 'STAID'
-    )['Ann_WY_ft']
+    df_train_mnthWY, cidtrain_in, left_on = 'site_no', right_on = 'STAID'
+    )['Mnth_WY_ft']
 testin_resp_in = pd.merge(
-    df_testin_anWY, cidtestin_in, left_on = 'site_no', right_on = 'STAID'
-    )['Ann_WY_ft']
+    df_testin_mnthWY, cidtestin_in, left_on = 'site_no', right_on = 'STAID'
+    )['Mnth_WY_ft']
 valnit_resp_in = pd.merge(
-    df_valnit_anWY, cidvalnit_in, left_on = 'site_no', right_on = 'STAID'
-    )['Ann_WY_ft']
+    df_valnit_mnthWY, cidvalnit_in, left_on = 'site_no', right_on = 'STAID'
+    )['Mnth_WY_ft']
 
 # explanatory variables
-train_expl_in = pd.merge(df_train_expl, cidtrain_in, left_on = 'STAID', right_on = 'STAID').drop(
-    columns = ['Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site',
-                'DRAIN_SQKM_y', 'LAT_GAGE', 'LNG_GAGE', 'HUC02']
-)
-testin_expl_in = pd.merge(df_testin_expl, cidtestin_in, left_on = 'STAID', right_on = 'STAID').drop(
-    columns = ['Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site',
-                'DRAIN_SQKM_y', 'LAT_GAGE', 'LNG_GAGE', 'HUC02']
-)
-valnit_expl_in = pd.merge(df_valnit_expl, cidvalnit_in, on = 'STAID').drop(
-    columns = ['Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site',
-                'DRAIN_SQKM_y', 'LAT_GAGE', 'LNG_GAGE', 'HUC02']
-)
+train_mnthDMT = pd.merge(df_train_mnthDMT, cidtrain_in, left_on = 'site_no', right_on = 'STAID').drop(
+    ['site_no', 'Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site',
+                'DRAIN_SQKM', 'LAT_GAGE', 'LNG_GAGE', 'HUC02'], axis = 1)
+testin_mnthDMT = pd.merge(df_testin_mnthDMT, cidtestin_in, left_on = 'site_no', right_on = 'STAID').drop(
+    ['site_no', 'Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site',
+                'DRAIN_SQKM', 'LAT_GAGE', 'LNG_GAGE', 'HUC02'], axis = 1)
+valnit_mnthDMT = pd.merge(df_valnit_mnthDMT, cidvalnit_in, left_on = 'site_no', right_on = 'STAID').drop(
+    ['site_no', 'Class', 'AggEcoregion', 'ECO3_Site', 'USDA_LRR_Site',
+                'DRAIN_SQKM', 'LAT_GAGE', 'LNG_GAGE', 'HUC02'], axis = 1)
+
 
 # Add DAYMET to explanatory vars
 train_expl_in = pd.merge(
-    train_expl_in, df_train_anDMT, left_on = ['STAID', 'year'], right_on = ['site_no', 'year']
-    ).drop('site_no', axis = 1)
+    train_mnthDMT, df_train_expl, on = ['STAID', 'year'], how = 'left'
+    )
 testin_expl_in = pd.merge(
-    testin_expl_in, df_testin_anDMT, left_on = ['STAID', 'year'], right_on = ['site_no', 'year']
-    ).drop('site_no', axis = 1)
+    testin_mnthDMT, df_testin_expl, on = ['STAID', 'year'], how = 'left'
+    )
 valnit_expl_in = pd.merge(
-    valnit_expl_in, df_valnit_anDMT, left_on = ['STAID', 'year'], right_on = ['site_no', 'year']
-    ).drop('site_no', axis = 1)
+    valnit_mnthDMT, df_valnit_expl, on = ['STAID', 'year'], how = 'left'
+    )
 
 # ID dataframes
 train_ID_in = pd.merge(
@@ -201,7 +215,7 @@ valnit_ID_in = pd.merge(
 #####
  
 X_in = train_expl_in.drop(
-    ['STAID', 'year'], axis = 1
+    ['STAID', 'year', 'month'], axis = 1
 )
 
 vif_th = 10 # 20
@@ -262,7 +276,8 @@ df_vif_write = pd.DataFrame({
     'columns_Removed': df_removed
 })
 
-df_vif_write.to_csv(f'{dir_VIF}/VIF_ClsRemoved_AnnualTS_{clust_meth_in}_{region_in}.csv')
+df_vif_write.to_csv(f'{dir_VIF}/VIF_ClsRemoved_MonthlyTS_{clust_meth_in}_{region_in}.csv')
+
 
 
 
@@ -272,7 +287,7 @@ df_vif_write.to_csv(f'{dir_VIF}/VIF_ClsRemoved_AnnualTS_{clust_meth_in}_{region_
 regress_fun(df_train_expl = train_expl_in, # training data explanatory variables. Expects STAID to be a column
             df_testin_expl = testin_expl_in, # validation data explanatory variables using same catchments that were trained on
             df_valnit_expl = valnit_expl_in, # validation data explanatory variables using different catchments than were trained on
-            train_resp = train_resp_in, # training data response variables NOTE: this should be a series, not a dataframe (e.g., df_train_anWY['Ann_WY_ft'])
+            train_resp = train_resp_in, # training data response variables NOTE: this should be a series, not a dataframe (e.g., df_train_mnthWY['Ann_WY_ft'])
             testin_resp = testin_resp_in, # validation data response variables using same catchments that were trained on
             valnit_resp = valnit_resp_in, # validation data response variables using different catchments than were trained on
             train_ID = train_ID_in, # training data id's (e.g., clusters or ecoregions; df_train_ID['AggEcoregion'])
@@ -292,11 +307,10 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             train_id_var = train_expl_in['STAID'], # unique identifier for training catchments
             testin_id_var = testin_expl_in['STAID'], # unique identifier for testin catchments
             valnit_id_var = valnit_expl_in['STAID'], # unique identifier for valnit catchments
-            dir_expl_in = f'{dir_Work}/data_out/annual', # directory where to write results
-            ncores_in = 8 # number of cores to distribute relevant jobs to
+            dir_expl_in = f'{dir_Work}/data_out/monthly', # directory where to write results
+            ncores_in = 8 # number of cores to send relevant jobs to
             )
 
 
-# %% Calculate NSE and KGE for each catchment
 
 
