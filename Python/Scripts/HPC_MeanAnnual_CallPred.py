@@ -29,6 +29,9 @@ clust_meth_in =  sys.argv[1] #  # 'None' # 'AggEcoregion' #
 # set region_in = 'All' to include all data
 region_in =  sys.argv[2] #  # 'All' #'SEPlains' #
 
+# define number of cores to use for applicable processes
+ncores = int(sys.argv[3])
+
 # %% load data
 
 # # water yield directory
@@ -320,7 +323,8 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             train_id_var = train_expl_in['STAID'], # unique identifier for training catchments
             testin_id_var = testin_expl_in['STAID'], # unique identifier for testin catchments
             valnit_id_var = valnit_expl_in['STAID'], # unique identifier for valnit catchments
-            dir_expl_in = f'{dir_Work}/data_out/mean_annual' # directory where to write results
+            dir_expl_in = f'{dir_Work}/data_out/mean_annual', # directory where to write results
+            ncores_in = ncores # number of cores to be used for relevant processes
             )
 
 

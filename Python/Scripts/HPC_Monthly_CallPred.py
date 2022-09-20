@@ -20,14 +20,18 @@ import sys
 
 # define clustering method used
 # this variable is only used for keeping track fo results
-clust_meth_in = 'AggEcoregion' # sys.argv[1] # 'Class' #'None' # 'AggEcoregion'
+clust_meth_in = sys.argv[1] # 'AggEcoregion' #  'Class' #'None' # 'AggEcoregion'
 
 # list of possible AggEcoregions:
 # 'All
 # 'NorthEast', 'SECstPlain', 'SEPlains', 'EastHghlnds', 'CntlPlains',
 #       'MxWdShld', 'WestMnts', 'WestPlains', 'WestXeric'
 # set region_in = 'All' to include all data
-region_in = 'MxWdShld' # sys.argv[2] # 'Ref' # 'All' #
+region_in = sys.argv[2] # 'MxWdShld' # 'Ref' # 'All' #
+
+
+# define number of cores to be used for relevant processes
+ncores = int(sys.argv[3])
 
 
 # %% load data

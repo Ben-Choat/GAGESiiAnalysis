@@ -17,12 +17,14 @@ from sklearn.metrics import mean_squared_error # returns negative (larger is bet
                                                 # squared = True: MSE; squared = False: RMSE
 from sklearn.metrics import mean_absolute_error # returns negative (larger is better)
 from sklearn.metrics import r2_score
+from sklearn.metrics import make_scorer # to allow a custom objective function (i.e., loss function)
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
 from sklearn.model_selection import GridSearchCV # for hyperparameter tuning
 from sklearn.experimental import enable_halving_search_cv
 from sklearn.model_selection import HalvingGridSearchCV # for hyperparameter tuning
 from sklearn.model_selection import RepeatedKFold # for repeated k-fold validation
+from sklearn.model_selection import GroupKFold # for splitting catchments without splitting individual catchments
 # from sklearn.model_selection import cross_val_score # only returns a single score (e.g., MAE)
 from sklearn.model_selection import cross_validate # can be used to return multiple scores 
 # from sklearn.feature_selection import RFE
@@ -1042,7 +1044,9 @@ class Regressor:
         klim_in = 30,
         timeseries = False, 
         n_jobs_in = 1,
-        plot_out = False): #, fl, fh):
+        plot_out = False,
+        n_splits_in = 10,
+        id_var = ''): #, fl, fh):
 
         """
         Using explanatory and response data provided, explore linear regression 
@@ -1073,6 +1077,10 @@ class Regressor:
             This application of NSE is equal to RMSE
         n_jobs_in: integer
             Specify number of processors to distribute job to
+        n_splits_in: integer
+            number of folds to use in cross-validation
+        id_var: pandas Series or array
+            unique identifiers for catchments (e.g., STAID)
 
         Attributes
         -------------
@@ -1105,6 +1113,16 @@ class Regressor:
         elif sel_meth =='backward':
             forward_in = False
 
+        # define model evaluation method
+        if timeseries:
+            cv = GroupKFold(
+                n_splits = n_splits_in
+                )   
+    
+        # else use repeatedKFold
+        else:
+            cv = n_splits_in
+
         if sel_meth == 'forward' or sel_meth == 'backward':
             # create sequential selection object
             sfs_obj = SFS(reg_all, 
@@ -1113,17 +1131,17 @@ class Regressor:
                 forward = forward_in, # set to False for backward
                 floating = float_opt,
                 verbose = 1, # 0 for no output, 1 for number features in set, 2 for more detail
-                scoring = 'r2', # 'neg_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error'
-                cv = 10
+                scoring = 'neg_root_mean_squared_error', # 'r2', # 'neg_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error'
+                cv = cv
             )
         elif sel_meth == 'exhaustive':
             sfs_obj = EFS(reg_all,
                 n_jobs = n_jobs_in,
                 min_features = min_k,
                 max_features = klim_in,
-                scoring = 'r2',
+                scoring = 'neg_root_mean_squared_error', # 'r2'
                 print_progress = True,
-                cv = 2
+                cv = cv
                 )
         
         else:
@@ -1133,7 +1151,7 @@ class Regressor:
         # sklearn.metrics.SCORERS.keys()
         
         # save sequential selection results in dataframe
-        sfs_fit = sfs_obj.fit(X_train, y_train)
+        sfs_fit = sfs_obj.fit(X_train, y_train, groups = id_var)
         self.sfscv_out_ = pd.DataFrame.from_dict(sfs_fit.get_metric_dict()).T
         # reset index
         self.sfscv_out_ = self.sfscv_out_.reset_index()
@@ -1269,7 +1287,9 @@ class Regressor:
                         n_repeats_in = 1,
                         random_state_in = 100,
                         timeseries = False,
-                        n_jobs_in = 1):
+                        n_jobs_in = 1,
+                        custom_loss = False,
+                        id_var = ''):
         # using info from here as guide: 
         # https://machinelearningmastery.com/lasso-regression-with-python/
         """
@@ -1294,6 +1314,8 @@ class Regressor:
             -1 means run on all available cores
         id_var: pandas Series or array
             unique identifiers for catchments (e.g., STAID)
+        custom_loss: False or a function
+            A function to be used as a custom loss fucntion in training (e.g., KGE_Optimize)
 
         Attributes
         -------------
@@ -1325,7 +1347,6 @@ class Regressor:
         self.lasso_reg_ = Lasso(alpha = alpha_in,
                             max_iter = max_iter_in)
         
-        
 
 
         ##### k-fold CV if alpha_in is a list
@@ -1333,30 +1354,50 @@ class Regressor:
         # https://machinelearningmastery.com/lasso-regression-with-python/
         if isinstance(alpha_in, list):
             # define model evaluation method
-            cv = RepeatedKFold(
-                    n_splits = n_splits_in, 
-                    n_repeats = n_repeats_in, 
-                    random_state = random_state_in)
+            
+            # if is timeseries data, then using GroupKFold to ensure no catchments are split
+            if timeseries:
+                cv = GroupKFold(
+                    n_splits = n_splits_in
+                    )   
+            
+            # else use repeatedKFold
+            else:
+                cv = RepeatedKFold(
+                        n_splits = n_splits_in, 
+                        n_repeats = n_repeats_in, 
+                        random_state = random_state_in)
+
             # define grid
             grid = dict()
             grid['alpha'] = alpha_in
-            # define search
+
+            # define custom loss function if custom_loss is an instance of a function
+            # if callable(custom_loss):
+            #     scorer = make_scorer(custom_loss, greater_is_better = True, ID_in = id_var)
+
+            # else:
+            #     scorer = 'neg_root_mean_squared_error'
+           
             search = HalvingGridSearchCV(self.lasso_reg_,
                 grid,
-                scoring = 'neg_root_mean_squared_error', 
-                            # 'neg_mean_absolute_error', 'r2'],
+                scoring = 'neg_root_mean_squared_error', # 'neg_mean_absolute_error', 'r2'],
                 refit = False,
                 cv = cv,
                 n_jobs = n_jobs_in)
             # perform the search
-            results = search.fit(X_train, y_train)
+            # if time series then include group in fit call
+            if timeseries:
+                results = search.fit(X_train, y_train, groups = id_var)
+            else:  
+                results = search.fit(X_train, y_train)
             self.lassoCV_results = results
             # self.lassoCV_results = pd.DataFrame(self.lassoCV_results.cv_results_)
 
             # print(pd.DataFrame(self.lassoCV_results.cv_results_))
             print(search.best_params_)
             # print top 10 performing based on scores
-            self.df_lassoCV_rmse = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_score')[[
+            self.df_lassoCV_score_ = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_score')[[
                             'param_alpha',
                             'mean_test_score',
                             'std_test_score',
@@ -1371,7 +1412,7 @@ class Regressor:
             self.lasso_reg_ = Lasso(alpha = alpha_in,
                             max_iter = max_iter_in)
             
-            # self.df_lassoCV_rmse = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
+            # self.df_lassoCV_score_ = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
             #                 'param_alpha',
             #                 'mean_test_neg_root_mean_squared_error',
             #                 'std_test_neg_root_mean_squared_error',
@@ -1388,7 +1429,7 @@ class Regressor:
             #                 'rank_test_r2']]
             
             # return(# self.lassoCV_results.cv_results_, 
-            #         self.df_lassoCV_rmse[0:10],
+            #         self.df_lassoCV_score_[0:10],
             #         self.df_lassoCV_mae[0:10], 
             #         self.df_lassoCV_r2[0:10])
             # summarize (best score and best params aren't available when using
@@ -1431,9 +1472,17 @@ class Regressor:
 
             #### Apply k-fold cross validation to see how performs across samples
             # # define k-fold model
-            # cv = RepeatedKFold(n_splits = n_splits_in,
-            #         n_repeats = n_repeats_in,
-            #         random_state = random_state_in)
+            # if timeseries:
+            #     cv = GroupKFold(
+            #         n_splits = n_splits_in
+            #         )   
+            
+            # # else use repeatedKFold
+            # else:
+            #     cv = RepeatedKFold(
+            #             n_splits = n_splits_in, 
+            #             n_repeats = n_repeats_in, 
+            #             random_state = random_state_in)
 
             # #evaluate model
             # scores = cross_validate(self.lasso_reg_,
@@ -1562,7 +1611,8 @@ class Regressor:
                        n_jobs_in = -1,
                        halving_factor = 3,
                        dir_save = 'D:/Projects/GAGESii_ANNstuff/Python/Scripts/Learning_Results/xgbreg_learn_model.json',
-                       id_var = ''):
+                       id_var = '',
+                       custom_loss = False):
         # using info from here as guide: 
         # https://machinelearningmastery.com/lasso-regression-with-python/
         """
@@ -1586,6 +1636,9 @@ class Regressor:
         halving_factor: int or float
             sepcifies portion of candidates chosen for subsequent round in 
             HalvingGridSearchCV (e.g., 3 means 1/3 of candidates are chosen)
+        custom_loss: False or a function
+            A function to be used as a custom loss fucntion in training (e.g., KGE_Optimize)
+
 
         Attributes
         -------------
@@ -1596,6 +1649,8 @@ class Regressor:
             This attribute is not created if all items in grid_in are of length 1
         df_xgboost_performance_: pandas DataFrame
             performance metrics for training data
+        id_var: pandas series or array
+            unique identifier for catchments (e.g., STAID)
         """
         try:
             X_train, y_train = self.expl_vars_tr_, self.resp_var
@@ -1615,12 +1670,30 @@ class Regressor:
         # if all variables in grid are not of length 1, then perform cross-validation
         if any(type(grid_in[x]) == list for x in grid_in):
 
+            #  # define custom loss function if custom_loss is an instance of a function
+            # if callable(custom_loss):
+            #     make_scorer(custom_loss, greater_is_better = True)
+                
+            #     scorer = make_scorer
+
+            # else:
+            #     scorer = 'neg_root_mean_squared_error'
+
             try:
                 # define model evaluation method
-                cv = RepeatedKFold(
-                            n_splits = n_splits_in, 
-                            n_repeats = n_repeats_in, 
-                            random_state = random_state_in)
+                if timeseries:
+                    cv = GroupKFold(
+                        n_splits = n_splits_in
+                        )   
+            
+                # else use repeatedKFold
+                else:
+                    cv = RepeatedKFold(
+                        n_splits = n_splits_in, 
+                        n_repeats = n_repeats_in, 
+                        random_state = random_state_in)
+
+            
 
                 # define gridsearch cross-validation object
                 gsCV = HalvingGridSearchCV(
@@ -1639,7 +1712,13 @@ class Regressor:
 
                 # apply gridsearch cross-validation
                 time_st = time.perf_counter()
-                cv_fitted = gsCV.fit(X_train, y_train)
+                # cv_fitted = gsCV.fit(X_train, y_train)
+
+                # if time series then include group in fit call
+                if timeseries:
+                    cv_fitted = gsCV.fit(X_train, y_train, groups = id_var)
+                else:  
+                    cv_fitted = gsCV.fit(X_train, y_train)
 
                 time_end = time.perf_counter()
                 print(f'\n grid search took {(time_end - time_st)/60: .2f} minutes \n')

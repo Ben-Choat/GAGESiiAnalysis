@@ -33,6 +33,9 @@ clust_meth_in =  sys.argv[1] # 'AggEcoregion' #
 # region_in =  'EastHghlnds' # 'All' #
 region_in = sys.argv[2] # 'MxWdShld' #
 
+# define number of cores to be used for relevant processes
+ncores = int(sys.argv[3])
+
 
 # %% load data
 
@@ -293,7 +296,7 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             testin_id_var = testin_expl_in['STAID'], # unique identifier for testin catchments
             valnit_id_var = valnit_expl_in['STAID'], # unique identifier for valnit catchments
             dir_expl_in = f'{dir_Work}/data_out/annual', # directory where to write results
-            ncores_in = 8 # number of cores to distribute relevant jobs to
+            ncores_in = ncores # number of cores to distribute relevant jobs to
             )
 
 

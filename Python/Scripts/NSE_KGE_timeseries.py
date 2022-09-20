@@ -70,6 +70,39 @@ def NSE_KGE_Apply(df_in): # , y_obs = 'y_obs', y_pred = 'y_pred', ID_in = 'ID_in
 
 
 
-
-
 # %%
+# KGE as objective function
+
+def KGE_Objective(y_obs, y_pred, ID_in): # , y_obs = 'y_obs', y_pred = 'y_pred', ID_in = 'ID_in'):
+    '''
+    Paramters
+    ----------
+    y_obs: array or pandas Series (float)
+        column name holding observed response variable
+    y_pred: array or pandas Series (float)
+        column name holding predicted response variables
+    ID_in: array or pandas Series (string)
+        column name holding ID's by which to group response variables
+        e.g.,. Catchment ID's (STAID)
+
+    Output
+    ----------
+    KGE_mean: float
+        the mean KGE 
+    '''
+
+    df_in = pd.DataFrame({
+        'y_obs': y_obs,
+        'y_pred': y_pred,
+        'ID_in': ID_in
+    })
+  
+    # KGE
+    kge_out = df_in.groupby('ID_in').apply(
+        lambda df: KGE(df['y_pred'], df['y_obs'])
+        )
+
+    kge_out = np.mean(kge_out)
+
+
+    return(kge_out)
