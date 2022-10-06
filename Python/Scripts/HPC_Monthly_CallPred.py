@@ -39,8 +39,9 @@ ncores = int(sys.argv[3])
 # main working directory
 # NOTE: may need to change '8' below to a different value
 # dir_Work = '/media/bchoat/2706253089/GAGES_Work' 
-dir_Work = os.getcwd()[0:(len(os.getcwd()) - 8)]
+# dir_Work = os.getcwd()[0:(len(os.getcwd()) - 8)]
 # dir_Work = '/scratch/bchoat'
+dir_Work = '/scratch/summit/bchoat@colostate.edu/GAGES'
 
 # water yield directory
 # dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
@@ -101,19 +102,19 @@ df_valnit_mnthWY = pd.read_csv(
 # DAYMET
 # training
 df_train_mnthDMT = pd.read_csv(
-    f'{dir_DMT}/monthly/DAYMET_Monthly_train.csv',
+    f'{dir_DMT}/monthly/DAYMET_monthly_train.csv',
     dtype = {"site_no":"string"}
     )
 
 # val_in
 df_testin_mnthDMT = pd.read_csv(
-    f'{dir_DMT}/monthly/DAYMET_Monthly_testin.csv',
+    f'{dir_DMT}/monthly/DAYMET_monthly_testin.csv',
     dtype = {"site_no":"string"}
     )
 
 # val_nit
 df_valnit_mnthDMT = pd.read_csv(
-    f'{dir_DMT}/monthly/DAYMET_Monthly_valnit.csv',
+    f'{dir_DMT}/monthly/DAYMET_monthly_valnit.csv',
     dtype = {"site_no":"string"}
     )
 # rename DAYMET columns 
@@ -157,14 +158,10 @@ if region_in == 'All':
     cidtrain_in = df_train_ID
     cidtestin_in = df_testin_ID
     cidvalnit_in = df_valnit_ID
-elif clust_meth_in == 'AggEcoregion':
-    cidtrain_in = df_train_ID[df_train_ID['AggEcoregion'] == region_in]
-    cidtestin_in = df_testin_ID[df_testin_ID['AggEcoregion'] == region_in]
-    cidvalnit_in = df_valnit_ID[df_valnit_ID['AggEcoregion'] == region_in]
-elif clust_meth_in == 'Class':
-    cidtrain_in = df_train_ID[df_train_ID['Class'] == region_in]
-    cidtestin_in = df_testin_ID[df_testin_ID['Class'] == region_in]
-    cidvalnit_in = df_valnit_ID[df_valnit_ID['Class'] == region_in]
+else:
+    cidtrain_in = df_train_ID[df_train_ID[clust_meth_in] == region_in]
+    cidtestin_in = df_testin_ID[df_testin_ID[clust_meth_in] == region_in]
+    cidvalnit_in = df_valnit_ID[df_valnit_ID[clust_meth_in] == region_in]
 
 
 # Water yield
@@ -228,27 +225,42 @@ vif_th = 10 # 20
 df_vif = VIF(X_in)
 
 
-
 # initiate array to hold varibles that have been removed
 df_removed = []
 
+
+# find locations where vif = na due to zero variance in that column and remove
+# that column
+navif = np.where(df_vif.isna()) 
+# append df_removed with VIFs of na which represent
+# columns of zero variancedf_vif.loc[df_vif.isna()].index.values
+df_removed.extend(df_vif.loc[df_vif.isna()].index.values, )
+# # drop na vifs
+# X_in.drop(df_removed, axis = 1, inplace = True)
+
+# calculate new vifs excluding na values
+df_vif = VIF(X_in.drop(df_removed, axis = 1))
+
+
 while any(df_vif > vif_th):
+
     
-    # find max vifs and remove. If > 1 max vif, then remove only 
-    # the first one
-    maxvif = np.where(df_vif == df_vif.max())[0][0]
+    # sort df_vif by VIF
+    temp_vif = df_vif.sort_values()
 
-    # find locations where vif = na due to zero variance in that colu
-    navif = np.where(df_vif.isna())
+    # if largest VIF is for precipitation, then use next to max value
+    if temp_vif.index[-1] == 'prcp':
+        # append to removed list
+        df_removed.append(temp_vif.index[-2])
+        # drop from df_vif
+        df_vif.drop(temp_vif.index[-2], inplace = True)
 
-    # append indices of max vifs to removed dataframe
-    df_removed.append(df_vif.index[maxvif])
+    else:
+        # append to removed list
+        df_removed.append(temp_vif.index[-1])
+        # drop from df_vif
+        df_vif.drop(temp_vif.index[-1], inplace = True)
 
-    # append df_removed with VIFs of na which represent
-    # columns of zero variancedf_vif.loc[df_vif.isna()].index.values
-    df_removed.extend(df_vif.loc[df_vif.isna()].index.values, )
-    # drop identified columns
-    df_vif.drop(df_vif.index[maxvif], inplace = True)
     
     # calculate new vifs
     df_vif = VIF(X_in.drop(df_removed, axis = 1))
@@ -300,19 +312,19 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             clust_meth = clust_meth_in, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
             reg_in = region_in, # region label, i.e., 'NorthEast'
             grid_in = { # dict with XGBoost parameters
-                'n_estimators': [500], # [100, 500, 750], # [100, 250, 500], # [10], # 
-                'colsample_bytree': [0.7, 1], # [1], #
-                'max_depth':  [4, 6], #, 8], # [6], #
-                'gamma': [0, 1], # [0], # 
-                'reg_lambda': [0, 1, 2], # [0], #
-                'learning_rate': [0.02, 0.1, 0.3]
+                'n_estimators': [500, 750], # , 1000], # [100, 500, 750], # [100, 250, 500], # [10], # 
+                'colsample_bytree': [0.7, 0.8], # [1], #
+                'max_depth':  [4, 5, 6], #, 8], # [6], #
+                'gamma': [0.01, 1, 2], # [0], # 
+                'reg_lambda': [0.01, 0.1, 1], # [0], #
+                'learning_rate': [0.001, 0.01, 0.1]
                 },
             plot_out = False, # Boolean; outputs plots if True,
             train_id_var = train_expl_in['STAID'], # unique identifier for training catchments
             testin_id_var = testin_expl_in['STAID'], # unique identifier for testin catchments
             valnit_id_var = valnit_expl_in['STAID'], # unique identifier for valnit catchments
             dir_expl_in = f'{dir_Work}/data_out/monthly', # directory where to write results
-            ncores_in = 8 # number of cores to send relevant jobs to
+            ncores_in = ncores # number of cores to send relevant jobs to
             )
 
 

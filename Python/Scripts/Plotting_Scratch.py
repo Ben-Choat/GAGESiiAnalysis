@@ -8,17 +8,31 @@ import pandas as pd
 import plotnine as p9
 
 # %% import data
-# explantory var (and other data) directory
-dir_expl = 'E:/Projects/GAGESii_ANNstuff/Data_Out'
-df_results = pd.read_csv(f'{dir_expl}/Results/Results_NonTimeSeries.csv')
+
+# Define working directories and variables
+
+# define which clustering method is being combined. This variable 
+# will be used for collecting data from the appropriate directory as well as
+# naming the combined file
+clust_meth = 'AggEcoregion' #AggEcoregion', 'None'
+
+# define time scale working with. This variable will be used to read and
+# write data from and to the correct directories
+time_scale = 'monthly' # 'mean_annual', 'annual', 'monthly', 'daily'
+
+# results directory
+dir_res = f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
+df_ind_results = pd.read_pickle(f'{dir_res}/combined/All_IndResults_monthly.pkl')
+df_sum_results = pd.read_pickle(f'{dir_res}/combined/All_SummaryResults_monthly.pkl')
 
 # df_results = df_results[df_results['parameters'] != 'nc38alpha1.0']
 # df_results = df_results[df_results['parameters'] != 'alpha1.0']
 
 # subset df_results to models of interest
 #define variable holding call to models of interest (moi)
-moi = 'regr_precip|raw_lasso|raw_mlr|strd_lasso|strd_mlr|PCA'
-df_results = df_results[df_results['model'].str.contains(moi)]
+moi = 'regr_precip|strd_lasso|strd_mlr|PCA|XGBoost'
+df_ind_results = df_ind_results[df_ind_results['model'].str.contains(moi)]
+df_sum_results = df_sum_results[df_sum_results['model'].str.contains(moi)]
 
 
 # %% plot some performance plots from mean annual water yield with no clustering
@@ -54,10 +68,10 @@ df_results = df_results[df_results['model'].str.contains(moi)]
 
 # r2adj from linear regression by parameters
 p5 = (
-        p9.ggplot(data = df_results) +
-            p9.geom_boxplot(p9.aes(x = 'model', y = 'r2adj', fill = 'train_val')) +
+        p9.ggplot(data = df_ind_results) +
+            p9.geom_boxplot(p9.aes(x = 'model', y = 'NSE', fill = 'train_val')) +
             p9.theme(axis_text_x = p9.element_text(angle = 45)) +
-            p9.ylim(0, 1) +
+            p9.ylim(-2, 1) + # Note that stats for box and whiskers seems to be calced excluding vals outside ylim
             p9.facet_wrap(facets = 'region', ncol = 2, scales = 'free_y')
     )
 

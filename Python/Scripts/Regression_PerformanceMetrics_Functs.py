@@ -16,7 +16,7 @@
 # %% Import libraries
 import numpy as np
 import pandas as pd
-import plotnine as p9
+# import plotnine as p9
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 # import matplotlib.pyplot as plt
@@ -35,6 +35,9 @@ def ssr(y_pred, y_obs):
     ssr: float
         sum of squared residuals
     """
+    y_obs = np.array(y_obs)
+    y_pred = np.array(y_pred)
+    
     ssr = np.sum((y_pred - y_obs)**2)
     return(ssr)
 # AIC
@@ -116,7 +119,11 @@ def R2adj(n_k, n_f, r2):
     r2: unadjusted r-squared (NOTE: that r2_score() function from
         sklearn.metrics can be used to calculate unadjusted r2)
     """
-    r2adj = 1 - ((n_k - 1)/(n_k - n_f - 1)) * (1 - r2)
+    try:
+        r2adj = 1 - ((n_k - 1)/(n_k - n_f - 1)) * (1 - r2)
+    except:
+        r2adj = -9999
+
     return(r2adj)
 
 # Variance Inflation Factor (VIF)
@@ -166,6 +173,8 @@ def PercentBias(y_pred, y_obs):
     y_pred: array of predicted time-series values
     y_obs: array of observed time-series values
     """
+    y_obs = np.array(y_obs)
+    y_pred = np.array(y_pred)
 
     # calc percent bias
     perc_bias = 100 * (np.sum(y_pred - y_obs)/np.sum(y_obs))
@@ -181,6 +190,9 @@ def NSE(y_pred, y_obs):
     y_pred: array of predicted time-series values
     y_obs: array of observed time-series values
     """
+    y_obs = np.array(y_obs)
+    y_pred = np.array(y_pred)
+
     nse = 1 - (np.sum((y_obs - y_pred)**2)/np.sum((y_obs - np.mean(y_obs))**2))
     return(nse)
 
@@ -194,6 +206,9 @@ def KGE(y_pred, y_obs):
     y_pred: array of predicted time-series values
     y_obs: array of observed time-series values
     """
+    y_obs = np.array(y_obs)
+    y_pred = np.array(y_pred)
+
     # get correlation coef between observed and predicted values
     r_o_m = np.corrcoef(y_pred, y_obs)[0, 1]
     # calc alpha as StDev_pred/StDev_obs
