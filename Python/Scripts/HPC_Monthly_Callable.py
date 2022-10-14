@@ -174,6 +174,17 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             resp_in = train_resp
 
             model = LinearRegression().fit(expl_in, resp_in)
+
+            # write model coef and int to csv
+            temp = pd.DataFrame({
+                'features': ['prcp', 'intercept'],
+                'coef': [model.coef_, model.intercept_]
+                })
+            temp.to_csv(
+                f'{dir_expl}/Models/{model_name}_monthly_{clust_meth}_{reg_in}_model.csv',
+                index = False)
+
+
             y_predicted = model.predict(expl_in)
 
             # ssr
@@ -640,6 +651,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             id_var = id_var_in
             )
 
+
+        # write coefs and intercept to csv
+        regr.df_linreg_features_coef_.to_csv(
+            f'{dir_expl}/Models/{model_name}_monthly_{clust_meth}_{reg_in}_model.csv',
+            index = False)
+
+
+
         # append results to df_results_temp
         to_append = regr.df_pred_performance_.copy() # NOTE: copy so original df is not edited in place
         # change VIF to max VIF instead of full array (full array saved to its own file for each model)
@@ -895,6 +914,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             timeseries = True,
             id_var = id_var_in
         )
+
+
+        # write coefs and intercept to csv
+        regr.df_linreg_features_coef_.to_csv(
+            f'{dir_expl}/Models/{model_name}_monthly_{clust_meth}_{reg_in}_model.csv',
+            index = False)
+
+
 
         # append results to df_results_temp
         to_append = regr.df_pred_performance_.copy()
@@ -1230,6 +1257,13 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             id_var = id_var_in
         )
 
+
+        # write coefs and intercept to csv
+        regr.df_linreg_features_coef_.to_csv(
+            f'{dir_expl}/Models/{model_name}_monthly_{clust_meth}_{reg_in}_model.csv',
+            index = False)
+
+
         # append results to df_results_temp
         to_append = regr.df_pred_performance_.copy() # NOTE: copy so original df is not edited in place
         # change VIF to max VIF instead of full array (full array saved to its own file for each model)
@@ -1551,6 +1585,14 @@ def regress_fun(df_train_expl, # training data explanatory variables. Expects ST
             timeseries = True,
             id_var = id_var_in
         )
+
+
+
+        # write coefs and intercept to csv
+        regr.df_linreg_features_coef_.to_csv(
+            f'{dir_expl}/Models/{model_name}_monthly_{clust_meth}_{reg_in}_model.csv',
+            index = False)
+
 
         # append results to df_results_temp
         to_append = regr.df_pred_performance_.copy()

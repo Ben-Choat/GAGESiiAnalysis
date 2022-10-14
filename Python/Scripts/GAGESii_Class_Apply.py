@@ -9,103 +9,243 @@ import plotly.express as px # easier interactive plots
 from scipy import stats
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from Load_Data import load_data_fun
+import glob
 
 # %% load data
 
 
-# water yield directory
-dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
 
-# explantory var (and other data) directory
-dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+# %%
+# define variables
+############
 
-# directory to write csv holding removed columns (due to high VIF)
-dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
+# define which clustering method is being combined. This variable 
+# will be used for collecting data from the appropriate directory as well as
+# naming the combined file
+clust_meth = 'AggEcoregion' # 'Class' # 'None' # 'AggEcoregion', 'None', 
 
-# GAGESii explanatory vars
-# training
-df_train_expl = pd.read_csv(
-    f'{dir_expl}/Expl_train.csv',
-    dtype = {'STAID': 'string'}
+# AggEcoregion regions:
+# CntlPlains, EastHghlnds, MxWdShld, NorthEast, SECstPlain, SEPlains, 
+# WestMnts, WestPlains, WestXeric 
+# define which region to work with
+region =  'CntlPlains' # 'CntlPlains' # 'Non-ref' # 'All'
+             
+# define time scale working with. This vcombtrainariable will be used to read and
+# write data from and to the correct directories
+time_scale = 'annual' # 'mean_annual', 'annual', 'monthly', 'daily'
+
+# define which model you want to work with
+model_work = 'strd_lasso' # ['XGBoost', 'strd_mlr', 'strd_lasso]
+
+# if lasso, define alpha
+alpha_in = 0.02
+
+# which data to plot/work with
+train_val = 'train'
+
+# specifiy whether or not you want the explanatory vars to be standardized
+strd_in = False
+
+# directory with data to work with
+dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work' 
+
+# # directory where to place outputs
+dir_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/TEST_RESULTS'
+
+
+
+
+# %%
+# Load data
+###########
+# load train data (explanatory, water yield, ID)
+df_trainexpl, df_trainWY, df_trainID = load_data_fun(
+    dir_work = dir_work, 
+    time_scale = time_scale,
+    train_val = 'train',
+    clust_meth = clust_meth,
+    region = region,
+    standardize = strd_in# True # whether or not to standardize data
 )
-# test_in
-df_testin_expl = pd.read_csv(
-    f'{dir_expl}/Expl_testin.csv',
-    dtype = {'STAID': 'string'}
+
+# load testin data (explanatory, water yield, ID)
+df_testinexpl, df_testinWY, df_testinID = load_data_fun(
+    dir_work = dir_work, 
+    time_scale = time_scale,
+    train_val = 'testin',
+    clust_meth = clust_meth,
+    region = region,
+    standardize = strd_in # whether or not to standardize data
 )
-# val_nit
-df_valnit_expl = pd.read_csv(
-    f'{dir_expl}/Expl_valnit.csv',
-    dtype = {'STAID': 'string'}
+
+# load valnit data (explanatory, water yield, ID)
+df_valnitexpl, df_valnitWY, df_valnitID = load_data_fun(
+    dir_work = dir_work, 
+    time_scale = time_scale,
+    train_val = 'valnit',
+    clust_meth = clust_meth,
+    region = region,
+    standardize = strd_in # whether or not to standardize data
 )
 
+# read in columns that were previously removed due to high VIF
+file = glob.glob(f'{dir_work}/data_out/{time_scale}/VIF_Removed/*{clust_meth}_{region}.csv')[0]
+try:
+    vif_removed = pd.read_csv(
+        file
+    )['columns_Removed']
+except:
+    vif_removed = pd.read_csv(
+    file
+    )['Columns_Removed']
 
-# Water yield variables
-# Annual Water yield
-# training
-df_train_anWY = pd.read_csv(
-    f'{dir_WY}/annual/WY_Ann_train.csv',
-    dtype = {"site_no":"string"}
-    )
+# drop columns that were removed due to high VIF
+df_trainexpl.drop(vif_removed, axis = 1, inplace = True)
+df_testinexpl.drop(vif_removed, axis = 1, inplace = True)
+df_valnitexpl.drop(vif_removed, axis = 1, inplace = True)
 
-# val_in
-df_testin_anWY = pd.read_csv(
-    f'{dir_WY}/annual/WY_Ann_testin.csv',
-    dtype = {"site_no":"string"}
-    )
 
-# val_nit
-df_valnit_anWY = pd.read_csv(
-    f'{dir_WY}/annual/WY_Ann_valnit.csv',
-    dtype = {"site_no":"string"}
-    )
+# store staid's and date/year/month
+# define columns to keep if present in STAID
+col_keep = ['STAID', 'year', 'month', 'day', 'date']
+STAIDtrain = df_trainexpl[df_trainexpl.columns.intersection(col_keep)]
+STAIDtestin = df_testinexpl[df_testinexpl.columns.intersection(col_keep)]
+STAIDvalnit = df_valnitexpl[df_valnitexpl.columns.intersection(col_keep)] 
 
-# mean annual water yield
-# training
-df_train_mnanWY = df_train_anWY.groupby(
-    'site_no', as_index = False
-).mean().drop(columns = ["yr"])
-# val_in
-df_testin_mnanWY = df_testin_anWY.groupby(
-    'site_no', as_index = False
-).mean().drop(columns = ["yr"])
-# val_nit
-df_valnit_mnanWY = df_valnit_anWY.groupby(
-    'site_no', as_index = False
-).mean().drop(columns = ["yr"])
+# remove id and time variables (e.g., STAID, year, month, etc.) from explanatory vars
+# subset WY to version desired (ft)
 
-# mean GAGESii explanatory vars
-# training
-df_train_mnexpl = df_train_expl.groupby(
-    'STAID', as_index = False
-).mean().drop(columns = ['year'])
-# val_in
-df_testin_mnexpl = df_testin_expl.groupby(
-    'STAID', as_index = False
-).mean().drop(columns = ['year'])
-#val_nit
-df_valnit_mnexpl = df_valnit_expl.groupby(
-    'STAID', as_index = False
-).mean().drop(columns = ['year'])
+if(time_scale == 'mean_annual'):
+     
+    df_trainexpl.drop('STAID', axis = 1, inplace = True)
+    df_trainWY = df_trainWY['Ann_WY_ft']
+    df_testinexpl.drop('STAID', axis = 1, inplace = True)
+    df_testinWY = df_testinWY['Ann_WY_ft']
+    df_valnitexpl.drop('STAID', axis = 1, inplace = True)
+    df_valnitnWY = df_valnitWY['Ann_WY_ft']
 
-# ID vars (e.g., ecoregion)
+if(time_scale == 'annual'):
 
-# training ID
-df_train_ID = pd.read_csv(f'{dir_expl}/ID_train.csv',
-    dtype = {'STAID': 'string'})
-# val_in ID
-df_testin_ID = df_train_ID
-# val_nit ID
-df_valnit_ID = pd.read_csv(f'{dir_expl}/ID_valnit.csv',
-    dtype = {'STAID': 'string'})
+    df_trainexpl.drop(['STAID', 'year'], axis = 1, inplace = True)
+    df_trainWY = df_trainWY['Ann_WY_ft']
+    df_testinexpl.drop(['STAID', 'year'], axis = 1, inplace = True)
+    df_testinWY = df_testinWY['Ann_WY_ft']
+    df_valnitexpl.drop(['STAID', 'year'], axis = 1, inplace = True)
+    df_valnitWY = df_valnitWY['Ann_WY_ft']
+
+if(time_scale == 'monthly'):
+
+    df_trainexpl.drop(['STAID', 'year', 'month'], axis = 1, inplace =True)
+    df_trainWY = df_trainWY['Mnth_WY_ft']
+    df_testinexpl.drop(['STAID', 'year', 'month'], axis = 1, inplace = True)
+    df_testinWY = df_testinWY['Mnth_WY_ft']
+    df_valnitexpl.drop(['STAID', 'year', 'month'], axis = 1, inplace = True)
+    df_valnitnWY = df_valnitWY['Mnth_WY_ft']
+
+if(time_scale == 'daily'):
+
+    STAIDtrain = df_trainexpl[['STAID', 'date']] 
+    df_trainexpl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace =True)
+    df_trainWY = df_trainWY['dlyWY_ft']
+    df_testinexpl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace = True)
+    df_testinWY = df_testinWY['dlyWY_ft']
+    df_valnitexpl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace = True)
+    df_valnitnWY = df_valnitWY['dlyWY_ft']
+
+# # water yield directory
+# dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+
+# # explantory var (and other data) directory
+# dir_expl = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/'
+
+# # directory to write csv holding removed columns (due to high VIF)
+# dir_VIF = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/VIF_Removed'
+
+# # GAGESii explanatory vars
+# # training
+# df_train_expl = pd.read_csv(
+#     f'{dir_expl}/Expl_train.csv',
+#     dtype = {'STAID': 'string'}
+# )
+# # test_in
+# df_testin_expl = pd.read_csv(
+#     f'{dir_expl}/Expl_testin.csv',
+#     dtype = {'STAID': 'string'}
+# )
+# # val_nit
+# df_valnit_expl = pd.read_csv(
+#     f'{dir_expl}/Expl_valnit.csv',
+#     dtype = {'STAID': 'string'}
+# )
+
+
+# # Water yield variables
+# # Annual Water yield
+# # training
+# df_train_anWY = pd.read_csv(
+#     f'{dir_WY}/annual/WY_Ann_train.csv',
+#     dtype = {"site_no":"string"}
+#     )
+
+# # val_in
+# df_testin_anWY = pd.read_csv(
+#     f'{dir_WY}/annual/WY_Ann_testin.csv',
+#     dtype = {"site_no":"string"}
+#     )
+
+# # val_nit
+# df_valnit_anWY = pd.read_csv(
+#     f'{dir_WY}/annual/WY_Ann_valnit.csv',
+#     dtype = {"site_no":"string"}
+#     )
+
+# # mean annual water yield
+# # training
+# df_train_mnanWY = df_train_anWY.groupby(
+#     'site_no', as_index = False
+# ).mean().drop(columns = ["yr"])
+# # val_in
+# df_testin_mnanWY = df_testin_anWY.groupby(
+#     'site_no', as_index = False
+# ).mean().drop(columns = ["yr"])
+# # val_nit
+# df_valnit_mnanWY = df_valnit_anWY.groupby(
+#     'site_no', as_index = False
+# ).mean().drop(columns = ["yr"])
+
+# # mean GAGESii explanatory vars
+# # training
+# df_train_mnexpl = df_train_expl.groupby(
+#     'STAID', as_index = False
+# ).mean().drop(columns = ['year'])
+# # val_in
+# df_testin_mnexpl = df_testin_expl.groupby(
+#     'STAID', as_index = False
+# ).mean().drop(columns = ['year'])
+# #val_nit
+# df_valnit_mnexpl = df_valnit_expl.groupby(
+#     'STAID', as_index = False
+# ).mean().drop(columns = ['year'])
+
+# # ID vars (e.g., ecoregion)
+
+# # training ID
+# df_train_ID = pd.read_csv(f'{dir_expl}/ID_train.csv',
+#     dtype = {'STAID': 'string'})
+# # val_in ID
+# df_testin_ID = df_train_ID
+# # val_nit ID
+# df_valnit_ID = pd.read_csv(f'{dir_expl}/ID_valnit.csv',
+#     dtype = {'STAID': 'string'})
 
 # Read in categories to be used in specified hierarchical clustering
 df_cats = pd.read_csv(
-    'D:/Projects/GAGESii_ANNstuff/Data_Out/FeatureCategories.csv',
+    'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories.csv',
     usecols = ['Custom_Cat', 'Features', 'Category', 'Coarse_Cat', 'Coarsest_Cat']
 ).drop([0, 82], axis = 0)
 
-del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY, df_valnit_expl)
+# del(df_train_anWY, df_train_expl, df_testin_anWY, df_testin_expl, df_valnit_anWY, df_valnit_expl)
 
 #############
 
@@ -474,15 +614,15 @@ not_tr_in = ['GEOL_REEDBUSH_DOM_gneiss', 'GEOL_REEDBUSH_DOM_granitic',
 
 # regression on untransformed explanatory variables
 # Instantiate a Regressor object 
-testreg = Regressor(expl_vars = df_train_mnexpl.drop(columns = ['STAID']),
-    resp_var = df_train_mnanWY['Ann_WY_ft'])
+testreg = Regressor(expl_vars = df_trainexpl, # .drop(columns = ['STAID']),
+    resp_var = df_trainWY) # ['Ann_WY_ft'])
 
 # apply lasso regression
 testreg.lasso_regression(
-    alpha_in = 1,
-    max_iter_in = 1000,
+    alpha_in = alpha_in,
+    max_iter_in = 10000,
     n_splits_in = 10,
-    n_repeats_in = 3,
+    # n_repeats_in = 3,
     random_state_in = 100
 )
 

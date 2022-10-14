@@ -47,11 +47,11 @@ import hdbscan # for hdbscan clustering
 # from mpl_toolkits.mplot3d import Axes3D # plot 3d plot
 # import plotly as ply # interactive plots
 # import plotly.io as pio5 # easier interactive plots
-import plotly.express as px # easier interactive plots
-import matplotlib.pyplot as plt # plotting
+# import plotly.express as px # easier interactive plots
+# import matplotlib.pyplot as plt # plotting
 # from matplotlib import cm
-import plotnine as p9
-import seaborn as sns # easier interactive plots
+# import plotnine as p9
+# import seaborn as sns # easier interactive plots
 
 import numpy as np # matrix operations/data manipulation
 import pandas as pd # data wrangling
@@ -1131,7 +1131,7 @@ class Regressor:
                 forward = forward_in, # set to False for backward
                 floating = float_opt,
                 verbose = 1, # 0 for no output, 1 for number features in set, 2 for more detail
-                scoring = 'neg_root_mean_squared_error', # 'r2', # 'neg_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error'
+                scoring = 'neg_mean_absolute_error', # 'neg_root_mean_squared_error', # 'r2', # 'neg_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error'
                 cv = cv
             )
         elif sel_meth == 'exhaustive':
@@ -1139,7 +1139,7 @@ class Regressor:
                 n_jobs = n_jobs_in,
                 min_features = min_k,
                 max_features = klim_in,
-                scoring = 'neg_root_mean_squared_error', # 'r2'
+                scoring = 'neg_mean_absolute_error', # 'neg_root_mean_squared_error', # 'r2'
                 print_progress = True,
                 cv = cv
                 )
@@ -1282,7 +1282,7 @@ class Regressor:
 
     def lasso_regression(self,
                         alpha_in = 1, 
-                        max_iter_in = 1000,
+                        max_iter_in = 1000.,
                         n_splits_in = 10,
                         n_repeats_in = 1,
                         random_state_in = 100,
@@ -1345,7 +1345,9 @@ class Regressor:
             X_train, y_train = self.expl_vars, self.resp_var
 
         self.lasso_reg_ = Lasso(alpha = alpha_in,
-                            max_iter = max_iter_in)
+                            max_iter = max_iter_in,
+                            tol = 1e-8,
+                            random_state = 100)
         
 
 
@@ -1381,7 +1383,7 @@ class Regressor:
            
             search = HalvingGridSearchCV(self.lasso_reg_,
                 grid,
-                scoring = 'neg_root_mean_squared_error', # 'neg_mean_absolute_error', 'r2'],
+                scoring = 'neg_mean_absolute_error', # 'neg_root_mean_squared_error', # 'neg_mean_absolute_error', 'r2'],
                 refit = False,
                 cv = cv,
                 n_jobs = n_jobs_in)
@@ -1700,7 +1702,7 @@ class Regressor:
                             estimator = xgb_reg,
                             param_grid = grid_in,
                             factor = halving_factor,
-                            scoring = 'neg_root_mean_squared_error',
+                            scoring = 'neg_mean_absolute_error', # 'r2', # 'neg_root_mean_squared_error',
                             cv = cv, # default = 5
                             return_train_score = False, # True, # default = False
                             random_state = random_state_in,
@@ -1823,12 +1825,12 @@ class Regressor:
             self.df_NSE_KGE_ = NSE_KGE_Apply(df_in = df_tempin)
 
             # assign mean NSE and KGE to variable to be added to output metrics
-            NSE_out = np.round(np.mean(self.df_NSE_KGE_['NSE']), 4)
-            KGE_out = np.round(np.mean(self.df_NSE_KGE_['KGE']), 4)
+            NSE_out = np.round(np.median(self.df_NSE_KGE_['NSE']), 4)
+            KGE_out = np.round(np.median(self.df_NSE_KGE_['KGE']), 4)
             # recalculate percent bias as mean of individual catchments
-            percBias_out = np.round(np.mean(self.df_NSE_KGE_['PercBias']), 4)
+            percBias_out = np.round(np.median(self.df_NSE_KGE_['PercBias']), 4)
             # calculate RMSE from time series
-            rmsets_out = np.round(np.mean(self.df_NSE_KGE_['RMSE']), 4)
+            rmsets_out = np.round(np.median(self.df_NSE_KGE_['RMSE']), 4)
 
 
         # write performance metrics to dataframe
@@ -1986,7 +1988,7 @@ class Regressor:
         # sample size
         n_k_out = X_pred.shape[0]
         # number of features
-        # if from lasso equation then use model_in.coef_ to get number of features
+        # if from lasso or mlr then use model_in.coef_ to get number of features
         # otherwise, use explanatory variable dataframe
         try:
             n_f_out = len(np.where(np.abs(model_in.coef_) > 0)[0])
@@ -2004,9 +2006,11 @@ class Regressor:
         rmse_out = mean_squared_error(y_obs, y_pred, squared = False)
         # VIF of variables in predictive model
         # if lasso regression, then only use features with non-zero coefficeints
-        # else use X_pred directoy
+        # else use X_pred directly
+
+	# self.lasso_reg_.l1_ratio # commenting this out, if lasso regr was applied at any point, then self will have .lasso_reg_ stored
         try:
-            self.lasso_reg_.l1_ratio
+            model_in.l1_ratio
             X_in = X_pred[self.df_lasso_features_coef_.drop(
                 self.df_lasso_features_coef_.tail(1).index)['features']]
             VIF_out = VIF(X_in)
@@ -2033,12 +2037,12 @@ class Regressor:
             self.df_NSE_KGE_ = NSE_KGE_Apply(df_in = df_tempin)
 
             # assign mean NSE and KGE to variable to be added to output metrics
-            NSE_out = np.round(np.mean(self.df_NSE_KGE_['NSE']), 4)
-            KGE_out = np.round(np.mean(self.df_NSE_KGE_['KGE']), 4)
+            NSE_out = np.round(np.median(self.df_NSE_KGE_['NSE']), 4)
+            KGE_out = np.round(np.median(self.df_NSE_KGE_['KGE']), 4)
             # recalculate percent bias as mean of individual catchments
-            percBias_out = np.round(np.mean(self.df_NSE_KGE_['PercBias']), 4)
+            percBias_out = np.round(np.median(self.df_NSE_KGE_['PercBias']), 4)
             # calculate RMSE from time series
-            rmsets_out = np.round(np.mean(self.df_NSE_KGE_['RMSE']), 4)
+            rmsets_out = np.round(np.median(self.df_NSE_KGE_['RMSE']), 4)
 
 
         # write performance metrics to dataframe

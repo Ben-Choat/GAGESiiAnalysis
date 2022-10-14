@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 clust_meth = 'AggEcoregion' # 'AggEcoregion', 'None', 
 
 # define which region to work with
-region =  'WestXeric' # 'NorthEast' # 'MxWdShld' #
+region =  'MxWdShld' # 'WestXeric' # 'NorthEast' # 'MxWdShld' #
 
 # define time scale working with. This variable will be used to read and
 # write data from and to the correct directories
@@ -45,17 +45,6 @@ dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work'
 # directory where to place outputs
 dir_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
 
-# Define features not to transform
-not_tr_in = ['GEOL_REEDBUSH_DOM_granitic', 
-            'GEOL_REEDBUSH_DOM_quarternary', 
-            'GEOL_REEDBUSH_DOM_sedimentary', 
-            'GEOL_REEDBUSH_DOM_ultramafic', 
-            'GEOL_REEDBUSH_DOM_volcanic',
-            'year',
-            'month',
-            'day',
-            'date']
-            # 'GEOL_REEDBUSH_DOM_gneiss', 
 
 
 
@@ -70,7 +59,12 @@ df_expl, df_WY, df_ID = load_data_fun(
     clust_meth = clust_meth,
     region = region,
     standardize = True # whether or not to standardize data
-)
+    )
+
+# DRAIN_SQKM stored as DRAIN_SQKM_x in some output by accident,
+# so replace it
+if 'SQKM_x' in df_expl.columns.values:
+    df_expl.columns = df_expl.columns.str.replace('SQKM_x', 'SQKM')
 
 # read in columns that were previously removed due to high VIF
 file = glob.glob(f'{dir_work}/data_out/{time_scale}/VIF_Removed/*{clust_meth}_{region}.csv')[0]
@@ -144,6 +138,12 @@ model.fit(df_expl, df_WY)
 # create dataframe with regression coefficients and variables
 vars_temp = df_expl.columns[np.abs(model.coef_) > 10e-20]
 coef_temp = [x for x in model.coef_ if np.abs(x) > 10e-20]
+
+# add intercept to coefs
+vars_temp.append('intercept')
+coef_temp.append(model.intercept_)
+
+# write to dataframe
 df_coef = pd.DataFrame({
     'features': vars_temp,
     'coef': coef_temp
@@ -165,6 +165,9 @@ vars_keep = pd.read_csv(
     file
 )['feature']
 
+if 'DRAIN_SQKM_x' in vars_keep.values:
+    vars_keep = vars_keep.str.replace('DRAIN_SQKM_x', 'DRAIN_SQKM')
+
 # subset data to variables used in model
 X_in = df_expl[vars_keep]
 
@@ -177,10 +180,15 @@ reg = LinearRegression()
 model = reg.fit(X_in, df_WY)
 
 
-
 # create dataframe with regression coefficients and variables
 vars_temp = vars_keep
 coef_temp = model.coef_
+
+# add intercept to coefs
+vars_temp = vars_temp.append(pd.Series('intercept'))
+coef_temp = np.append(coef_temp, model.intercept_)
+
+# write to dataframe
 df_coef = pd.DataFrame({
     'features': vars_temp,
     'coef': coef_temp
@@ -209,6 +217,9 @@ X_in = df_expl
 
 # xgb.plot_tree(model)
 
+
+
+
 # %%
 # Shapley Values
 ###########
@@ -220,12 +231,21 @@ Xsubset = shap.utils.sample(X_in, int(np.floor(X_in.shape[0] * ratio_sample)))
 
 # define explainer
 explainer = shap.Explainer(model.predict, Xsubset)
+# explainer = shap.TreeExplainer(model)
 # calc shap values
 shap_values = explainer(X_in) # df_expl)
 
+
 # define the catchment for which to create a partial dependence plot and/or
 # a waterfall plot
-sample_ind = 50
+catch_ind = 500
+
+# pull id and dates for this catchment (catch_ind)
+sample_idtime = STAID[catch_ind:catch_ind+1]
+id_in = sample_idtime['STAID'].values# [0]
+time_in = sample_idtime['year'].values# [0]
+
+
 
 # %%
 # make a standard partial dependence plot
@@ -236,17 +256,29 @@ shap.partial_dependence_plot(
     model_expected_value = True,
     feature_expected_value = True, 
     ice = False,
-    shap_values = shap_values[sample_ind:sample_ind + 1, :]
+    shap_values = shap_values[catch_ind:catch_ind + 1, :]
 )
 # scatter
 shap.plots.scatter(shap_values[:, 'PPTAVG_BASIN'])
 
 
 # %%
-# waterfall plot shows how we get from shap_values.base to model.predict(x)[sample_ind]
-# for a given catchment (sample_ind)
-shap.plots.waterfall(shap_values[sample_ind], 
-    max_display = len(X_in.columns) + 1) # vars_temp
+# waterfall plot shows how we get from shap_values.base to model.predict(x)[catch_ind]
+# for a given catchment (catch_ind)
+for catch_ind in np.arange(500, 509):
+    # pull id and dates for this catchment (catch_ind)
+    sample_idtime = STAID[catch_ind:catch_ind+1]
+    id_in = sample_idtime['STAID'].values[0]
+    time_in = sample_idtime['year'].values[0]
+
+    shap.plots.waterfall(shap_values[catch_ind], 
+        max_display = len(X_in.columns) + 1, # vars_temp, X_in.columns
+        show = False) 
+
+    plt.title(f'{id_in}: {time_in}')
+
+    plt.show()
+
 
 
 # %%
@@ -260,4 +292,28 @@ plt.title(f'{clust_meth}: {region}')
 plt.show()
 
 
+# %%
+# mean magnitude of effect of each variable
+shap.summary_plot(
+    shap_values, 
+    max_display=15, 
+    show=False, 
+    plot_type='bar')
+
+
+
+# %%
+# load JS visualization code to notebook
+# shap.initjs()
+
+# shap.plots.force(shap_values[catch_ind])
+
+
+# %%
+# visualize the first 5 predictions explanations with a dark red dark blue color map.
+shap.force_plot(
+    explainer.expected_value, 
+    shap_values[0:5,:], 
+    X_in.iloc[0:5,:], 
+    plot_cmap="DrDb")
 # %%

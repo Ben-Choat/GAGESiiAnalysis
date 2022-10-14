@@ -12,6 +12,9 @@ import pandas as pd
 # import numpy as np
 import glob
 import os
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Lasso
+import xgboost as xgb
 
 # %% 
 # Define working directories and variables
@@ -19,11 +22,11 @@ import os
 # define which clustering method is being combined. This variable 
 # will be used for collecting data from the appropriate directory as well as
 # naming the combined file
-clust_meth = 'None' # 'AggEcoregion', 'None', 
+clust_meth = 'AggEcoregion' # 'AggEcoregion', 'None', 'Class'
 
 # define time scale working with. This variable will be used to read and
 # write data from and to the correct directories
-time_scale = 'mean_annual' # 'mean_annual', 'annual', 'monthly', 'daily'
+time_scale = 'annual' # 'mean_annual', 'annual', 'monthly', 'daily'
 
 # source directory
 dir_source = ('D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/'
@@ -47,7 +50,7 @@ file_ind_list = glob.glob(f'{dir_source}/Results_*IndCatch*csv')
 
 # summary results (first read in all files)
 file_summary_list = glob.glob(f'{dir_source}/Results*csv')
-# now drop the itesm that are also located in file_ind_list
+# now drop the items that are also located in file_ind_list
 file_summary_list = [x for x in file_summary_list if x not in file_ind_list]
 
 
