@@ -95,6 +95,16 @@ if(time_scale == 'mean_annual'):
     #df_WY = df_WY['Ann_WY_ft']
 
 
+# define features that are natural features
+nat_feats = feat_cats.loc[
+    feat_cats['Coarsest_Cat'] == 'Natural', 'Features'
+].reset_index(drop = True)
+
+# define features that are anthropogenic features
+anthro_feats = feat_cats.loc[
+    feat_cats['Coarsest_Cat'] == 'Anthro', 'Features'
+].reset_index(drop = True)
+
 
 
 
@@ -119,6 +129,7 @@ param_grid = {
 
 
 # allNames = sorted(param_grid)
+# produce all combos of parameters
 combos = product(*(param_grid[Name] for Name in param_grid))
 combosdf = pd.DataFrame(combos)
 
@@ -250,7 +261,7 @@ combosAllVars = combosAllVars.loc[
     ).reset_index(drop = True)
 
 # define empty dataframe to append parameters with which to work in the next step
-combosAllBest = pd.DataFrame(columns = combosAllVars.columns[0:9])
+combosAllBest = pd.DataFrame(columns = combosAllVars.columns)
 
 # filter to only highest validity index for each unique number of clusters
 for i in combosAllVars['Numb_Clusters'].unique():
@@ -260,7 +271,7 @@ for i in combosAllVars['Numb_Clusters'].unique():
     # keep only max
     tmp = tmp[tmp['Validity_Ind'] == np.max(tmp['Validity_Ind'])]
 
-    combosAllBest = pd.concat([combosAllBest, tmp.iloc[:, 0:9]])
+    combosAllBest = pd.concat([combosAllBest, tmp])
 
 combosAllBest.reset_index(drop = True, inplace = True)
 print(combosAllBest)
@@ -279,8 +290,6 @@ combosAllBest = pd.read_csv(
     'D:/Projects/GAGESii_ANNstuff/Data_Out/'
     'UMAP_HDBSCAN/UMAP_HDBSCAN_AllVars_ParamSearch_Results.csv',
 )
-
-
 
 
 
@@ -304,15 +313,7 @@ paramNat_grid = {
 
 
 
-# define features that are natural features
-nat_feats = feat_cats.loc[
-    feat_cats['Coarsest_Cat'] == 'Natural', 'Features'
-].reset_index(drop = True)
 
-# define features that are anthropogenic features
-anthro_feats = feat_cats.loc[
-    feat_cats['Coarsest_Cat'] == 'Anthro', 'Features'
-].reset_index(drop = True)
 
 
 
@@ -321,6 +322,7 @@ anthro_feats = feat_cats.loc[
 ######
 
 # allNames = sorted(paramNat_grid)
+# produce all combos of parameters
 combos = product(*(paramNat_grid[Name] for Name in paramNat_grid))
 combosNat = pd.DataFrame(combos)
 
@@ -351,6 +353,10 @@ df_work = df_expl[df_expl.columns.intersection(nat_feats)]
 # subset params to random sample for increased speed in testing
 # combosNat = combosNat.sample(n = 5) # frac = 0.5
 # print(combosNat)
+
+# FOR TROUBLE SHOOTING ONLY
+combosNat = combosNatBest
+
 combosout_df = combosNat
 for i in combosout_df.itertuples(index = False):
     tempParams = np.array(i)
@@ -491,6 +497,7 @@ paramAnth_grid = {
 }
 
 # allNames = sorted(param_grid)
+# produce all combos of parameters
 combos = product(*(paramAnth_grid[Name] for Name in paramAnth_grid))
 combosanth_df = pd.DataFrame(combos)
 
@@ -498,19 +505,6 @@ combosanth_df = pd.DataFrame(combos)
 # subset to random sample for increased speed in testing
 # combosanth_df = combosanth_df.sample(n = 5) # frac = 0.5
 # print(combosanth_df)
-
-# # define empty list to hold absolute DBCV scores
-# Nat_dbcvout = []
-# Anth_dbcvout = []
-# # define empty list to hold relative DBCV scores
-# Nat_reldbcvout = []
-# Anth_reldbcvout = []
-# # define empty list to hold number of values identified as noise
-# Nat_noise_count = []
-# Anth_noise_count = []
-# # define empty list to hold number of clusters
-# Nat_num_clusters = []
-# Anth_num_clusters = []
 
 # define empty params dataframe to hold param combos
 
@@ -525,6 +519,12 @@ nat_anth_combos = pd.DataFrame(
 
 # define holder to work with
 temp_df = nat_anth_combos
+
+# Next two lines commented out - only used if rereading in 
+# combosNatAnthBest form csv 
+
+# combosNatBest = combosNatAnthBest.iloc[:, 0:9].drop_duplicates()
+# combosNatBest.reset_index(drop = True, inplace = True)
 
 # loop through best params from natural features and identify
 # best params for anth features
@@ -549,12 +549,12 @@ for i in combosNatBest.itertuples(index = False):
                     n_jobs = -1)
 
     hd_clusterer = hdbscan.HDBSCAN(min_cluster_size = int(NatTempParams[4]),
-                                    min_samples = int(NatTempParams[5]), 
-                                    gen_min_span_tree = True,
-                                    metric = NatTempParams[6], # 'euclidean' or 'manhattan'
-                                    cluster_selection_epsilon = float(NatTempParams[7]),
-                                    cluster_selection_method = NatTempParams[8],
-                                    prediction_data = True)
+                        min_samples = int(NatTempParams[5]), 
+                        gen_min_span_tree = True,
+                        metric = NatTempParams[6], # 'euclidean' or 'manhattan'
+                        cluster_selection_epsilon = float(NatTempParams[7]),
+                        cluster_selection_method = NatTempParams[8],
+                        prediction_data = True)
 
 
     # define pipline
@@ -584,17 +584,18 @@ for i in combosNatBest.itertuples(index = False):
     # Now loop through the individual clusters from the natural clustering and 
     # cluster based on antrhopogenic features
     
-    for cluster in np.unique(hd_clusterer.labels_):
-        # subset stations of interest 
+    # for cluster in np.unique(hd_clusterer.labels_):
+    for cluster in np.unique(hd_clusterer.labels_)[1:3]:
+        # subset stations of interest (matching current label) 
         expl_work = df_workanth[hd_clusterer.labels_ == cluster]
         
         for params in combosanth_df.itertuples(index = False):
             AnthTempParams = np.array(params)
             # define standard scaler
-            scaler = StandardScaler()
+            scaler2 = StandardScaler()
 
             # define umap object
-            umap_reducer = umap.UMAP(
+            umap_reducer2 = umap.UMAP(
                             n_neighbors = int(AnthTempParams[0]),
                             min_dist = int(AnthTempParams[1]),
                             metric = AnthTempParams[2],
@@ -604,36 +605,37 @@ for i in combosNatBest.itertuples(index = False):
                             # n_epochs = 200, 
                             n_jobs = -1)
 
-            hd_clusterer = hdbscan.HDBSCAN(min_cluster_size = int(AnthTempParams[4]),
-                                            min_samples = int(AnthTempParams[5]), 
-                                            gen_min_span_tree = True,
-                                            metric = AnthTempParams[6], # 'euclidean' or 'manhattan'
-                                            cluster_selection_epsilon = float(AnthTempParams[7]),
-                                            cluster_selection_method = AnthTempParams[8],
-                                            prediction_data = True)
+            hd_clusterer2 = hdbscan.HDBSCAN(
+                            min_cluster_size = int(AnthTempParams[4]),
+                            min_samples = int(AnthTempParams[5]), 
+                            gen_min_span_tree = True,
+                            metric = AnthTempParams[6], # 'euclidean' or 'manhattan'
+                            cluster_selection_epsilon = float(AnthTempParams[7]),
+                            cluster_selection_method = AnthTempParams[8],
+                            prediction_data = True)
 
 
             # define pipline
-            pipe = Pipeline(
-                steps = [('scaler', scaler), 
-                    ('umap_reducer', umap_reducer), 
-                    ('hd_clusterer', hd_clusterer)]
+            pipe2 = Pipeline(
+                steps = [('scaler', scaler2), 
+                    ('umap_reducer', umap_reducer2), 
+                    ('hd_clusterer', hd_clusterer2)]
                 )
 
             # fit the model pipeline
-            pipe.fit(df_workanth)   
+            pipe2.fit(df_workanth)   
 
 
             # define temp vars for relative validity, number catchments 
             # as noise, and number of clusters
             # Anth_relative_validity = hd_clusterer.relative_validity_
-            Anth_noise = len(hd_clusterer.labels_[hd_clusterer.labels_ == -1])
-            Anth_numclusts = len(np.unique(hd_clusterer.labels_))
+            Anth_noise = len(hd_clusterer2.labels_[hd_clusterer2.labels_ == -1])
+            Anth_numclusts = len(np.unique(hd_clusterer2.labels_))
 
             # calculate absolute validity index
             Anth_absValInd = hdbscan.validity_index(
-                X = umap_reducer.embedding_.astype(np.float64), 
-                labels = hd_clusterer.labels_,
+                X = umap_reducer2.embedding_.astype(np.float64), 
+                labels = hd_clusterer2.labels_,
                 metric = AnthTempParams[6])
 
 
@@ -649,7 +651,8 @@ for i in combosNatBest.itertuples(index = False):
                 tempAnth]
             ))
 
-            # write all params and metrics to dataframe and append to nat_anth_combos df
+            # write all params and metrics to dataframe and append to 
+            # nat_anth_combos df
             temp_df.loc[len(temp_df)] = tempRow
 
 
@@ -675,7 +678,7 @@ combosNatAnthVars = combosNatAnthVars.loc[
     ).reset_index(drop = True)
 
 # define empty dataframe to append parameters with which to work in the next step
-combosNatAnthBest = pd.DataFrame(columns = combosNatAnthVars.columns[0:18])
+combosNatAnthBest = pd.DataFrame(columns = combosNatAnthVars.columns)
 
 
 # filter to only highest validity index for each unique number of clusters
@@ -690,7 +693,7 @@ for i in combosNatAnthVars['Nat_Numb_Clusters'].unique():
         # keep only max
         tmp = tmp[tmp['Anth_Validity_Ind'] == np.max(tmp['Anth_Validity_Ind'])]
 
-        combosNatAnthBest = pd.concat([combosNatAnthBest, tmp.iloc[:, 0:9]])
+        combosNatAnthBest = pd.concat([combosNatAnthBest, tmp], axis = 0)
 
 combosNatAnthBest.reset_index(drop = True, inplace = True)
 
@@ -712,6 +715,8 @@ combosNatAnthBest = pd.read_csv(
 )
 
 
-
+# following is for trouble shooting. Read in peviously written combosNatAnthBest
+# and subset to just NatBest columns
+# combosNatBest = combosNatAnthBest.iloc[:, 0:9]
 
 # %%

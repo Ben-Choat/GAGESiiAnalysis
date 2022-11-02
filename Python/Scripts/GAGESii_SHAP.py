@@ -17,6 +17,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import Lasso
 import xgboost as xgb
 import matplotlib.pyplot as plt
+import seaborn as sns
 # from xgboost import plot_tree # can't get to work on windows (try on linux)
 
 
@@ -30,14 +31,24 @@ import matplotlib.pyplot as plt
 # define which clustering method is being combined. This variable 
 # will be used for collecting data from the appropriate directory as well as
 # naming the combined file
-clust_meth = 'AggEcoregion' # 'AggEcoregion', 'None', 
+
+clust_meth = 'AggEcoregion' # 'AggEcoregion', 'None', Class
+
+# AggEcoregion regions:
+# CntlPlains, EastHghlnds, MxWdShld, NorthEast, SECstPlain, SEPlains, 
+# WestMnts, WestPlains, WestXeric 
+# classes
+# Non-ref, Ref
 
 # define which region to work with
-region =  'MxWdShld' # 'WestXeric' # 'NorthEast' # 'MxWdShld' #
+region =  'SECstPlain' # 'WestXeric' # 'NorthEast' # 'MxWdShld' #
 
 # define time scale working with. This variable will be used to read and
 # write data from and to the correct directories
 time_scale = 'annual' # 'mean_annual', 'annual', 'monthly', 'daily'
+
+# whether or not to standardize data
+stndz = True
 
 # directory with data to work with
 dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work' 
@@ -58,7 +69,7 @@ df_expl, df_WY, df_ID = load_data_fun(
     train_val = 'train',
     clust_meth = clust_meth,
     region = region,
-    standardize = True # whether or not to standardize data
+    standardize = stndz # whether or not to standardize data
     )
 
 # DRAIN_SQKM stored as DRAIN_SQKM_x in some output by accident,
@@ -210,14 +221,15 @@ temp_time = time_scale.replace('_', '')
 # reload model into object
 model.load_model(
     f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
-    f'/Models/xgbreg_{temp_time}_XGBoost_{clust_meth}_{region}_model.json'
+    f'/Models/XGBoost_{temp_time}_{clust_meth}_{region}_model.json'
     )
 
-X_in = df_expl
+
 
 # xgb.plot_tree(model)
 
-
+# define X_in so you can call it below without needing to edit the text
+X_in = df_expl
 
 
 # %%
@@ -230,11 +242,15 @@ ratio_sample = 0.50
 Xsubset = shap.utils.sample(X_in, int(np.floor(X_in.shape[0] * ratio_sample)))
 
 # define explainer
-explainer = shap.Explainer(model.predict, Xsubset)
-# explainer = shap.TreeExplainer(model)
+# explainer = shap.LinearExplainer(model, Xsubset)
+explainer = shap.TreeExplainer(model)
 # calc shap values
 shap_values = explainer(X_in) # df_expl)
 
+# save explainer
+# explainer.save(
+#     f'{dir_out}/{clust_meth}_{region}_{time_scale}.pkl'
+# )
 
 # define the catchment for which to create a partial dependence plot and/or
 # a waterfall plot
@@ -265,14 +281,14 @@ shap.plots.scatter(shap_values[:, 'PPTAVG_BASIN'])
 # %%
 # waterfall plot shows how we get from shap_values.base to model.predict(x)[catch_ind]
 # for a given catchment (catch_ind)
-for catch_ind in np.arange(500, 509):
+for catch_ind in np.arange(500, 501):
     # pull id and dates for this catchment (catch_ind)
     sample_idtime = STAID[catch_ind:catch_ind+1]
     id_in = sample_idtime['STAID'].values[0]
     time_in = sample_idtime['year'].values[0]
 
     shap.plots.waterfall(shap_values[catch_ind], 
-        max_display = len(X_in.columns) + 1, # vars_temp, X_in.columns
+        max_display = 20, # len(X_in.columns) + 1, # vars_temp, X_in.columns
         show = False) 
 
     plt.title(f'{id_in}: {time_in}')
@@ -296,11 +312,39 @@ plt.show()
 # mean magnitude of effect of each variable
 shap.summary_plot(
     shap_values, 
-    max_display=15, 
+    max_display=20, 
     show=False, 
     plot_type='bar')
 
+plt.show()
 
+# same info as summary_plot, but cleaned up a bit
+shap.plots.bar(
+    shap_values,
+    max_display = 15
+)
+
+# indiviudal relationships between shap values and features
+shap.plots.scatter(
+    shap_values
+)
+
+# heatmap
+shap.plots.heatmap(
+    shap_values
+)
+
+# visualize the first 5 predictions explanations with a dark red dark blue color map.
+shap.force_plot(
+    # explainer.expected_value, 
+    shap_values, # [0:5,:], 
+    X_in, # .iloc[0:5,:], 
+    plot_cmap="DrDb")
+
+# this one does not work for me
+# shap.plots.text(
+#     shap_values
+# )
 
 # %%
 # load JS visualization code to notebook
@@ -309,11 +353,42 @@ shap.summary_plot(
 # shap.plots.force(shap_values[catch_ind])
 
 
+# # %%
 # %%
-# visualize the first 5 predictions explanations with a dark red dark blue color map.
-shap.force_plot(
-    explainer.expected_value, 
-    shap_values[0:5,:], 
-    X_in.iloc[0:5,:], 
-    plot_cmap="DrDb")
+# get direction for linear regression
+test = model.coef_.copy()
+test[test < 0] = -1
+test[test >= 0] = 1
+
+# define shapvalue dataframes
+df_shap_valout = pd.DataFrame(
+    shap_values.values,
+    columns = X_in.columns
+)
+
+df_shap_baseout = pd.DataFrame(
+    shap_values.base_values
+)
+
+sns.scatterplot(df_expl['vp'], df_shap_valout['vp'])
+
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+scaler.fit(df_expl)
+
+df_explstand = pd.DataFrame(
+    scaler.transform(df_expl),
+    columns = df_expl.columns
+    )
+
+x = np.array(df_explstand['vp']).reshape(-1,1)
+y = df_shap_valout['cp']
+
+lm = LinearRegression()
+lm.fit(x, y)
+lm.coef_
+
+lm.intercept_
 # %%

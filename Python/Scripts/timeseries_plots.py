@@ -26,7 +26,8 @@ from GAGESii_Class import *
 
 
 
-# from xgboost import plot_tree # can't get to work on windows (try on linux)
+# from xgboost import plot_tree # can't get to work on 
+# windows (try on linux)
 
 
 
@@ -45,29 +46,29 @@ clust_meth = 'AggEcoregion' # 'Class' # 'None' # 'AggEcoregion', 'None',
 # CntlPlains, EastHghlnds, MxWdShld, NorthEast, SECstPlain, SEPlains, 
 # WestMnts, WestPlains, WestXeric 
 # define which region to work with
-region =  'SECstPlain' # 'CntlPlains' # 'Non-ref' # 'All'
+region =  'CntlPlains' # 'CntlPlains' # 'Non-ref' # 'All'
              
 # define time scale working with. This vcombtrainariable will be used to read and
 # write data from and to the correct directories
-time_scale = 'monthly' # 'mean_annual', 'annual', 'monthly', 'daily'
+time_scale = 'annual' # 'mean_annual', 'annual', 'monthly', 'daily'
 
 # define which model you want to work with
 model_work = 'strd_mlr' # ['XGBoost', 'strd_mlr', 'strd_lasso]
 
 # if lasso, define alpha
-alpha_in = 0.04
+alpha_in = 0.03
 
 # which data to plot/work with
-train_val = 'valnit'
+train_val = 'train'
 
 # specifiy whether or not you want the explanatory vars to be standardized
-strd_in = True #False #
+strd_in =  True #False #
 
 # directory with data to work with
 dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work' 
 
 # # directory where to place outputs
-dir_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/TEST_RESULTS'
+# dir_out = '/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/Data_Out/TEST_RESULTS'
 
 
 
@@ -82,7 +83,7 @@ df_trainexpl, df_trainWY, df_trainID = load_data_fun(
     train_val = 'train',
     clust_meth = clust_meth,
     region = region,
-    standardize = strd_in# True # whether or not to standardize data
+    standardize = strd_in # whether or not to standardize data
 )
 
 # load testin data (explanatory, water yield, ID)
@@ -117,6 +118,11 @@ except:
     vif_removed = pd.read_csv(
     file
     )['Columns_Removed']
+
+if 'DRAIN_SQKM_x' in vif_removed.values:
+    vif_removed = vif_removed.str.replace(
+        'DRAIN_SQKM_x', 'DRAIN_SQKM'
+    )
 
 # drop columns that were removed due to high VIF
 df_trainexpl.drop(vif_removed, axis = 1, inplace = True)
@@ -289,13 +295,13 @@ if model_work == 'XGBoost':
     # reload model into object
     # try:
     model.load_model(
-        f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
+        f'/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
         f'/Models/XGBoost_{temp_time}_{clust_meth}_{region}_model.json'
         # f'/Models/xgbreg_meanannual_XGBoost_{clust_meth}_{region}_model.json'
         )
     # except:
     #     model.load_model(
-    #         f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
+    #         f'/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
     #         # f'/Models/XGBoost_{temp_time}_{clust_meth}_{region}_model.json'
     #         f'/Models/xgbreg_{temp_time}_XGBoost_{clust_meth}_{region}_model.json'
     #         )
@@ -378,52 +384,52 @@ STAID_work = results_ind[
 
 # subset data to data of interest
 # plot_in = plot_data
-for STAID in STAID_work[0:20]:
-    plot_in = plot_data[plot_data['STAID'] == STAID]
-    plot_in['month_yr'] = plot_in['year'].astype(str) + \
-        '-' + \
-        plot_in['month'].astype(str)
+# for STAID in STAID_work[0:20]:
+#     plot_in = plot_data[plot_data['STAID'] == STAID]
+#     plot_in['month_yr'] = plot_in['year'].astype(str) + \
+#         '-' + \
+#         plot_in['month'].astype(str)
 
-    plot_in['month_count'] = np.concatenate(
-        [np.arange(0, len(plot_in)/2, 1),
-        np.arange(0, len(plot_in)/2, 1)])
+#     plot_in['month_count'] = np.concatenate(
+#         [np.arange(0, len(plot_in)/2, 1),
+#         np.arange(0, len(plot_in)/2, 1)])
 
     
-    NSE_in = results_ind.loc[
-        (results_ind['STAID'] == STAID) &
-        (results_ind['model'] == model_work) &
-        (results_ind['train_val'] == train_val),
-        'NSE'
-        ].values[0]
+#     NSE_in = results_ind.loc[
+#         (results_ind['STAID'] == STAID) &
+#         (results_ind['model'] == model_work) &
+#         (results_ind['train_val'] == train_val),
+#         'NSE'
+#         ].values[0]
 
-    NSE_in = NSE(
-        plot_in.loc[
-            plot_in['label'] == 'Pred', 'WY_ft'
-            ], plot_in.loc[
-                plot_in['label'] == 'Obs', 'WY_ft'
-                ]
-    )
+#     NSE_in = NSE(
+#         plot_in.loc[
+#             plot_in['label'] == 'Pred', 'WY_ft'
+#             ], plot_in.loc[
+#                 plot_in['label'] == 'Obs', 'WY_ft'
+#                 ]
+#     )
 
-    nse_out.extend([NSE_in])
-    print(NSE_in)
+#     nse_out.extend([NSE_in])
+#     print(NSE_in)
     
-    # plot
-    p = (
-        p9.ggplot(plot_in) +
-        p9.geom_line(
-            p9.aes(x = 'month_count', 
-                    y = 'WY_ft', 
-                    color = 'label')) +
-        p9.theme_light() +
-        # p9.scales.scale_x_continuous(
-        #     breaks =  plot_in['month'].unique()) +
-        p9.ggtitle(
-            f'{model_work}: {STAID} (NSE = {NSE_in})') +
-        p9.ylab('Water Yield [ft]')
-        )
+#     # plot
+#     p = (
+#         p9.ggplot(plot_in) +
+#         p9.geom_line(
+#             p9.aes(x = 'month_count', 
+#                     y = 'WY_ft', 
+#                     color = 'label')) +
+#         p9.theme_light() +
+#         # p9.scales.scale_x_continuous(
+#         #     breaks =  plot_in['month'].unique()) +
+#         p9.ggtitle(
+#             f'{model_work}: {STAID} (NSE = {NSE_in})') +
+#         p9.ylab('Water Yield [ft]')
+#         )
 
 
-    print(p)
+#     print(p)
 
 
 ##

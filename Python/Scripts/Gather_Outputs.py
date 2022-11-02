@@ -22,7 +22,7 @@ import xgboost as xgb
 # define which clustering method is being combined. This variable 
 # will be used for collecting data from the appropriate directory as well as
 # naming the combined file
-clust_meth = 'AggEcoregion' # 'AggEcoregion', 'None', 'Class'
+clust_meth = 'None' # 'AggEcoregion', 'None', 'Class'
 
 # define time scale working with. This variable will be used to read and
 # write data from and to the correct directories
@@ -93,6 +93,10 @@ for x in file_summary_list:
     # concatenate to df_ind
     df_summ = pd.concat([df_summ, temp_df], axis = 0, ignore_index = True)
 
+
+# remove duplicated rows incase rereading in some data
+df_ind.drop_duplicates(inplace = True)
+df_summ.drop_duplicates(inplace = True)
 
 
 # write concatenated results to pickle file
