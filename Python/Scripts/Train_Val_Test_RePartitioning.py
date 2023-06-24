@@ -71,7 +71,7 @@ df_expl_all = df_expl_all.iloc[
 ]
 
 # drop lat, long, class, hydro_dist_indx, baseflow index, relief mean
-# # and fragmentation columns
+# and fragmentation columns
 df_expl_all = df_expl_all.drop(
     ['LAT_GAGE', 
     'LNG_GAGE', 
@@ -86,9 +86,7 @@ df_expl_all = df_expl_all.drop(
 df_expl_all = pd.get_dummies(df_expl_all)
 
 # calculate mean variables
-
 df_expl_all_mn = df_expl_all.groupby('STAID').mean().reset_index()
-
 
 # read in ID file (e.g., holds aggecoregions) with gauges available from '98-'12
 df_ID = pd.read_csv(

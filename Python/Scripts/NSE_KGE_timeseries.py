@@ -16,7 +16,7 @@ from sklearn.metrics import mean_squared_error
 # %%
 # NSE and KGE
 
-def NSE_KGE_Apply(df_in): # , y_obs = 'y_obs', y_pred = 'y_pred', ID_in = 'ID_in'):
+def NSE_KGE_Apply(df_in, return_comp = False): # , y_obs = 'y_obs', y_pred = 'y_pred', ID_in = 'ID_in'):
     '''
     Paramters
     ----------
@@ -29,6 +29,7 @@ def NSE_KGE_Apply(df_in): # , y_obs = 'y_obs', y_pred = 'y_pred', ID_in = 'ID_in
         ID_in: string
             column name holding ID's by which to group response variables
             e.g.,. Catchment ID's (STAID)
+    return_comp: return the individual components of KGE (True or False)?
 
     Output
     ----------
@@ -42,8 +43,13 @@ def NSE_KGE_Apply(df_in): # , y_obs = 'y_obs', y_pred = 'y_pred', ID_in = 'ID_in
         ) 
     
     # KGE
+    # if return_comp:
+    #     kge_out, rom_out, alpha_out, beta_out = df_in.groupby('ID_in').apply(
+    #         lambda df: KGE(df['y_pred'], df['y_obs'], return_comp = return_comp)
+    #         )
+    # else:
     kge_out = df_in.groupby('ID_in').apply(
-        lambda df: KGE(df['y_pred'], df['y_obs'])
+        lambda df: KGE(df['y_pred'], df['y_obs'], return_comp = return_comp)
         )
 
     # percent bias
@@ -55,15 +61,27 @@ def NSE_KGE_Apply(df_in): # , y_obs = 'y_obs', y_pred = 'y_pred', ID_in = 'ID_in
     rmse_out = df_in.groupby('ID_in').apply(
         lambda df: mean_squared_error(df['y_obs'], df['y_pred'], squared = False)
         )
-    
+     
 
-    df_out = pd.DataFrame({
-        'STAID': nse_out.index,
-        'NSE': nse_out.values,
-        'KGE': kge_out.values,
-        'PercBias': pb_out.values,
-        'RMSE': rmse_out.values
-    })
+    if return_comp:
+        df_out = pd.DataFrame({
+            'STAID': nse_out.index,
+            'NSE': nse_out.values,
+            'KGE': [x[0] for x in kge_out],
+            'r': [x[1] for x in kge_out],
+            'alpha': [x[2] for x in kge_out],
+            'beta': [x[3] for x in kge_out],
+            'PercBias': pb_out.values,
+            'RMSE': rmse_out.values
+        })
+    else:
+        df_out = pd.DataFrame({
+            'STAID': nse_out.index,
+            'NSE': nse_out.values,
+            'KGE': kge_out.values,
+            'PercBias': pb_out.values,
+            'RMSE': rmse_out.values
+        })
 
     return(df_out)
 

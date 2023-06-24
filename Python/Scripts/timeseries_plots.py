@@ -26,10 +26,6 @@ from GAGESii_Class import *
 
 
 
-# from xgboost import plot_tree # can't get to work on 
-# windows (try on linux)
-
-
 
 
 
@@ -40,35 +36,37 @@ from GAGESii_Class import *
 # define which clustering method is being combined. This variable 
 # will be used for collecting data from the appropriate directory as well as
 # naming the combined file
-clust_meth = 'AggEcoregion' # 'Class' # 'None' # 'AggEcoregion', 'None', 
+clust_meth = 'HLR_0' # 'Class' # 'None' # 'AggEcoregion', 'None', 
+ # All_0, All_1, All_2, Anth_0, Anth_1, CAMELS, HLR, Nat_0, Nat_1, Nat_2,
+ # Nat_3, Nat_4
 
 # AggEcoregion regions:
 # CntlPlains, EastHghlnds, MxWdShld, NorthEast, SECstPlain, SEPlains, 
 # WestMnts, WestPlains, WestXeric 
 # define which region to work with
-region =  'CntlPlains' # 'CntlPlains' # 'Non-ref' # 'All'
+region =  'SECstPlain' # 1 # 'CntlPlains' # 'Non-ref' # 'All'
              
 # define time scale working with. This vcombtrainariable will be used to read and
 # write data from and to the correct directories
-time_scale = 'annual' # 'mean_annual', 'annual', 'monthly', 'daily'
+time_scale = 'monthly' # 'mean_annual', 'annual', 'monthly', 'daily'
 
 # define which model you want to work with
-model_work = 'strd_mlr' # ['XGBoost', 'strd_mlr', 'strd_lasso]
+model_work = 'XGBoost' # ['XGBoost', 'strd_mlr', 'strd_lasso]
 
 # if lasso, define alpha
 alpha_in = 0.03
 
 # which data to plot/work with
-train_val = 'train'
+train_val = 'valnit' # 'train', 'valnit'
 
 # specifiy whether or not you want the explanatory vars to be standardized
-strd_in =  True #False #
+strd_in =   False # True #
 
 # directory with data to work with
 dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work' 
 
 # # directory where to place outputs
-# dir_out = '/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/Data_Out/TEST_RESULTS'
+# dir_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/TEST_RESULTS'
 
 
 
@@ -87,14 +85,14 @@ df_trainexpl, df_trainWY, df_trainID = load_data_fun(
 )
 
 # load testin data (explanatory, water yield, ID)
-df_testinexpl, df_testinWY, df_testinID = load_data_fun(
-    dir_work = dir_work, 
-    time_scale = time_scale,
-    train_val = 'testin',
-    clust_meth = clust_meth,
-    region = region,
-    standardize = strd_in # whether or not to standardize data
-)
+# df_testinexpl, df_testinWY, df_testinID = load_data_fun(
+#     dir_work = dir_work, 
+#     time_scale = time_scale,
+#     train_val = 'testin',
+#     clust_meth = clust_meth,
+# #    region = region,
+#     standardize = strd_in # whether or not to standardize data
+# )
 
 # load valnit data (explanatory, water yield, ID)
 df_valnitexpl, df_valnitWY, df_valnitID = load_data_fun(
@@ -126,7 +124,7 @@ if 'DRAIN_SQKM_x' in vif_removed.values:
 
 # drop columns that were removed due to high VIF
 df_trainexpl.drop(vif_removed, axis = 1, inplace = True)
-df_testinexpl.drop(vif_removed, axis = 1, inplace = True)
+# df_testinexpl.drop(vif_removed, axis = 1, inplace = True)
 df_valnitexpl.drop(vif_removed, axis = 1, inplace = True)
 
 
@@ -134,7 +132,7 @@ df_valnitexpl.drop(vif_removed, axis = 1, inplace = True)
 # define columns to keep if present in STAID
 col_keep = ['STAID', 'year', 'month', 'day', 'date']
 STAIDtrain = df_trainexpl[df_trainexpl.columns.intersection(col_keep)]
-STAIDtestin = df_testinexpl[df_testinexpl.columns.intersection(col_keep)]
+# STAIDtestin = df_testinexpl[df_testinexpl.columns.intersection(col_keep)]
 STAIDvalnit = df_valnitexpl[df_valnitexpl.columns.intersection(col_keep)] 
 
 # remove id and time variables (e.g., STAID, year, month, etc.) from explanatory vars
@@ -143,39 +141,39 @@ STAIDvalnit = df_valnitexpl[df_valnitexpl.columns.intersection(col_keep)]
 if(time_scale == 'mean_annual'):
      
     df_trainexpl.drop('STAID', axis = 1, inplace = True)
-    df_trainWY = df_trainWY['Ann_WY_ft']
-    df_testinexpl.drop('STAID', axis = 1, inplace = True)
-    df_testinWY = df_testinWY['Ann_WY_ft']
+    df_trainWY = df_trainWY['Ann_WY_cm']
+    # df_testinexpl.drop('STAID', axis = 1, inplace = True)
+    # df_testinWY = df_testinWY['Ann_WY_cm']
     df_valnitexpl.drop('STAID', axis = 1, inplace = True)
-    df_valnitnWY = df_valnitWY['Ann_WY_ft']
+    df_valnitnWY = df_valnitWY['Ann_WY_cm']
 
 if(time_scale == 'annual'):
 
     df_trainexpl.drop(['STAID', 'year'], axis = 1, inplace = True)
-    df_trainWY = df_trainWY['Ann_WY_ft']
-    df_testinexpl.drop(['STAID', 'year'], axis = 1, inplace = True)
-    df_testinWY = df_testinWY['Ann_WY_ft']
+    df_trainWY = df_trainWY['Ann_WY_cm']
+    # df_testinexpl.drop(['STAID', 'year'], axis = 1, inplace = True)
+    # df_testinWY = df_testinWY['Ann_WY_cm']
     df_valnitexpl.drop(['STAID', 'year'], axis = 1, inplace = True)
-    df_valnitWY = df_valnitWY['Ann_WY_ft']
+    df_valnitWY = df_valnitWY['Ann_WY_cm']
 
 if(time_scale == 'monthly'):
 
     df_trainexpl.drop(['STAID', 'year', 'month'], axis = 1, inplace =True)
-    df_trainWY = df_trainWY['Mnth_WY_ft']
-    df_testinexpl.drop(['STAID', 'year', 'month'], axis = 1, inplace = True)
-    df_testinWY = df_testinWY['Mnth_WY_ft']
+    df_trainWY = df_trainWY['Mnth_WY_cm']
+    # df_testinexpl.drop(['STAID', 'year', 'month'], axis = 1, inplace = True)
+    # df_testinWY = df_testinWY['Mnth_WY_cm']
     df_valnitexpl.drop(['STAID', 'year', 'month'], axis = 1, inplace = True)
-    df_valnitWY = df_valnitWY['Mnth_WY_ft']
+    df_valnitWY = df_valnitWY['Mnth_WY_cm']
 
 if(time_scale == 'daily'):
 
     STAIDtrain = df_trainexpl[['STAID', 'date']] 
     df_trainexpl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace =True)
-    df_trainWY = df_trainWY['dlyWY_ft']
-    df_testinexpl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace = True)
-    df_testinWY = df_testinWY['dlyWY_ft']
+    df_trainWY = df_trainWY['dlyWY_cm']
+    # df_testinexpl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace = True)
+    # df_testinWY = df_testinWY['dlyWY_cm']
     df_valnitexpl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace = True)
-    df_valnitnWY = df_valnitWY['dlyWY_ft']
+    df_valnitnWY = df_valnitWY['dlyWY_cm']
 
 
 # %%
@@ -295,13 +293,13 @@ if model_work == 'XGBoost':
     # reload model into object
     # try:
     model.load_model(
-        f'/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
+        f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
         f'/Models/XGBoost_{temp_time}_{clust_meth}_{region}_model.json'
         # f'/Models/xgbreg_meanannual_XGBoost_{clust_meth}_{region}_model.json'
         )
     # except:
     #     model.load_model(
-    #         f'/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
+    #         f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{time_scale}'
     #         # f'/Models/XGBoost_{temp_time}_{clust_meth}_{region}_model.json'
     #         f'/Models/xgbreg_{temp_time}_XGBoost_{clust_meth}_{region}_model.json'
     #         )
@@ -317,10 +315,10 @@ if train_val == 'train':
     X_in = df_trainexpl[vars_keep] if model_work == 'strd_mlr' else df_trainexpl
     STAID_in = STAIDtrain
     df_WY_in = df_trainWY    
-if train_val == 'testin':
-    X_in = df_testinexpl[vars_keep] if model_work == 'strd_mlr' else df_testinexpl
-    STAID_in = STAIDtestin
-    df_WY_in = df_testinWY
+# if train_val == 'testin':
+#     X_in = df_testinexpl[vars_keep] if model_work == 'strd_mlr' else df_testinexpl
+#     STAID_in = STAIDtestin
+#     df_WY_in = df_testinWY
 if train_val == 'valnit':
     X_in = df_valnitexpl[vars_keep] if model_work == 'strd_mlr' else df_valnitexpl
     STAID_in = STAIDvalnit
@@ -342,7 +340,7 @@ if time_scale == 'annual':
     plot_data = pd.DataFrame({
         'STAID': np.hstack([STAID_in['STAID'], STAID_in['STAID']]),
         'year': np.hstack([STAID_in['year'], STAID_in['year']]),
-        'WY_ft': np.hstack([df_WY_in, y_pred]),
+        'WY_cm': np.hstack([df_WY_in, y_pred]),
         'label': lab_in
     })
 
@@ -352,7 +350,7 @@ if time_scale == 'monthly':
         'STAID': np.hstack([STAID_in['STAID'], STAID_in['STAID']]),
         'year': np.hstack([STAID_in['year'], STAID_in['year']]),
         'month': np.hstack([STAID_in['month'], STAID_in['month']]),
-        'WY_ft': np.hstack([df_WY_in, y_pred]),
+        'WY_cm': np.hstack([df_WY_in, y_pred]),
         'label': lab_in
     })
 
@@ -363,7 +361,7 @@ if time_scale == 'daily':
         'year': np.hstack([STAID_in['year'], STAID_in['year']]),
         'month': np.hstack([STAID_in['month'], STAID_in['month']]),
         'date': np.hstack([STAID_in['date'], STAID_in['date']]),
-        'WY_ft': np.hstack([df_WY_in, y_pred]),
+        'WY_cm': np.hstack([df_WY_in, y_pred]),
         'label': lab_in
     })
 
@@ -372,8 +370,8 @@ if time_scale == 'daily':
 ##
 # plots of individual catchment time-seires obs vs pred
 
-# define empty array to append NSE to
-nse_out = []
+# # define empty array to append NSE to
+# nse_out = []
 
 STAID_work = results_ind[
     (results_ind['train_val'] == train_val) & 
@@ -404,9 +402,9 @@ STAID_work = results_ind[
 
 #     NSE_in = NSE(
 #         plot_in.loc[
-#             plot_in['label'] == 'Pred', 'WY_ft'
+#             plot_in['label'] == 'Pred', 'WY_cm'
 #             ], plot_in.loc[
-#                 plot_in['label'] == 'Obs', 'WY_ft'
+#                 plot_in['label'] == 'Obs', 'WY_cm'
 #                 ]
 #     )
 
@@ -418,7 +416,7 @@ STAID_work = results_ind[
 #         p9.ggplot(plot_in) +
 #         p9.geom_line(
 #             p9.aes(x = 'month_count', 
-#                     y = 'WY_ft', 
+#                     y = 'WY_cm', 
 #                     color = 'label')) +
 #         p9.theme_light() +
 #         # p9.scales.scale_x_continuous(
@@ -437,8 +435,8 @@ STAID_work = results_ind[
 plot_dataw = pd.DataFrame({
     'STAID': plot_data.loc[plot_data['label'] == 'Obs', 'STAID'],
     'year': plot_data.loc[plot_data['label'] == 'Obs', 'year'],
-    'Obs': plot_data.loc[plot_data['label'] == 'Obs', 'WY_ft'],
-    'Pred': plot_data.loc[plot_data['label'] == 'Pred', 'WY_ft'].reset_index(
+    'Obs': plot_data.loc[plot_data['label'] == 'Obs', 'WY_cm'],
+    'Pred': plot_data.loc[plot_data['label'] == 'Pred', 'WY_cm'].reset_index(
         drop = True)
     })
 
@@ -510,67 +508,67 @@ print(f'median NSE: {np.median(df_nse_kge[metr_in])}')
 # %% 
 # manually applied regression with numpy
 
-# read in coefs. and intercept from summit
-coef_int = pd.read_csv(
-    f'{dir_work}/data_out/{time_scale}/Models/{model_work}_{time_scale}'
-    f'_{clust_meth}_{region}_model.csv'
-    )
-
-# if lasso, keep only non-zero features
-if model_work == 'strd_lasso':
-    coef_int = coef_int[np.abs(coef_int['coef']) > 1e-6]
-
-# coef_int = df_coef.reset_index(drop = True)
-# coef_int = df_coef.append(
-#     pd.DataFrame({
-#         'features': 'intercept',
-#         'coef': model.intercept_},
-#         index = [0]
+# # read in coefs. and intercept from summit
+# coef_int = pd.read_csv(
+#     f'{dir_work}/data_out/{time_scale}/Models/{model_work}_{time_scale}'
+#     f'_{clust_meth}_{region}_model.csv'
 #     )
-# ).reset_index(
-#     drop = True
-# )
 
-if 'DRAIN_SQKM_x' in coef_int['features'].values:
-    coef_int['features'] = coef_int[
-        'features'
-        ].str.replace('DRAIN_SQKM_x', 'DRAIN_SQKM')
+# # if lasso, keep only non-zero features
+# if model_work == 'strd_lasso':
+#     coef_int = coef_int[np.abs(coef_int['coef']) > 1e-6]
 
+# # coef_int = df_coef.reset_index(drop = True)
+# # coef_int = df_coef.append(
+# #     pd.DataFrame({
+# #         'features': 'intercept',
+# #         'coef': model.intercept_},
+# #         index = [0]
+# #     )
+# # ).reset_index(
+# #     drop = True
+# # )
 
-df_work = np.array(
-    df_trainexpl[
-        df_trainexpl.columns.intersection(coef_int['features'])
-        ]
-    )
-
-# df_work = df_work.reshape(len(df_work), df_work.shape[1])
-
-# define coefs var
-beta_vars = np.array(coef_int['coef'].drop(
-    (len(coef_int['coef']) - 1), axis = 0))
-
-# define intercept
-b0 = np.array(coef_int.loc[coef_int['features'] == 'intercept', 'coef'])
-
-y = np.dot(df_work, beta_vars) + b0[0]
-# np.linalg.inv(df_work.T.dot(df_expl)).dot(df_expl.T)dot()
-
-df_out = pd.DataFrame({
-    'STAID': STAIDtrain['STAID'],
-    'y_pred': y
-})
-
-print(NSE(df_trainWY, y))
+# if 'DRAIN_SQKM_x' in coef_int['features'].values:
+#     coef_int['features'] = coef_int[
+#         'features'
+#         ].str.replace('DRAIN_SQKM_x', 'DRAIN_SQKM')
 
 
-# calc NSE and KGE from all stations
-df_nse_kge2 = NSE_KGE_Apply(
-    pd.DataFrame({
-        'y_obs': df_WY_in,
-        'y_pred': y,
-        'ID_in': STAID_in['STAID']
-        })
-    )
+# df_work = np.array(
+#     df_trainexpl[
+#         df_trainexpl.columns.intersection(coef_int['features'])
+#         ]
+#     )
+
+# # df_work = df_work.reshape(len(df_work), df_work.shape[1])
+
+# # define coefs var
+# beta_vars = np.array(coef_int['coef'].drop(
+#     (len(coef_int['coef']) - 1), axis = 0))
+
+# # define intercept
+# b0 = np.array(coef_int.loc[coef_int['features'] == 'intercept', 'coef'])
+
+# y = np.dot(df_work, beta_vars) + b0[0]
+# # np.linalg.inv(df_work.T.dot(df_expl)).dot(df_expl.T)dot()
+
+# df_out = pd.DataFrame({
+#     'STAID': STAIDtrain['STAID'],
+#     'y_pred': y
+# })
+
+# print(NSE(df_trainWY, y))
+
+
+# # calc NSE and KGE from all stations
+# df_nse_kge2 = NSE_KGE_Apply(
+#     pd.DataFrame({
+#         'y_obs': df_WY_in,
+#         'y_pred': y,
+#         'ID_in': STAID_in['STAID']
+#         })
+#     )
 
 # %%
 

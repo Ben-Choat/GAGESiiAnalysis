@@ -1,0 +1,969 @@
+rm: cannot remove '/scratch/summit/bchoat@colostate.edu/GAGES/mean_annual/Nat_4/2': No such file or directory
+cp: omitting directory '__pycache__'
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: invalid value encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  36 out of  36 | elapsed:   51.0s finished
+Features: 1/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  24 out of  35 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  35 out of  35 | elapsed:    0.1s finished
+[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   1 out of   1 | elapsed:   15.1s finished
+Features: 2/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  34 out of  34 | elapsed:  1.5min finished
+[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   2 out of   2 | elapsed:  1.2min finished
+Features: 3/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  33 out of  33 | elapsed:  2.2min finished
+[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   3 out of   3 | elapsed:    0.4s finished
+Features: 4/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  32 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.2s finished
+[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   4 out of   4 | elapsed:    0.3s finished
+[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   3 out of   3 | elapsed:    0.3s finished
+Features: 4/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.3s finished
+[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   4 out of   4 | elapsed:    0.3s finished
+Features: 5/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  31 | elapsed:    0.4s remaining:    0.2s
+[Parallel(n_jobs=6)]: Done  31 out of  31 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   5 out of   5 | elapsed:    0.1s finished
+Features: 6/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  30 out of  30 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.1s finished
+Features: 7/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  29 | elapsed:    0.3s remaining:    0.2s
+[Parallel(n_jobs=6)]: Done  29 out of  29 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.1s finished
+Features: 8/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  28 out of  28 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   6 out of   8 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   8 out of   8 | elapsed:    0.1s finished
+Features: 9/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  27 | elapsed:    0.3s remaining:    0.2s
+[Parallel(n_jobs=6)]: Done  27 out of  27 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.2s finished
+Features: 10/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s finished
+Features: 11/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  25 | elapsed:    0.2s remaining:    0.2s
+[Parallel(n_jobs=6)]: Done  25 out of  25 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.2s finished
+Features: 12/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  24 out of  24 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.2s finished
+Features: 13/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  23 out of  23 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.2s finished
+Features: 10/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.2s finished
+Features: 10/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s finished
+Features: 11/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  25 | elapsed:    0.3s remaining:    0.2s
+[Parallel(n_jobs=6)]: Done  25 out of  25 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.2s finished
+Features: 12/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  24 out of  24 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.2s finished
+Features: 13/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  23 out of  23 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.2s finished
+Features: 14/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.3s finished
+Features: 15/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+Features: 16/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+Features: 17/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+Features: 18/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.2s finished
+Features: 14/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.3s finished
+Features: 15/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+Features: 16/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+Features: 17/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+Features: 18/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+Features: 19/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+Features: 20/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.4s finished
+Features: 21/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.4s finished
+Features: 22/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.4s finished
+Features: 23/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  23 out of  23 | elapsed:    0.4s finished
+Features: 24/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  24 out of  24 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  23 out of  23 | elapsed:    0.4s finished
+Features: 24/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  24 out of  24 | elapsed:    0.4s finished
+Features: 25/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  25 | elapsed:    0.3s remaining:    0.2s
+[Parallel(n_jobs=6)]: Done  25 out of  25 | elapsed:    0.5s finished
+Features: 26/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  25 | elapsed:    0.3s remaining:    0.2s
+[Parallel(n_jobs=6)]: Done  25 out of  25 | elapsed:    0.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  24 out of  24 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  23 out of  23 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.2s finished
+Features: 14/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.2s finished
+Features: 15/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+Features: 16/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.2s finished
+Features: 15/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+Features: 16/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+Features: 16/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+Features: 17/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+Features: 18/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+Features: 19/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+Features: 18/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+Features: 17/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+Features: 18/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+Features: 19/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+Features: 20/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.4s finished
+Features: 21/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.4s finished
+Features: 22/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.4s finished
+Features: 23/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  23 out of  23 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.3s finished
+Features: 19/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.3s finished
+Features: 20/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.4s finished
+Features: 21/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:   58.5s finished
+Features: 22/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:   24.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.1s finished
+Features: 23/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  23 out of  23 | elapsed:    0.1s finished
+Features: 24/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  24 out of  24 | elapsed:    0.1s finished
+Features: 25/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  25 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  25 out of  25 | elapsed:    0.1s finished
+Features: 26/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  25 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  25 out of  25 | elapsed:    0.1s finished
+Features: 26/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.1s finished
+Features: 27/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  27 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  27 out of  27 | elapsed:    0.1s finished
+Features: 28/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   6 out of   8 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   8 out of   8 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  28 out of  28 | elapsed:    0.1s finished
+Features: 29/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  29 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  29 out of  29 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  28 out of  28 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  27 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  27 out of  27 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  26 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  25 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  25 out of  25 | elapsed:    0.1s finished
+Features: 26/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  25 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  25 out of  25 | elapsed:    0.1s finished
+Features: 26/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  26 out of  26 | elapsed:    0.1s finished
+Features: 27/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  27 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  27 out of  27 | elapsed:    0.1s finished
+Features: 28/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   6 out of   8 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   8 out of   8 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  28 out of  28 | elapsed:    0.1s finished
+Features: 29/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  29 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  29 out of  29 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  28 out of  28 | elapsed:    0.1s finished
+Features: 29/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  29 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  29 out of  29 | elapsed:    0.1s finished
+Features: 30/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  30 out of  30 | elapsed:    0.1s finished
+Features: 31/35[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:    0.2s remaining:    0.3s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  31 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  31 out of  31 | elapsed:    0.1s finished
+Features: 32/35[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.2s remaining:    0.2s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  31 | elapsed:    0.2s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  31 out of  31 | elapsed:    0.2s finished
+Features: 32/35[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.2s remaining:    0.2s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.6s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  31 | elapsed:    0.4s remaining:    0.2s
+[Parallel(n_jobs=6)]: Done  31 out of  31 | elapsed:    0.6s finished
+Features: 32/35[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:   55.4s remaining:   55.4s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:   55.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  32 | elapsed:    0.2s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  31 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  31 out of  31 | elapsed:    0.2s finished
+Features: 32/35[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.2s remaining:    0.2s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.4s finished
+Features: 33/35[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   3 out of   3 | elapsed:  1.3min finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  33 out of  33 | elapsed:  2.0min finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  32 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  31 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  31 out of  31 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  30 out of  30 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  29 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  29 out of  29 | elapsed:    0.1s finished
+Features: 30/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  30 out of  30 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  29 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  29 out of  29 | elapsed:    0.1s finished
+Features: 30/35[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  30 out of  30 | elapsed:    0.1s finished
+Features: 31/35[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:    0.2s remaining:    0.3s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  31 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  31 out of  31 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  30 out of  30 | elapsed:    0.1s finished
+Features: 31/35[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:    0.2s remaining:    0.4s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:    0.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  31 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  31 out of  31 | elapsed:    0.2s finished
+Features: 32/35[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.2s remaining:    0.2s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.3s finished
+Features: 33/35[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   3 out of   3 | elapsed:   52.9s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  33 out of  33 | elapsed:  2.4min finished
+Features: 34/35[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:  1.5min remaining:    0.0s
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:  1.5min finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  34 out of  34 | elapsed:  2.0min finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  33 | elapsed:    0.1s remaining:    0.1s
+[Parallel(n_jobs=6)]: Done  33 out of  33 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  32 out of  32 | elapsed:    0.2s finished
+Features: 33/35[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   3 out of   3 | elapsed:  1.6min finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  33 out of  33 | elapsed:  2.5min finished
+Features: 34/35[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:   60.0s remaining:    0.0s
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:   60.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  34 out of  34 | elapsed:  2.1min finished
+Features: 35/35/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  22 out of  22 | elapsed:    0.1s finished
+Features: 1/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.1s finished
+[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   1 out of   1 | elapsed:   52.0s finished
+Features: 2/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:   51.3s finished
+[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   2 out of   2 | elapsed:   55.7s finished
+Features: 3/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:   20.8s finished
+[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   3 out of   3 | elapsed:    0.2s finished
+Features: 4/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.1s finished
+[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   4 out of   4 | elapsed:    0.2s finished
+Features: 5/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   5 out of   5 | elapsed:    0.0s finished
+Features: 6/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.0s finished
+Features: 7/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.0s finished
+Features: 7/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.1s finished
+Features: 8/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   6 out of   8 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   8 out of   8 | elapsed:    0.1s finished
+Features: 9/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.1s finished
+Features: 10/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+Features: 11/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.1s finished
+Features: 12/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.1s finished
+Features: 13/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.1s finished
+Features: 14/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   6 out of   8 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   8 out of   8 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.1s finished
+Features: 15/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.1s finished
+Features: 16/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.1s finished
+Features: 17/22[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:    0.2s remaining:    0.3s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   6 out of   8 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   8 out of   8 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.1s finished
+Features: 7/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.1s finished
+Features: 8/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   6 out of   8 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   8 out of   8 | elapsed:    0.1s finished
+Features: 9/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.1s finished
+Features: 10/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+Features: 11/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.1s finished
+Features: 10/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+Features: 11/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  11 out of  11 | elapsed:    0.1s finished
+Features: 12/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done  10 out of  10 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  12 out of  12 | elapsed:    0.1s finished
+Features: 13/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   9 out of   9 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  13 out of  13 | elapsed:    0.1s finished
+Features: 14/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   6 out of   8 | elapsed:   17.2s remaining:    5.7s
+[Parallel(n_jobs=6)]: Done   8 out of   8 | elapsed:   17.3s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  14 out of  14 | elapsed:   30.1s finished
+Features: 15/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   4 out of   7 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   7 out of   7 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  15 out of  15 | elapsed:    0.1s finished
+Features: 16/22[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:    0.0s remaining:    0.0s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.1s finished
+Features: 17/22[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:    0.2s remaining:    0.3s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.1s finished
+Features: 17/22[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:    0.2s remaining:    0.3s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.1s finished
+Features: 18/22[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.2s remaining:    0.2s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.2s finished
+Features: 19/22[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   3 out of   3 | elapsed:    9.5s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:   16.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  16 out of  16 | elapsed:    0.1s finished
+Features: 17/22[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:    0.2s remaining:    0.3s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  17 out of  17 | elapsed:    0.1s finished
+Features: 18/22[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:    0.2s remaining:    0.2s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:    0.2s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.1s finished
+Features: 19/22[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   3 out of   3 | elapsed:    4.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    6.0s finished
+Features: 20/22[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:    8.4s remaining:    0.0s
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:    8.4s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    3.0s finished
+Features: 21/22[Parallel(n_jobs=1)]: Using backend SequentialBackend with 1 concurrent workers.
+[Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    0.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  18 out of  18 | elapsed:    0.1s finished
+Features: 19/22[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   3 out of   3 | elapsed:    1.9s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  19 out of  19 | elapsed:    2.1s finished
+Features: 20/22[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:    1.6s remaining:    0.0s
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:    1.6s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  20 out of  20 | elapsed:    1.9s finished
+Features: 21/22[Parallel(n_jobs=1)]: Using backend SequentialBackend with 1 concurrent workers.
+[Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    0.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done  21 out of  21 | elapsed:    0.1s finished
+Features: 22/22/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/gpfs/summit/scratch/bchoat@colostate.edu/GAGES/mean_annual/Nat_4/2/HPC_MeanAnnual_Callable.py:1608: FutureWarning: The series.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  region_temp = region_temp.append(
+/gpfs/summit/scratch/bchoat@colostate.edu/GAGES/mean_annual/Nat_4/2/HPC_MeanAnnual_Callable.py:1615: FutureWarning: The series.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  clust_meth_temp = clust_meth_temp.append(

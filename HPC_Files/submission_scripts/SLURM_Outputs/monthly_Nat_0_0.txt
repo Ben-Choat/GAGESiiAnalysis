@@ -1,0 +1,752 @@
+rm: cannot remove '/scratch/summit/bchoat@colostate.edu/GAGES/monthly/Nat_0/0': No such file or directory
+cp: omitting directory '__pycache__'
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: invalid value encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    6.6s
+[Parallel(n_jobs=12)]: Done  86 out of  86 | elapsed:    8.4s finished
+Features: 1/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    2.0s
+[Parallel(n_jobs=12)]: Done  85 out of  85 | elapsed:    4.9s finished
+[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   1 out of   1 | elapsed:    2.1s finished
+Features: 2/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    4.9s
+[Parallel(n_jobs=12)]: Done  84 out of  84 | elapsed:    8.2s finished
+[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   2 out of   2 | elapsed:    2.7s finished
+Features: 3/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    4.7s
+[Parallel(n_jobs=12)]: Done  83 out of  83 | elapsed:    8.1s finished
+[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   3 out of   3 | elapsed:    2.8s finished
+Features: 4/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    5.1s
+[Parallel(n_jobs=12)]: Done  82 out of  82 | elapsed:    8.8s finished
+[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   4 out of   4 | elapsed:    2.9s finished
+Features: 5/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    6.9s
+[Parallel(n_jobs=12)]: Done  81 out of  81 | elapsed:   11.0s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   5 out of   5 | elapsed:    3.9s finished
+Features: 6/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    6.0s
+[Parallel(n_jobs=12)]: Done  80 out of  80 | elapsed:   10.5s finished
+[Parallel(n_jobs=7)]: Using backend LokyBackend with 7 concurrent workers.
+[Parallel(n_jobs=7)]: Done   6 out of   6 | elapsed:    1.8s finished
+Features: 7/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    4.5s
+[Parallel(n_jobs=12)]: Done  79 out of  79 | elapsed:    9.5s finished
+[Parallel(n_jobs=8)]: Using backend LokyBackend with 8 concurrent workers.
+[Parallel(n_jobs=8)]: Done   7 out of   7 | elapsed:    2.0s finished
+Features: 8/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    4.7s
+[Parallel(n_jobs=12)]: Done  78 out of  78 | elapsed:   10.2s finished
+[Parallel(n_jobs=9)]: Using backend LokyBackend with 9 concurrent workers.
+[Parallel(n_jobs=9)]: Done   8 out of   8 | elapsed:    2.1s finished
+Features: 9/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    5.2s
+[Parallel(n_jobs=12)]: Done  77 out of  77 | elapsed:   11.2s finished
+[Parallel(n_jobs=10)]: Using backend LokyBackend with 10 concurrent workers.
+[Parallel(n_jobs=10)]: Done   9 out of   9 | elapsed:    2.4s finished
+Features: 10/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    5.6s
+[Parallel(n_jobs=12)]: Done  76 out of  76 | elapsed:   12.3s finished
+[Parallel(n_jobs=11)]: Using backend LokyBackend with 11 concurrent workers.
+[Parallel(n_jobs=11)]: Done  10 out of  10 | elapsed:    2.4s finished
+Features: 11/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    6.0s
+[Parallel(n_jobs=12)]: Done  75 out of  75 | elapsed:   12.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  11 out of  11 | elapsed:    2.5s finished
+Features: 12/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    6.5s
+[Parallel(n_jobs=12)]: Done  74 out of  74 | elapsed:   13.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   2 out of  12 | elapsed:    2.3s remaining:   11.3s
+[Parallel(n_jobs=12)]: Done  12 out of  12 | elapsed:    2.6s finished
+Features: 13/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    6.8s
+[Parallel(n_jobs=12)]: Done  73 out of  73 | elapsed:   14.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   4 out of  13 | elapsed:    2.5s remaining:    5.7s
+[Parallel(n_jobs=12)]: Done  13 out of  13 | elapsed:    3.8s finished
+Features: 14/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    7.6s
+[Parallel(n_jobs=12)]: Done  72 out of  72 | elapsed:   15.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   6 out of  14 | elapsed:    2.7s remaining:    3.7s
+[Parallel(n_jobs=12)]: Done  14 out of  14 | elapsed:    4.1s finished
+Features: 15/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    8.1s
+[Parallel(n_jobs=12)]: Done  71 out of  71 | elapsed:   16.2s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   8 out of  15 | elapsed:    3.0s remaining:    2.6s
+[Parallel(n_jobs=12)]: Done  15 out of  15 | elapsed:    4.8s finished
+Features: 16/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    8.9s
+[Parallel(n_jobs=12)]: Done  70 out of  70 | elapsed:   17.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  10 out of  16 | elapsed:    3.5s remaining:    2.1s
+[Parallel(n_jobs=12)]: Done  16 out of  16 | elapsed:    5.2s finished
+Features: 17/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    9.5s
+[Parallel(n_jobs=12)]: Done  69 out of  69 | elapsed:   18.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  12 out of  17 | elapsed:    3.8s remaining:    1.6s
+[Parallel(n_jobs=12)]: Done  17 out of  17 | elapsed:    5.8s finished
+Features: 18/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   10.3s
+[Parallel(n_jobs=12)]: Done  68 out of  68 | elapsed:   19.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  14 out of  18 | elapsed:    6.4s remaining:    1.8s
+[Parallel(n_jobs=12)]: Done  18 out of  18 | elapsed:    6.5s finished
+Features: 19/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   11.2s
+[Parallel(n_jobs=12)]: Done  67 out of  67 | elapsed:   21.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  16 out of  19 | elapsed:    6.9s remaining:    1.3s
+[Parallel(n_jobs=12)]: Done  19 out of  19 | elapsed:    7.0s finished
+Features: 20/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   11.9s
+[Parallel(n_jobs=12)]: Done  66 out of  66 | elapsed:   22.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  18 out of  20 | elapsed:    7.2s remaining:    0.8s
+[Parallel(n_jobs=12)]: Done  20 out of  20 | elapsed:    7.3s finished
+Features: 21/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   12.5s
+[Parallel(n_jobs=12)]: Done  65 out of  65 | elapsed:   23.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  21 out of  21 | elapsed:    8.4s finished
+Features: 22/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   13.4s
+[Parallel(n_jobs=12)]: Done  64 out of  64 | elapsed:   25.0s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  22 out of  22 | elapsed:    8.8s remaining:    0.0s
+[Parallel(n_jobs=12)]: Done  22 out of  22 | elapsed:    8.8s finished
+Features: 23/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   14.2s
+[Parallel(n_jobs=12)]: Done  63 out of  63 | elapsed:   26.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  23 out of  23 | elapsed:    9.5s finished
+Features: 24/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   14.9s
+[Parallel(n_jobs=12)]: Done  62 out of  62 | elapsed:   27.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  24 out of  24 | elapsed:   10.4s finished
+Features: 25/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   15.7s
+[Parallel(n_jobs=12)]: Done  61 out of  61 | elapsed:   28.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  25 out of  25 | elapsed:   12.9s finished
+Features: 26/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   16.7s
+[Parallel(n_jobs=12)]: Done  60 out of  60 | elapsed:   28.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 out of  26 | elapsed:   13.9s finished
+Features: 27/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   17.3s
+[Parallel(n_jobs=12)]: Done  59 out of  59 | elapsed:   28.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  27 out of  27 | elapsed:   15.1s finished
+Features: 28/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   18.1s
+[Parallel(n_jobs=12)]: Done  58 out of  58 | elapsed:   29.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  28 out of  28 | elapsed:   16.3s finished
+Features: 29/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   18.9s
+[Parallel(n_jobs=12)]: Done  57 out of  57 | elapsed:   30.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  29 out of  29 | elapsed:   17.2s finished
+Features: 30/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   19.7s
+[Parallel(n_jobs=12)]: Done  56 out of  56 | elapsed:   31.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  30 out of  30 | elapsed:   17.9s finished
+Features: 31/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   20.8s
+[Parallel(n_jobs=12)]: Done  55 out of  55 | elapsed:   33.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  31 out of  31 | elapsed:   20.0s finished
+Features: 32/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   21.5s
+[Parallel(n_jobs=12)]: Done  54 out of  54 | elapsed:   35.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  32 out of  32 | elapsed:   20.3s finished
+Features: 33/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   22.8s
+[Parallel(n_jobs=12)]: Done  53 out of  53 | elapsed:   36.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  33 out of  33 | elapsed:   21.7s finished
+Features: 34/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   23.8s
+[Parallel(n_jobs=12)]: Done  52 out of  52 | elapsed:   37.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  34 out of  34 | elapsed:   23.0s finished
+Features: 35/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   24.8s
+[Parallel(n_jobs=12)]: Done  51 out of  51 | elapsed:   38.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  35 out of  35 | elapsed:   24.1s finished
+Features: 36/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   25.7s
+[Parallel(n_jobs=12)]: Done  50 out of  50 | elapsed:   39.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  36 out of  36 | elapsed:   25.5s finished
+Features: 37/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   26.6s
+[Parallel(n_jobs=12)]: Done  49 out of  49 | elapsed:   40.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  37 out of  37 | elapsed:   30.5s finished
+Features: 38/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  48 out of  48 | elapsed:   37.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  38 out of  38 | elapsed:   32.9s finished
+Features: 39/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  47 out of  47 | elapsed:   38.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  39 out of  39 | elapsed:   34.5s finished
+Features: 40/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  46 out of  46 | elapsed:   39.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  40 out of  40 | elapsed:   36.4s finished
+Features: 41/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  45 out of  45 | elapsed:   40.3s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  41 out of  41 | elapsed:   37.7s finished
+Features: 42/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  44 out of  44 | elapsed:   41.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  42 out of  42 | elapsed:   39.8s finished
+Features: 43/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  43 out of  43 | elapsed:   41.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  43 out of  43 | elapsed:   42.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  42 out of  42 | elapsed:   40.1s finished
+Features: 43/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  43 out of  43 | elapsed:   43.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  43 out of  43 | elapsed:   41.5s finished
+Features: 44/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  42 out of  42 | elapsed:   44.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  44 out of  44 | elapsed:   43.3s finished
+Features: 45/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  41 out of  41 | elapsed:   44.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  45 out of  45 | elapsed:   44.5s finished
+Features: 46/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  40 out of  40 | elapsed:   44.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  46 out of  46 | elapsed:   45.5s finished
+Features: 47/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  39 out of  39 | elapsed:   45.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  47 out of  47 | elapsed:   47.7s finished
+Features: 48/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  38 out of  38 | elapsed:   46.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  48 out of  48 | elapsed:   50.7s finished
+Features: 49/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  37 out of  37 | elapsed:   49.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   36.8s
+[Parallel(n_jobs=12)]: Done  49 out of  49 | elapsed:   56.8s finished
+Features: 50/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  36 out of  36 | elapsed:   45.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   41.1s
+[Parallel(n_jobs=12)]: Done  50 out of  50 | elapsed:  1.1min finished
+Features: 51/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  35 out of  35 | elapsed:   46.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   44.1s
+[Parallel(n_jobs=12)]: Done  51 out of  51 | elapsed:  1.2min finished
+Features: 52/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  34 out of  34 | elapsed:   47.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   45.7s
+[Parallel(n_jobs=12)]: Done  52 out of  52 | elapsed:  1.2min finished
+Features: 53/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  33 out of  33 | elapsed:   47.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   46.9s
+[Parallel(n_jobs=12)]: Done  53 out of  53 | elapsed:  1.2min finished
+Features: 54/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  32 out of  32 | elapsed:   47.2s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   47.7s
+[Parallel(n_jobs=12)]: Done  54 out of  54 | elapsed:  1.3min finished
+Features: 55/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  31 out of  31 | elapsed:   49.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   50.0s
+[Parallel(n_jobs=12)]: Done  55 out of  55 | elapsed:  1.3min finished
+Features: 56/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  30 out of  30 | elapsed:   49.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   51.0s
+[Parallel(n_jobs=12)]: Done  56 out of  56 | elapsed:  1.4min finished
+Features: 57/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  29 out of  29 | elapsed:   52.2s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   53.3s
+[Parallel(n_jobs=12)]: Done  57 out of  57 | elapsed:  1.4min finished
+Features: 58/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  28 out of  28 | elapsed:   52.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   53.9s
+[Parallel(n_jobs=12)]: Done  58 out of  58 | elapsed:  1.5min finished
+Features: 59/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  27 out of  27 | elapsed:   51.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   55.6s
+[Parallel(n_jobs=12)]: Done  59 out of  59 | elapsed:  1.5min finished
+Features: 60/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 out of  26 | elapsed:   52.3s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   57.3s
+[Parallel(n_jobs=12)]: Done  60 out of  60 | elapsed:  1.6min finished
+Features: 61/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  25 out of  25 | elapsed:   52.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   58.3s
+[Parallel(n_jobs=12)]: Done  61 out of  61 | elapsed:  1.8min finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   56.4s
+[Parallel(n_jobs=12)]: Done  60 out of  60 | elapsed:  1.7min finished
+Features: 61/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  25 out of  25 | elapsed:   51.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   56.3s
+[Parallel(n_jobs=12)]: Done  61 out of  61 | elapsed:  1.8min finished
+Features: 62/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  24 out of  24 | elapsed:   47.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.0min
+[Parallel(n_jobs=12)]: Done  62 out of  62 | elapsed:  1.9min finished
+Features: 63/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  23 out of  23 | elapsed:   44.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.0min
+[Parallel(n_jobs=12)]: Done  63 out of  63 | elapsed:  1.9min finished
+Features: 64/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  22 out of  22 | elapsed:   44.3s remaining:    0.0s
+[Parallel(n_jobs=12)]: Done  22 out of  22 | elapsed:   44.3s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.1min
+[Parallel(n_jobs=12)]: Done  64 out of  64 | elapsed:  2.0min finished
+Features: 65/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  21 out of  21 | elapsed:   45.2s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.1min
+[Parallel(n_jobs=12)]: Done  65 out of  65 | elapsed:  2.1min finished
+Features: 66/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  18 out of  20 | elapsed:   45.2s remaining:    5.0s
+[Parallel(n_jobs=12)]: Done  20 out of  20 | elapsed:   45.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.1min
+[Parallel(n_jobs=12)]: Done  66 out of  66 | elapsed:  2.1min finished
+Features: 67/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  16 out of  19 | elapsed:   41.4s remaining:    7.8s
+[Parallel(n_jobs=12)]: Done  19 out of  19 | elapsed:   42.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.1min
+[Parallel(n_jobs=12)]: Done  67 out of  67 | elapsed:  2.3min finished
+Features: 68/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  14 out of  18 | elapsed:   44.8s remaining:   12.8s
+[Parallel(n_jobs=12)]: Done  18 out of  18 | elapsed:   45.3s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.1min
+[Parallel(n_jobs=12)]: Done  68 out of  68 | elapsed:  2.3min finished
+Features: 69/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  12 out of  17 | elapsed:   26.8s remaining:   11.2s
+[Parallel(n_jobs=12)]: Done  17 out of  17 | elapsed:   45.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.1min
+[Parallel(n_jobs=12)]: Done  69 out of  69 | elapsed:  2.4min finished
+Features: 70/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  10 out of  16 | elapsed:   27.0s remaining:   16.2s
+[Parallel(n_jobs=12)]: Done  16 out of  16 | elapsed:   45.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.2min
+[Parallel(n_jobs=12)]: Done  70 out of  70 | elapsed:  2.4min finished
+Features: 71/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   8 out of  15 | elapsed:   27.0s remaining:   23.6s
+[Parallel(n_jobs=12)]: Done  15 out of  15 | elapsed:   43.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.3min
+[Parallel(n_jobs=12)]: Done  71 out of  71 | elapsed:  2.5min finished
+Features: 72/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   6 out of  14 | elapsed:   25.9s remaining:   34.6s
+[Parallel(n_jobs=12)]: Done  14 out of  14 | elapsed:   42.2s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.2min
+[Parallel(n_jobs=12)]: Done  72 out of  72 | elapsed:  2.5min finished
+Features: 73/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   4 out of  13 | elapsed:   27.3s remaining:  1.0min
+[Parallel(n_jobs=12)]: Done  13 out of  13 | elapsed:   45.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.4min
+[Parallel(n_jobs=12)]: Done  73 out of  73 | elapsed:  3.1min finished
+Features: 74/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   2 out of  12 | elapsed:   30.8s remaining:  2.6min
+[Parallel(n_jobs=12)]: Done  12 out of  12 | elapsed:   33.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.5min
+[Parallel(n_jobs=12)]: Done  74 out of  74 | elapsed:  3.3min finished
+Features: 75/86[Parallel(n_jobs=11)]: Using backend LokyBackend with 11 concurrent workers.
+[Parallel(n_jobs=11)]: Done   2 out of  11 | elapsed:   29.0s remaining:  2.2min
+[Parallel(n_jobs=11)]: Done  11 out of  11 | elapsed:   31.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.5min
+[Parallel(n_jobs=12)]: Done  75 out of  75 | elapsed:  3.4min finished
+Features: 76/86[Parallel(n_jobs=10)]: Using backend LokyBackend with 10 concurrent workers.
+[Parallel(n_jobs=10)]: Done   2 out of  10 | elapsed:   29.0s remaining:  1.9min
+[Parallel(n_jobs=10)]: Done  10 out of  10 | elapsed:   30.0s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.5min
+[Parallel(n_jobs=12)]: Done  76 out of  76 | elapsed:  3.5min finished
+Features: 77/86[Parallel(n_jobs=9)]: Using backend LokyBackend with 9 concurrent workers.
+[Parallel(n_jobs=9)]: Done   2 out of   9 | elapsed:   25.5s remaining:  1.5min
+[Parallel(n_jobs=9)]: Done   9 out of   9 | elapsed:   30.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.5min
+[Parallel(n_jobs=12)]: Done  77 out of  77 | elapsed:  3.6min finished
+Features: 78/86[Parallel(n_jobs=8)]: Using backend LokyBackend with 8 concurrent workers.
+[Parallel(n_jobs=8)]: Done   2 out of   8 | elapsed:   25.4s remaining:  1.3min
+[Parallel(n_jobs=8)]: Done   8 out of   8 | elapsed:   28.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.6min
+[Parallel(n_jobs=12)]: Done  78 out of  78 | elapsed:  3.7min finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.6min
+[Parallel(n_jobs=12)]: Done  77 out of  77 | elapsed:  3.5min finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.6min
+[Parallel(n_jobs=12)]: Done  76 out of  76 | elapsed:  3.5min finished
+Features: 77/86[Parallel(n_jobs=9)]: Using backend LokyBackend with 9 concurrent workers.
+[Parallel(n_jobs=9)]: Done   2 out of   9 | elapsed:   25.8s remaining:  1.5min
+[Parallel(n_jobs=9)]: Done   9 out of   9 | elapsed:   31.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.6min
+[Parallel(n_jobs=12)]: Done  77 out of  77 | elapsed:  3.6min finished
+Features: 78/86[Parallel(n_jobs=8)]: Using backend LokyBackend with 8 concurrent workers.
+[Parallel(n_jobs=8)]: Done   2 out of   8 | elapsed:   26.9s remaining:  1.3min
+[Parallel(n_jobs=8)]: Done   8 out of   8 | elapsed:   27.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.6min
+[Parallel(n_jobs=12)]: Done  78 out of  78 | elapsed:  3.5min finished
+Features: 79/86[Parallel(n_jobs=7)]: Using backend LokyBackend with 7 concurrent workers.
+[Parallel(n_jobs=7)]: Done   2 out of   7 | elapsed:   23.2s remaining:   57.9s
+[Parallel(n_jobs=7)]: Done   7 out of   7 | elapsed:   25.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.4min
+[Parallel(n_jobs=12)]: Done  79 out of  79 | elapsed:  3.3min finished
+Features: 80/86[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:   23.1s remaining:   46.1s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:   25.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.5min
+[Parallel(n_jobs=12)]: Done  80 out of  80 | elapsed:  3.3min finished
+Features: 81/86[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:   23.6s remaining:   35.4s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:   25.0s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.5min
+[Parallel(n_jobs=12)]: Done  81 out of  81 | elapsed:  3.5min finished
+Features: 82/86[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:   21.4s remaining:   21.4s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:   21.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.5min
+[Parallel(n_jobs=12)]: Done  82 out of  82 | elapsed:  3.8min finished
+Features: 83/86[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   3 out of   3 | elapsed:   19.0s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.6min
+[Parallel(n_jobs=12)]: Done  83 out of  83 | elapsed:  3.8min finished
+Features: 84/86[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:   18.7s remaining:    0.0s
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:   18.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.7min
+[Parallel(n_jobs=12)]: Done  84 out of  84 | elapsed:  3.9min finished
+Features: 85/86[Parallel(n_jobs=1)]: Using backend SequentialBackend with 1 concurrent workers.
+[Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:   11.3s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:  1.7min
+[Parallel(n_jobs=12)]: Done  85 out of  85 | elapsed:  4.2min finished
+Features: 86/86[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    5.0s
+[Parallel(n_jobs=12)]: Done  54 out of  54 | elapsed:    5.8s finished
+Features: 1/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    2.2s
+[Parallel(n_jobs=12)]: Done  53 out of  53 | elapsed:    3.7s finished
+[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   1 out of   1 | elapsed:    2.4s finished
+Features: 2/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    4.8s
+[Parallel(n_jobs=12)]: Done  52 out of  52 | elapsed:    6.1s finished
+[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   2 out of   2 | elapsed:    2.6s finished
+Features: 3/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    5.0s
+[Parallel(n_jobs=12)]: Done  51 out of  51 | elapsed:    6.6s finished
+[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   3 out of   3 | elapsed:    2.8s finished
+Features: 4/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    5.1s
+[Parallel(n_jobs=12)]: Done  50 out of  50 | elapsed:    6.7s finished
+[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   4 out of   4 | elapsed:    2.8s finished
+Features: 5/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:    5.5s
+[Parallel(n_jobs=12)]: Done  49 out of  49 | elapsed:    7.1s finished
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   5 out of   5 | elapsed:    3.8s finished
+Features: 6/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  48 out of  48 | elapsed:    8.0s finished
+[Parallel(n_jobs=7)]: Using backend LokyBackend with 7 concurrent workers.
+[Parallel(n_jobs=7)]: Done   6 out of   6 | elapsed:    2.0s finished
+Features: 7/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  47 out of  47 | elapsed:    6.7s finished
+[Parallel(n_jobs=8)]: Using backend LokyBackend with 8 concurrent workers.
+[Parallel(n_jobs=8)]: Done   7 out of   7 | elapsed:    1.9s finished
+Features: 8/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  46 out of  46 | elapsed:    6.9s finished
+[Parallel(n_jobs=9)]: Using backend LokyBackend with 9 concurrent workers.
+[Parallel(n_jobs=9)]: Done   8 out of   8 | elapsed:    2.1s finished
+Features: 9/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  45 out of  45 | elapsed:    7.3s finished
+[Parallel(n_jobs=10)]: Using backend LokyBackend with 10 concurrent workers.
+[Parallel(n_jobs=10)]: Done   9 out of   9 | elapsed:    2.4s finished
+Features: 10/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  44 out of  44 | elapsed:    7.9s finished
+[Parallel(n_jobs=11)]: Using backend LokyBackend with 11 concurrent workers.
+[Parallel(n_jobs=11)]: Done  10 out of  10 | elapsed:    2.5s finished
+Features: 11/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  43 out of  43 | elapsed:    8.2s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  11 out of  11 | elapsed:    2.7s finished
+Features: 12/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  42 out of  42 | elapsed:    8.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   2 out of  12 | elapsed:    2.9s remaining:   14.6s
+[Parallel(n_jobs=12)]: Done  12 out of  12 | elapsed:    3.3s finished
+Features: 13/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  41 out of  41 | elapsed:    9.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   4 out of  13 | elapsed:    3.0s remaining:    6.7s
+[Parallel(n_jobs=12)]: Done  13 out of  13 | elapsed:    4.1s finished
+Features: 14/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  40 out of  40 | elapsed:    9.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   6 out of  14 | elapsed:    3.5s remaining:    4.6s
+[Parallel(n_jobs=12)]: Done  14 out of  14 | elapsed:    4.8s finished
+Features: 15/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  39 out of  39 | elapsed:   10.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   8 out of  15 | elapsed:    3.5s remaining:    3.1s
+[Parallel(n_jobs=12)]: Done  15 out of  15 | elapsed:    5.0s finished
+Features: 16/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  38 out of  38 | elapsed:   10.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  10 out of  16 | elapsed:    3.8s remaining:    2.3s
+[Parallel(n_jobs=12)]: Done  16 out of  16 | elapsed:    5.3s finished
+Features: 17/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  37 out of  37 | elapsed:   11.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  12 out of  17 | elapsed:    3.9s remaining:    1.6s
+[Parallel(n_jobs=12)]: Done  17 out of  17 | elapsed:    6.1s finished
+Features: 18/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  36 out of  36 | elapsed:   10.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  14 out of  18 | elapsed:    6.2s remaining:    1.8s
+[Parallel(n_jobs=12)]: Done  18 out of  18 | elapsed:    6.5s finished
+Features: 19/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  35 out of  35 | elapsed:   12.0s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  16 out of  19 | elapsed:    6.9s remaining:    1.3s
+[Parallel(n_jobs=12)]: Done  19 out of  19 | elapsed:    7.0s finished
+Features: 20/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  34 out of  34 | elapsed:   13.0s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  18 out of  20 | elapsed:    7.8s remaining:    0.9s
+[Parallel(n_jobs=12)]: Done  20 out of  20 | elapsed:    7.9s finished
+Features: 21/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  33 out of  33 | elapsed:   12.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  21 out of  21 | elapsed:    8.3s finished
+Features: 22/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  32 out of  32 | elapsed:   14.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  22 out of  22 | elapsed:    9.2s remaining:    0.0s
+[Parallel(n_jobs=12)]: Done  22 out of  22 | elapsed:    9.2s finished
+Features: 23/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  31 out of  31 | elapsed:   14.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  23 out of  23 | elapsed:    9.8s finished
+Features: 24/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  30 out of  30 | elapsed:   14.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  24 out of  24 | elapsed:   10.6s finished
+Features: 25/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  29 out of  29 | elapsed:   15.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  25 out of  25 | elapsed:   13.6s finished
+Features: 26/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  28 out of  28 | elapsed:   15.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 out of  26 | elapsed:   14.8s finished
+Features: 27/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  27 out of  27 | elapsed:   15.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  27 out of  27 | elapsed:   15.0s finished
+Features: 28/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 out of  26 | elapsed:   16.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  28 out of  28 | elapsed:   16.2s finished
+Features: 29/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  25 out of  25 | elapsed:   16.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  29 out of  29 | elapsed:   17.4s finished
+Features: 30/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  24 out of  24 | elapsed:   15.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  30 out of  30 | elapsed:   18.9s finished
+Features: 31/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  23 out of  23 | elapsed:   15.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  31 out of  31 | elapsed:   19.8s finished
+Features: 32/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  22 out of  22 | elapsed:   15.9s remaining:    0.0s
+[Parallel(n_jobs=12)]: Done  22 out of  22 | elapsed:   15.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  32 out of  32 | elapsed:   21.7s finished
+Features: 33/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  21 out of  21 | elapsed:   16.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  33 out of  33 | elapsed:   23.1s finished
+Features: 34/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  18 out of  20 | elapsed:   16.6s remaining:    1.8s
+[Parallel(n_jobs=12)]: Done  20 out of  20 | elapsed:   16.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  34 out of  34 | elapsed:   23.8s finished
+Features: 35/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  16 out of  19 | elapsed:   17.3s remaining:    3.2s
+[Parallel(n_jobs=12)]: Done  19 out of  19 | elapsed:   17.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  35 out of  35 | elapsed:   24.4s finished
+Features: 36/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  14 out of  18 | elapsed:   15.4s remaining:    4.4s
+[Parallel(n_jobs=12)]: Done  18 out of  18 | elapsed:   16.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  36 out of  36 | elapsed:   26.4s finished
+Features: 37/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  12 out of  17 | elapsed:   11.0s remaining:    4.6s
+[Parallel(n_jobs=12)]: Done  17 out of  17 | elapsed:   17.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  37 out of  37 | elapsed:   31.2s finished
+Features: 38/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  10 out of  16 | elapsed:   10.9s remaining:    6.6s
+[Parallel(n_jobs=12)]: Done  16 out of  16 | elapsed:   16.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  38 out of  38 | elapsed:   33.3s finished
+Features: 39/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   8 out of  15 | elapsed:   11.1s remaining:    9.7s
+[Parallel(n_jobs=12)]: Done  15 out of  15 | elapsed:   17.2s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  39 out of  39 | elapsed:   35.0s finished
+Features: 40/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   6 out of  14 | elapsed:   12.1s remaining:   16.1s
+[Parallel(n_jobs=12)]: Done  14 out of  14 | elapsed:   18.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  40 out of  40 | elapsed:   36.5s finished
+Features: 41/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   4 out of  13 | elapsed:   11.6s remaining:   26.1s
+[Parallel(n_jobs=12)]: Done  13 out of  13 | elapsed:   17.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  41 out of  41 | elapsed:   38.3s finished
+Features: 42/54[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done   2 out of  12 | elapsed:   11.2s remaining:   56.1s
+[Parallel(n_jobs=12)]: Done  12 out of  12 | elapsed:   13.2s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  42 out of  42 | elapsed:   41.2s finished
+Features: 43/54[Parallel(n_jobs=11)]: Using backend LokyBackend with 11 concurrent workers.
+[Parallel(n_jobs=11)]: Done   2 out of  11 | elapsed:   11.1s remaining:   49.8s
+[Parallel(n_jobs=11)]: Done  11 out of  11 | elapsed:   12.3s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  43 out of  43 | elapsed:   41.8s finished
+Features: 44/54[Parallel(n_jobs=10)]: Using backend LokyBackend with 10 concurrent workers.
+[Parallel(n_jobs=10)]: Done   2 out of  10 | elapsed:   10.2s remaining:   41.0s
+[Parallel(n_jobs=10)]: Done  10 out of  10 | elapsed:   13.1s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  44 out of  44 | elapsed:   43.3s finished
+Features: 45/54[Parallel(n_jobs=9)]: Using backend LokyBackend with 9 concurrent workers.
+[Parallel(n_jobs=9)]: Done   2 out of   9 | elapsed:   11.2s remaining:   39.0s
+[Parallel(n_jobs=9)]: Done   9 out of   9 | elapsed:   11.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  45 out of  45 | elapsed:   44.0s finished
+Features: 46/54[Parallel(n_jobs=8)]: Using backend LokyBackend with 8 concurrent workers.
+[Parallel(n_jobs=8)]: Done   2 out of   8 | elapsed:   10.8s remaining:   32.5s
+[Parallel(n_jobs=8)]: Done   8 out of   8 | elapsed:   11.5s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  46 out of  46 | elapsed:   48.6s finished
+Features: 47/54[Parallel(n_jobs=7)]: Using backend LokyBackend with 7 concurrent workers.
+[Parallel(n_jobs=7)]: Done   2 out of   7 | elapsed:   10.8s remaining:   27.1s
+[Parallel(n_jobs=7)]: Done   7 out of   7 | elapsed:   11.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  47 out of  47 | elapsed:   49.8s finished
+Features: 48/54[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+[Parallel(n_jobs=6)]: Done   2 out of   6 | elapsed:   10.7s remaining:   21.3s
+[Parallel(n_jobs=6)]: Done   6 out of   6 | elapsed:   12.4s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  48 out of  48 | elapsed:   56.7s finished
+Features: 49/54[Parallel(n_jobs=5)]: Using backend LokyBackend with 5 concurrent workers.
+[Parallel(n_jobs=5)]: Done   2 out of   5 | elapsed:   11.6s remaining:   17.4s
+[Parallel(n_jobs=5)]: Done   5 out of   5 | elapsed:   12.7s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   40.3s
+[Parallel(n_jobs=12)]: Done  49 out of  49 | elapsed:  1.0min finished
+Features: 50/54[Parallel(n_jobs=4)]: Using backend LokyBackend with 4 concurrent workers.
+[Parallel(n_jobs=4)]: Done   2 out of   4 | elapsed:   12.9s remaining:   12.9s
+[Parallel(n_jobs=4)]: Done   4 out of   4 | elapsed:   12.9s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   42.0s
+[Parallel(n_jobs=12)]: Done  50 out of  50 | elapsed:  1.1min finished
+Features: 51/54[Parallel(n_jobs=3)]: Using backend LokyBackend with 3 concurrent workers.
+[Parallel(n_jobs=3)]: Done   3 out of   3 | elapsed:   13.3s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   46.2s
+[Parallel(n_jobs=12)]: Done  51 out of  51 | elapsed:  1.2min finished
+Features: 52/54[Parallel(n_jobs=2)]: Using backend LokyBackend with 2 concurrent workers.
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:   12.6s remaining:    0.0s
+[Parallel(n_jobs=2)]: Done   2 out of   2 | elapsed:   12.6s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   49.5s
+[Parallel(n_jobs=12)]: Done  52 out of  52 | elapsed:  1.3min finished
+Features: 53/54[Parallel(n_jobs=1)]: Using backend SequentialBackend with 1 concurrent workers.
+[Parallel(n_jobs=1)]: Done   1 out of   1 | elapsed:    6.8s finished
+[Parallel(n_jobs=12)]: Using backend LokyBackend with 12 concurrent workers.
+[Parallel(n_jobs=12)]: Done  26 tasks      | elapsed:   48.5s
+[Parallel(n_jobs=12)]: Done  53 out of  53 | elapsed:  1.3min finished
+Features: 54/54/gpfs/summit/scratch/bchoat@colostate.edu/GAGES/monthly/Nat_0/0/HPC_Monthly_Callable.py:1701: FutureWarning: The series.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  region_temp = region_temp.append(
+/gpfs/summit/scratch/bchoat@colostate.edu/GAGES/monthly/Nat_0/0/HPC_Monthly_Callable.py:1708: FutureWarning: The series.append method is deprecated and will be removed from pandas in a future version. Use pandas.concat instead.
+  clust_meth_temp = clust_meth_temp.append(

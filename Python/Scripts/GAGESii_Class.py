@@ -1131,7 +1131,7 @@ class Regressor:
                 forward = forward_in, # set to False for backward
                 floating = float_opt,
                 verbose = 1, # 0 for no output, 1 for number features in set, 2 for more detail
-                scoring = 'neg_mean_absolute_error', # 'neg_root_mean_squared_error', # 'r2', # 'neg_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error'
+                scoring = 'r2', # 'neg_root_mean_squared_error', # 'r2', # 'neg_mean_squared_error', 'neg_mean_absolute_error', 'neg_median_absolute_error'
                 cv = cv
             )
         elif sel_meth == 'exhaustive':
@@ -1139,7 +1139,7 @@ class Regressor:
                 n_jobs = n_jobs_in,
                 min_features = min_k,
                 max_features = klim_in,
-                scoring = 'neg_mean_absolute_error', # 'neg_root_mean_squared_error', # 'r2'
+                scoring = 'r2', # 'neg_mean_absolute_error', # 'neg_root_mean_squared_error',
                 print_progress = True,
                 cv = cv
                 )
@@ -1282,14 +1282,15 @@ class Regressor:
 
     def lasso_regression(self,
                         alpha_in = 1, 
-                        max_iter_in = 1000.,
+                        max_iter_in = 10000,
                         n_splits_in = 10,
                         n_repeats_in = 1,
                         random_state_in = 100,
                         timeseries = False,
                         n_jobs_in = 1,
                         custom_loss = False,
-                        id_var = ''):
+                        id_var = '',
+                        fit_int = False):
         # using info from here as guide: 
         # https://machinelearningmastery.com/lasso-regression-with-python/
         """
@@ -1346,8 +1347,10 @@ class Regressor:
 
         self.lasso_reg_ = Lasso(alpha = alpha_in,
                             max_iter = max_iter_in,
+                            # selection = 'random',
+                            random_state = 100,                            
                             tol = 1e-8,
-                            random_state = 100)
+                            fit_intercept = fit_int)
         
 
 
@@ -1373,6 +1376,10 @@ class Regressor:
             # define grid
             grid = dict()
             grid['alpha'] = alpha_in
+           
+            # print alpha_in grid for trouble shooting
+            # print('Alpha grid:')
+            # print(grid)
 
             # define custom loss function if custom_loss is an instance of a function
             # if callable(custom_loss):
@@ -1381,10 +1388,11 @@ class Regressor:
             # else:
             #     scorer = 'neg_root_mean_squared_error'
            
-            search = HalvingGridSearchCV(self.lasso_reg_,
+            search = GridSearchCV( # HalvingGridSearchCV(
+                self.lasso_reg_,
                 grid,
-                scoring = 'neg_mean_absolute_error', # 'neg_root_mean_squared_error', # 'neg_mean_absolute_error', 'r2'],
-                refit = False,
+                scoring = 'r2', # 'neg_mean_absolute_error', # 'neg_root_mean_squared_error', # 'neg_mean_absolute_error', 'r2'],
+                refit = True, # False,
                 cv = cv,
                 n_jobs = n_jobs_in)
             # perform the search
@@ -1395,6 +1403,9 @@ class Regressor:
                 results = search.fit(X_train, y_train)
             self.lassoCV_results = results
             # self.lassoCV_results = pd.DataFrame(self.lassoCV_results.cv_results_)
+            
+            # print CV results for trouble shooting
+            # print(self.lassoCV_results.cv_results_)
 
             # print(pd.DataFrame(self.lassoCV_results.cv_results_))
             print(search.best_params_)
@@ -1404,15 +1415,19 @@ class Regressor:
                             'mean_test_score',
                             'std_test_score',
                             'rank_test_score']]
-
-            # redfine alpha as best alpha
+            
+            # redefine alpha as best alpha
             alpha_in = search.best_params_['alpha']
             # write best alpha to self
             self.lasso_alpha_ = search.best_params_['alpha']
 
             # redfine lasso using update alpha value
-            self.lasso_reg_ = Lasso(alpha = alpha_in,
-                            max_iter = max_iter_in)
+            self.lasso_reg_ = search.best_estimator_
+                              #  Lasso(alpha = alpha_in,
+                            # max_iter = max_iter_in,
+                            # selection = 'random',
+                            # random_state = 100,                            
+                            # tol = 1e-8)
             
             # self.df_lassoCV_score_ = pd.DataFrame(self.lassoCV_results.cv_results_).sort_values(by = 'rank_test_neg_root_mean_squared_error')[[
             #                 'param_alpha',
@@ -1680,7 +1695,9 @@ class Regressor:
 
             # else:
             #     scorer = 'neg_root_mean_squared_error'
-
+           
+            # print grid for TROUBLESHOOTING
+            # print(grid_in) 
             try:
                 # define model evaluation method
                 if timeseries:
@@ -1697,15 +1714,15 @@ class Regressor:
 
             
 
-                # define gridsearch cross-validation object
-                gsCV = HalvingGridSearchCV(
-                            estimator = xgb_reg,
+                # define gridsearch cross-validation object # HalvingGridSearchCV(
+
+                gsCV = GridSearchCV(estimator = xgb_reg,
                             param_grid = grid_in,
-                            factor = halving_factor,
-                            scoring = 'neg_mean_absolute_error', # 'r2', # 'neg_root_mean_squared_error',
+                            # factor = halving_factor,
+                            scoring = 'r2', # 'neg_root_mean_squared_error', 'neg_mean_absolute_error'
                             cv = cv, # default = 5
                             return_train_score = False, # True, # default = False
-                            random_state = random_state_in,
+                            # random_state = random_state_in,
                             verbose = 2,
                             n_jobs = -1,
                             refit = False

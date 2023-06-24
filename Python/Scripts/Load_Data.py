@@ -17,32 +17,34 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler # standardizing data
 
 
-##### 
+#####
 # define function that accepts working directory and time-scale as inputs
 #####
-def load_data_fun(dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work', 
+def load_data_fun(
+    dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work', 
     time_scale = 'mean_annual',
     train_val = 'train',
     clust_meth = 'None',
     region = 'All',
-    standardize = True):
+    standardize = True
+    ):
 
     # print input variables to check if as expected
     print(f' working directory: {dir_work} \n time scale: {time_scale}')
 
     # define sub-directories
     # water yield directory
-    # dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
-    dir_WY = f'{dir_work}/data_work/USGS_discharge'
+    dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+    # dir_WY = f'{dir_work}/data_work/USGS_discharge'
 
     # explantory var (and other data) directory
-    # dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
-    dir_expl = f'{dir_work}/data_work/GAGESiiVariables'
+    dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+    # dir_expl = f'{dir_work}/data_work/GAGESiiVariables'
 
     # DAYMET directory
-    # dir_DMT = 'D:/DataWorking/Daymet/train_val_test'
-    dir_DMT = f'{dir_work}/data_work/Daymet'
-
+    dir_DMT = 'D:/DataWorking/Daymet/train_val_test'
+    # dir_DMT = f'{dir_work}/data_work/Daymet'
+    
     # Define features not to transform
     not_tr_in = ['GEOL_REEDBUSH_DOM_granitic', 
                 'GEOL_REEDBUSH_DOM_quarternary', 
@@ -196,14 +198,22 @@ def load_data_fun(dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work'
  
         # DAYMET
         # train for training standard scaler
-        df_trainDMT = pd.read_csv(
-            f'{dir_DMT}/{time_scale}/DAYMET_{time_scale}_train.csv',
-            dtype = {"site_no":"string"}
-        )
-        df_DMT = pd.read_csv(
-            f'{dir_DMT}/{time_scale}/DAYMET_{time_scale}_{train_val}.csv',
-            dtype = {"site_no":"string"}
-        )
+        try:
+            df_trainDMT = pd.read_csv(
+                f'{dir_DMT}/{time_scale}/DAYMET_{time_scale}_train.csv',
+                dtype = {"site_no":"string"}
+            )
+            df_DMT = pd.read_csv(
+                f'{dir_DMT}/{time_scale}/DAYMET_{time_scale}_{train_val}.csv',
+                dtype = {"site_no":"string"}
+            )
+        except:
+            df_trainDMT = pd.read_parquet(
+                f'{dir_DMT}/{time_scale}/DAYMET_{time_scale}_train.parquet'
+            )
+            df_DMT = pd.read_parquet(
+                f'{dir_DMT}/{time_scale}/DAYMET_{time_scale}_{train_val}.parquet'
+            )
 
         # Add DAYMET to explanatory vars
         # train
@@ -302,11 +312,11 @@ def load_data_fun(dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work'
     # otherwise, subset the data to region/cluster of interest
     else:
         # working data
-        cid_in = df_ID[df_ID[clust_meth] == region]
+        cid_in = df_ID[df_ID[clust_meth].astype(str) == str(region)]
 
         cid_in.drop('DRAIN_SQKM', axis = 1, inplace = True)
         # training data
-        cidtrain_in = df_trainID[df_trainID[clust_meth] == region]
+        cidtrain_in = df_trainID[df_trainID[clust_meth].astype(str) == str(region)]
 
         cidtrain_in.drop('DRAIN_SQKM', axis = 1, inplace = True)
 
@@ -331,13 +341,18 @@ def load_data_fun(dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work'
 
         # ID dataframes
         # working
-        df_ID = pd.merge(
-            df_ID, cid_in, on = ['STAID', 'Class', 'AggEcoregion', 'ECO3_Site', 
-                                'USDA_LRR_Site', 'CAMELS'])[clust_meth] # ['ECO3_Site']
+        # print(f'cid_in: {cid_in} \n')
+        # print(f'\n df_ID columns: {df_ID.columns}')
+
+
+        df_ID = pd.merge(cid_in, df_ID, on = [x for x in cid_in.columns])[clust_meth] # ['ECO3_Site']
+        
+        # print(f'cidtrain_in: {cidtrain_in}')
+        # print(f'df_ID_train: {df_trainID}')
         # training
         df_trainID = pd.merge(
-            df_trainID, cidtrain_in, on = ['STAID', 'Class', 'AggEcoregion',
-                                     'ECO3_Site', 'USDA_LRR_Site', 'CAMELS'])[clust_meth] # ['ECO3_Site']
+            df_trainID, cidtrain_in, on = [x for x in cidtrain_in.columns]
+            )[clust_meth] # ['ECO3_Site']
 
         # transform data
         if standardize:

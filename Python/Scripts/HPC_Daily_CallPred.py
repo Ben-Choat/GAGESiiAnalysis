@@ -196,6 +196,16 @@ valnit_expl_in = pd.merge(df_valnit_expl, cidvalnit_in, on = 'STAID').drop(
                 'DRAIN_SQKM_y', 'LAT_GAGE', 'LNG_GAGE', 'HUC02']
 )
 
+
+
+# remove '_x' from drain_sqkm column name.
+if 'DRAIN_SQKM_x' in train_expl_in.columns.values:
+    train_expl_in.columns.str.replace('DRAIN_SQKM_x', 'DRAIN_SQKM')
+if 'DRAIN_SQKM_x' in testin_expl_in.columns.values:
+    testin_expl_in.columns.str.replace('DRAIN_SQKM_x', 'DRAIN_SQKM')
+if 'DRAIN_SQKM_x' in valnit_expl_in.columns.values:
+    valnit_expl_in.columns.str.replace('DRAIN_SQKM_x', 'DRAIN_SQKM')
+
 # Add DAYMET to explanatory vars
 train_expl_in = pd.merge(
     train_expl_in, df_train_dailyDMT, left_on = ['STAID', 'year'], right_on = ['site_no', 'year']
@@ -322,13 +332,21 @@ regress_fun(df_train_expl = train_expl_in, # training data explanatory variables
             valnit_ID = valnit_ID_in, # # validation data id's from catchments not used in training (e.g., clusters or ecoregions)
             clust_meth = clust_meth_in, # the clustering method used. This variable is used for naming models (e.g., AggEcoregion)
             reg_in = region_in, # region label, i.e., 'NorthEast'
+            models_in = [ # list of which models to run
+                'regr_precip', 
+                # 'strd_lasso', 
+                'strd_mlr', 
+                # 'strd_PCA_lasso', 
+                'strd_PCA_mlr', 
+                'XGBoost'
+                ],               
             grid_in = { # dict with XGBoost parameters
-                'n_estimators': [500, 750], # [100, 500, 750], # [100, 250, 500], # [10], # 
+                'n_estimators': [500, 750, 1000], # [100, 500, 750], # [100, 250, 500], # [10], # 
                 'colsample_bytree': [0.7, 0.8], # [1], #
-                'max_depth':  [4, 5, 6], #, 8], # [6], #
-                'gamma': [0.01, 1, 2], # [0], # 
+                'max_depth':  [3, 5, 7], #, 8], # [6], #
+                'gamma': [0.1, 1, 2], # [0], # 
                 'reg_lambda': [0.01, 0.1, 1], # [0], #
-                'learning_rate': [0.001, 0.01, 0.1]
+                'learning_rate': [0.01, 0.1, 0.2]
                 },
             plot_out = False, # Boolean; outputs plots if True,
             train_id_var = train_expl_in['STAID'], # unique identifier for training catchments

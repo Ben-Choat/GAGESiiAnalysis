@@ -11,7 +11,7 @@ Main script to produce results figures.
 
 import pandas as pd
 import numpy as np
-import geopandas as gpd
+# import geopandas as gpd
 import seaborn as sns
 import matplotlib.pyplot as plt
 # from statsmodels.distributions.empirical_distribution import ECDF
@@ -32,7 +32,7 @@ dir_shap = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
 dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
 
 # directory where to place outputs
-dir_umaphd = 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN'
+# dir_umaphd = 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN'
 
 
 
@@ -64,6 +64,7 @@ df_ressumm_mannual = pd.read_pickle(
 df_ressumm_annual = pd.read_pickle(
     f'{dir_work}/annual/combined/All_SummaryResults_annual.pkl'
 )
+
 # month
 df_ressumm_monthly = pd.read_pickle(
     f'{dir_work}/monthly/combined/All_SummaryResults_monthly.pkl'
@@ -136,11 +137,11 @@ data_in_mannual = df_resind_mannual[
     df_resind_mannual['train_val'] == 'valnit'
 ]
 
-data_in_mannual = pd.merge(
-    data_in_mannual, df_shap_mannual,
-    left_on = ['region', 'clust_method', 'model'],
-    right_on = ['region', 'clust_meth', 'best_model']
-)[df_resind_mannual.columns]
+# data_in_mannual = pd.merge(
+#     data_in_mannual, df_shap_mannual,
+#     left_on = ['region', 'clust_method', 'model'],
+#     right_on = ['region', 'clust_meth', 'best_model']
+# )[df_resind_mannual.columns]
 
 data_in_mannual['|residuals|'] = np.abs(data_in_mannual['residuals'])
 
@@ -154,11 +155,11 @@ data_in_annual = df_resind_annual[
     df_resind_annual['train_val'] == 'valnit'
 ]
 
-data_in_annual = pd.merge(
-    data_in_annual, df_shap_annual,
-    left_on = ['region', 'clust_method', 'model'],
-    right_on = ['region', 'clust_meth', 'best_model']
-)[df_resind_annual.columns]
+# data_in_annual = pd.merge(
+#     data_in_annual, df_shap_annual,
+#     left_on = ['region', 'clust_method', 'model'],
+#     right_on = ['region', 'clust_meth', 'best_model']
+# )[df_resind_annual.columns]
 
 data_in_annual.sort_values(
     by = ['clust_method', 'region'], inplace = True
@@ -170,11 +171,11 @@ data_in_month = df_resind_monthly[
     df_resind_monthly['train_val'] == 'valnit'
 ]
 
-data_in_month = pd.merge(
-    data_in_month, df_shap_monthly,
-    left_on = ['region', 'clust_method', 'model'],
-    right_on = ['region', 'clust_meth', 'best_model']
-)[df_resind_monthly.columns]
+# data_in_month = pd.merge(
+#     data_in_month, df_shap_monthly,
+#     left_on = ['region', 'clust_method', 'model'],
+#     right_on = ['region', 'clust_meth', 'best_model']
+# )[df_resind_monthly.columns]
 
 
 data_in_month.sort_values(
@@ -182,8 +183,24 @@ data_in_month.sort_values(
     )
 
 
+####
+clust_meth_in = 'Class'
+model_in = 'XGBoost'
+data_in_mannual = data_in_mannual[
+    (data_in_mannual['clust_method'] == clust_meth_in) &
+    (data_in_mannual['model'] == model_in)
+]
 
+data_in_annual = data_in_annual[
+    (data_in_annual['clust_method'] == clust_meth_in) &
+    (data_in_annual['model'] == model_in)
+]
 
+data_in_month = data_in_month[
+    (data_in_month['clust_method'] == clust_meth_in) &
+    (data_in_month['model'] == model_in)
+]
+####
 
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize = (10, 5), sharey = True)
 
@@ -302,7 +319,8 @@ shap_monthly.rename(
 # mean annual
 
 # calculate column order
-mannual_col_order = shap_mannual.fillna(0).abs().mean().sort_values(ascending = False).index
+mannual_col_order = shap_mannual.fillna(0).abs().mean().sort_values(
+                                                    ascending = False).index
 
 data_mannualin = shap_mannual.reindex(mannual_col_order, axis = 1)
 
@@ -720,10 +738,7 @@ sns.heatmap(
                 'location': 'bottom'} # ,
     # robust = True
     )
-ax3.set(xlabel = 'Region') # xlabel = 'Explanatory Varaibles', ylabel = 'Region')
-# ax3.tick_params(axis = 'x',
-#                 rotation = 66)
-
+ax3.set(xlabel = 'Region', ylabel = '') 
 # color anthropogenic hydrologic alteration variables
 # for x in np.where(monthly_data_plot.columns.isin(anhyd_feats))[0]: # np.arange(5, 20, 1): 
 #     ax3.get_xticklabels()[x].set_color('red')
@@ -737,7 +752,7 @@ ax2.annotate('(b)', xy = (12, 21.5), annotation_clip = False)
 ax3.annotate('(c)', xy = (12, 21.5), annotation_clip = False)
 
 
-# save fig
+# # save fig
 # plt.savefig(
 #     f'{dir_figs}/Heat_AnthVars_AllTimescales.png',  # Heat_AnthVars_monthly_Horz.png', 
 #     dpi = 300,

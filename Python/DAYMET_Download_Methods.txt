@@ -1,0 +1,7 @@
+Using NLDI from PyNHD and PyDAYMET API’s via HyRiver
+1. Loop through .shp files in the GAGESii folder on the external hard drive.
+a. There is a .shp file for each ecoregion and each .shp file has several catchments in it.
+2. Read in .shpfiles and loop through stations
+a. Use read geopandas.read_file
+i. https://readthedocs.org/projects/dbfread/downloads/pdf/latest/
+3. Use that boundary as input to PyDAYMET 

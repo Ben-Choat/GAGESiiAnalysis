@@ -1,6 +1,7 @@
 # Ben Choat, 2022/09/16
 
-# script to read in csvs and combine them into a single 
+# script to read in csvs and combine them into a single pickle file
+
 
 # %%
 # load libraries

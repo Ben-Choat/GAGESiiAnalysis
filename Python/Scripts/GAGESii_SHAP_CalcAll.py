@@ -2,7 +2,7 @@
 BChoat 10/17/2022
 
 Script to loop through all models and calculate SHAP values.
-After being calculated shap values are appended to a daraframe,
+After being calculated shap values are appended to a dataframe,
 which is eventually written to a csv. 
 
 
@@ -34,27 +34,23 @@ import xgboost as xgb
 # which to work
 
 # clustering methods
-clust_meth = ['None', 'Class', 'AggEcoregion']
+# clust_meth = ['None', 'Class', 'AggEcoregion']
 
-# define regions for different clustering methods
-aggecoregions = ['CntlPlains', 'EastHghlnds', 'MxWdShld', 'NorthEast', 
-        'SECstPlain', 'SEPlains', 'WestMnts', 'WestPlains', 'WestXeric']
-classes = ['Non-ref', 'Ref']
-all_stations = ['All']
-# combine region names into a dict
-df_regions = {
-    'None': all_stations,
-    'Class': classes,
-    'AggEcoregion': aggecoregions
-}
+clust_meth = ['None', 'Class', 'AggEcoregion', 
+        'All_0', 'All_1', 'All_2', 'Anth_0', 'Anth_1', 
+        'CAMELS', 'HLR', 'Nat_0', 'Nat_1', 'Nat_2',
+        'Nat_3', 'Nat_4']
+# clust_meth = ['Anth_0'] # ,'Anth_0', 'Nat_0']
+
+# read in ID.csv file to get unique clusters under each method
+df_ID = pd.read_csv(
+    'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/' \
+        'GAGESiiVariables/ID_train.csv'
+)
 
 # time scales
-time_scale = ['mean_annual'] # 'monthly', 'annual', 
+time_scale = ['monthly', 'annual', 'mean_annual']
 
-# for testing
-# clust_meth = [clust_meth[2]]
-# region = [region[3]]
-# time_scale = [time_scale[1]]
 
 # Define directory variables
 # directory with data to work with
@@ -77,6 +73,18 @@ names_drop = ['STAID', 'year', 'month', 'day', 'date']
 # %%
 # Load data
 ###########
+
+# define dict to hold cluster methods: cluster
+df_regions = {}
+
+# define regions for different clustering methods
+for cl in clust_meth:
+    if cl == 'None':
+        df_regions[cl] = 'All'
+    else:
+        df_regions[cl] = np.sort(df_ID[cl].unique())
+
+
 
 for timescale in time_scale:
 
@@ -122,8 +130,15 @@ for timescale in time_scale:
     best_scores = []
 
     for method in clust_meth:
+
+        # print update
+        print(f'\n Processing scenario: {timescale}-{method} \n')
+
         # define regions for the clust_meth
-        region = df_regions[method]
+        if isinstance(df_regions[method], str):
+            region = [df_regions[method]]
+        else: 
+            region = df_regions[method]
         for cluster in region: 
 
             # add clust_meth and region to output lists
@@ -237,19 +252,19 @@ for timescale in time_scale:
             if(timescale == 'mean_annual'):
                 STAID = df_expl['STAID']  
                 df_expl.drop('STAID', axis = 1, inplace = True)
-                df_WY = df_WY['Ann_WY_ft']
+                df_WY = df_WY['Ann_WY_cm']
             if(timescale == 'annual'):
                 STAID = df_expl[['STAID', 'year']]  
                 df_expl.drop(['STAID', 'year'], axis = 1, inplace = True)
-                df_WY = df_WY['Ann_WY_ft']
+                df_WY = df_WY['Ann_WY_cm']
             if(timescale == 'monthly'):
                 STAID = df_expl[['STAID', 'year', 'month']]   
                 df_expl.drop(['STAID', 'year', 'month'], axis = 1, inplace =True)
-                df_WY = df_WY['Mnth_WY_ft']
+                df_WY = df_WY['Mnth_WY_cm']
             if(timescale == 'daily'):
                 STAID = df_expl[['STAID', 'date']] 
                 df_expl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace =True)
-                df_WY = df_WY['dlyWY_ft']
+                df_WY = df_WY['dlyWY_cm']
 
         
             # read in columns that were previously removed due to high VIF
@@ -269,6 +284,9 @@ for timescale in time_scale:
                 vif_removed = vif_removed.str.replace(
                     'DRAIN_SQKM_x', 'DRAIN_SQKM'
                 )
+
+            # make sure only columns in current df_expl are removed
+            # vif_removed = [x in vif_removed.values if x in df_expl.columns] # vif_removed.intersection(df_expl.columns)
 
             # drop columns that were removed due to high VIF
             df_expl.drop(vif_removed, axis = 1, inplace = True)
@@ -338,6 +356,7 @@ for timescale in time_scale:
                 # this object is used in feature selection just below and
                 # results from this will be used to calculate Mallows' Cp
                 model = reg.fit(X_in, df_WY)
+
 
             # read in xgboost if best model is xgboost
             if best_model.values == 'XGBoost':

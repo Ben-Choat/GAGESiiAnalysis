@@ -8,10 +8,10 @@ import pandas as pd
 # %% load data
 
 # water yield directory
-dir_WY = 'E:/DataWorking/USGS_discharge/train_val_test'
+dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
 
 # explantory var (and other data) directory
-dir_expl = 'E:/Projects/GAGESii_ANNstuff/Data_Out'
+dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out'
 
 # GAGESii explanatory vars
 # training
@@ -47,7 +47,7 @@ df_valnit_ID = df_ID[df_ID.STAID.isin(df_valnit_expl.STAID)].reset_index(drop = 
 
 #########################
 # read in BasinID sheet from All_GAGESiiTS.xlsx
-df_work = pd.read_excel('E:/DataWorking/GAGESii_TS/All_GAGESiiTS.xlsx', 
+df_work = pd.read_excel('D:/DataWorking/GAGESii_TS/All_GAGESiiTS.xlsx', 
     sheet_name='BasinID',
     dtype = {'STAID': 'string'}
     ).drop(columns = ['STANAME', 'STATE', 'HCDN-2009'])
@@ -69,7 +69,7 @@ df_work_valnit = pd.merge(
 
 # write new ID dfs 
 
-df_work_train.to_csv('E:/Projects/GAGESii_ANNstuff/Data_Out/ID_train.csv')
-df_work_valnit.to_csv('E:/Projects/GAGESii_ANNstuff/Data_Out/ID_valnit.csv')
+df_work_train.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/ID_train.csv')
+df_work_valnit.to_csv('D:/Projects/GAGESii_ANNstuff/Data_Out/ID_valnit.csv')
 
 # %%

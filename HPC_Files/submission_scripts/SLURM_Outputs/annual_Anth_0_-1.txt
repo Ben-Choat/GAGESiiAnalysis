@@ -1,0 +1,34 @@
+cp: omitting directory '__pycache__'
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: invalid value encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/stats/outliers_influence.py:195: RuntimeWarning: divide by zero encountered in double_scalars
+  vif = 1. / (1. - r_squared_i)
+/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/statsmodels/regression/linear_model.py:1736: RuntimeWarning: divide by zero encountered in double_scalars
+  return 1 - self.ssr/self.centered_tss
+Traceback (most recent call last):
+  File "/gpfs/summit/scratch/bchoat@colostate.edu/GAGES/annual/Anth_0/-1/HPC_Annual_CallPred.py", line 266, in <module>
+    regress_fun(df_train_expl = train_expl_in, # training data explanatory variables. Expects STAID to be a column
+  File "/gpfs/summit/scratch/bchoat@colostate.edu/GAGES/annual/Anth_0/-1/HPC_Annual_Callable.py", line 633, in regress_fun
+    regr.pred_plot(
+  File "/gpfs/summit/scratch/bchoat@colostate.edu/GAGES/annual/Anth_0/-1/GAGESii_Class.py", line 2003, in pred_plot
+    y_pred = model_in.predict(X_pred)
+  File "/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/sklearn/linear_model/_base.py", line 386, in predict
+    return self._decision_function(X)
+  File "/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/sklearn/linear_model/_coordinate_descent.py", line 1127, in _decision_function
+    return super()._decision_function(X)
+  File "/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/sklearn/linear_model/_base.py", line 369, in _decision_function
+    X = self._validate_data(X, accept_sparse=["csr", "csc", "coo"], reset=False)
+  File "/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/sklearn/base.py", line 577, in _validate_data
+    X = check_array(X, input_name="X", **check_params)
+  File "/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/sklearn/utils/validation.py", line 899, in check_array
+    _assert_all_finite(
+  File "/projects/.colostate.edu/bchoat/software/anaconda/envs/gagesiienv/lib/python3.10/site-packages/sklearn/utils/validation.py", line 146, in _assert_all_finite
+    raise ValueError(msg_err)
+ValueError: Input X contains NaN.
+Lasso does not accept missing values encoded as NaN natively. For supervised learning, you might want to consider sklearn.ensemble.HistGradientBoostingClassifier and Regressor which accept missing values encoded as NaNs natively. Alternatively, it is possible to preprocess the data, for instance by using an imputer transformer in a pipeline or drop samples with missing values. See https://scikit-learn.org/stable/modules/impute.html You can find a list of all estimators that handle NaN values at the following page: https://scikit-learn.org/stable/modules/impute.html#estimators-that-handle-nan-values

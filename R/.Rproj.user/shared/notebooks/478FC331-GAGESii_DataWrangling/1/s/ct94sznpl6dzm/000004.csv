@@ -14,7 +14,8 @@
 "0",""
 "0","# pacman as a package loader"
 "0","if(!require(pacman))(install.packages(""pacman""))"
-"0",""
+"2","Loading required package: pacman
+"
 "0","# renv for dependency management"
 "0","# data.table for data wrangling"
 "0","# dplyr for some data wrangling"

@@ -197,7 +197,7 @@ def NSE(y_pred, y_obs):
     return(nse)
 
 # Kling Gupta Efficiency
-def KGE(y_pred, y_obs):
+def KGE(y_pred, y_obs, return_comp = False):
     """
     Kling-Gupta Efficiency for time series performance
     
@@ -205,6 +205,15 @@ def KGE(y_pred, y_obs):
     ----------
     y_pred: array of predicted time-series values
     y_obs: array of observed time-series values
+    return_comp: return the individual components of KGE (True or False)?
+
+    Returns:
+    ----------
+    array of kge and if return_comp == True, r, alpha, and beta
+        r: correlation between observed and predicted values
+        alpha: variability bias (ratio of stdevs)
+        beta: mean bias
+
     """
     y_obs = np.array(y_obs)
     y_pred = np.array(y_pred)
@@ -217,7 +226,10 @@ def KGE(y_pred, y_obs):
     beta = np.mean(y_pred)/np.mean(y_obs)
     kge = 1 - np.sqrt((r_o_m - 1)**2 + (alpha - 1)**2 + (beta - 1)**2)
     
-    return(kge)
+    if return_comp:
+        return(kge, r_o_m, alpha, beta)
+    else:
+        return(kge)
 
 # plot performance metrics against number of features
 def PlotPM(df_in, timeseries = False):
