@@ -26,8 +26,7 @@ import xgboost as xgb
 # import plotnine as p9
 # import seaborn as sns
 from Regression_PerformanceMetrics_Functs import *
-from NSE_KGE_timeseries import NSE_KGE_Apply
-# from statsmodels.distributions.empirical_distribution import ECDF
+from statsmodels.distributions.empirical_distribution import ECDF
 # from sklearn.preprocessing import StandardScaler
 from GAGESii_Class import *
 
@@ -44,7 +43,7 @@ from GAGESii_Class import *
 # will be used for collecting data from the appropriate directory as well aA
 # naming the combined file
 # clust_meth = 'None' # 
-clust_meths = ['Class', 'None', 'AggEcoregion'  'CAMELS', 'HLR', 
+clust_meths = ['Class', 'None', 'AggEcoregion',  'CAMELS', 'HLR', 
                 'All_0', 'All_1', 'All_2', 'Anth_0', 'Anth_1',
                 'Nat_0', 'Nat_1', 'Nat_2', 'Nat_3', 'Nat_4']
 
@@ -60,7 +59,7 @@ clust_meths = ['Class', 'None', 'AggEcoregion'  'CAMELS', 'HLR',
 # define time scale working with. This vcombtrainariable will be used to read and
 # write data from and to the correct directories
 # time_scale = 'monthly' # 'mean_annual', 'annual', 'monthly', 'daily'
-time_scales = ['annual', 'monthly'] # 'mean_annual', 
+time_scales = ['mean_annual']
 
 # define which model you want to work with
 model_works = ['regr_precip', 'strd_mlr', 'strd_PCA_mlr', 'XGBoost']
@@ -85,20 +84,20 @@ df_id = pd.read_csv(
 # # directory where to place outputs
 # dir_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/TEST_RESULTS'
 
-# delete df_nse_kge if already read in, to avoid duplicates
-if 'df_nse_kge' in globals():
-    del(df_nse_kge)
+# delete df_metrics if already read in, to avoid duplicates
+if 'df_metrics' in globals():
+    del(df_metrics)
 
-for time_scale in time_scales:
-    for clust_meth in clust_meths:
+for time_scale in time_scales[0:1]:
+    for clust_meth in clust_meths[0:1]:
         if clust_meth == 'None':
             regions = ['All']
         else:
             regions = df_id[clust_meth].unique()
 
-        for model_work in model_works:
-            for train_val in train_vals:
-                for region in regions:
+        for model_work in model_works[0:1]:
+            for train_val in train_vals[0:1]:
+                for region in regions[0:1]:
 
                 
 
@@ -496,14 +495,21 @@ for time_scale in time_scales:
 
                     # %%
                     # calc NSE and KGE from all stations
-                    df_temp = NSE_KGE_Apply(
-                        pd.DataFrame({
-                            'y_obs': df_WY_in,
-                            'y_pred': y_pred,
-                            'ID_in': STAID_in['STAID']
-                            }),
-                            return_comp = True
-                        )
+                    # df_temp = NSE_KGE_Apply(
+                    #     pd.DataFrame({
+                    #         'y_obs': df_WY_in,
+                    #         'y_pred': y_pred,
+                    #         'ID_in': STAID_in['STAID']
+                    #         }),
+                    #         return_comp = True
+                    #     )
+
+                    residuals = y_pred - df_WY_in
+
+                    df_temp = pd.DataFrame({
+                        'y_obs': df_WY_in,
+                        'y_'
+                    })
 
                     df_temp['clust_method'] = np.repeat(clust_meth, df_temp.shape[0])
                     df_temp['region'] = np.repeat(region, df_temp.shape[0])
@@ -511,21 +517,29 @@ for time_scale in time_scales:
                     df_temp['train_val'] = np.repeat(train_val, df_temp.shape[0])
                     df_temp['time_scale'] = np.repeat(time_scale, df_temp.shape[0])
 
-                    if not 'df_nse_kge' in globals():
-                        df_nse_kge = df_temp
+                    if not 'df_metrics' in globals():
+                        df_metrics = df_temp
                     else:
-                        df_nse_kge = pd.concat([
-                            df_nse_kge, df_temp
+                        df_metrics = pd.concat([
+                            df_metrics, df_temp
                         ])
 
                     # print(f'\n\n\n {time_scale}-{clust_meth}-{region}\n\n\n')
 
 
-print('Printing df_nse_kge to csv')
+
+# STAID	NSE	KGE	r	alpha	beta	PercBias	RMSE	clust_method	region	model	train_val	time_scale
+# 1013500	0.105208081	0.726786772	0.937834519	0.85857641	0.774655177	-22.53448229	15.91135737	Class	Ref	regr_precip	train	annual
+# 1022500	0.717631948	0.861707279	0.957569863	0.957623006	0.875385593	-12.46144075	12.42484489	Class	Ref	regr_precip	train	annual
+# 1030500	0.653646432	0.857743968	0.956736034	1.014978035	0.865312709	-13.46872912	10.96894455	Class	Ref	regr_precip	train	annual
+# 1031300	0.777449422	0.851981945	0.965241324	0.913250253	0.88521472	-11.47852799	10.59782987	Class	Ref	regr_precip	train	annual
+# 1031500	0.717670572	0.819004619	0.965530821	0.882477775	0.866734362	-13.32656385	12.03591104	Class	Ref	regr_precip	train	annual
+
+print('Printing df_metrics to csv')
 
 
-df_nse_kge.to_csv(
-    'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/NSEComponents_KGE.csv',
+df_metrics.to_csv(
+    'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/PerfMetrics_MeanAnnual.csv',
     index = False)
 # %%
 
@@ -541,21 +555,21 @@ df_summit = pd.read_pickle(
     'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/monthly/combined/All_SummaryResults_monthly.pkl')
 
 
-df_nse_kge = pd.read_csv(
+df_metrics = pd.read_csv(
     'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/NSEComponents_KGE.csv')
 
 
-df_nse_kge = df_nse_kge[df_nse_kge['time_scale'] == 'monthly']
+df_metrics = df_metrics[df_metrics['time_scale'] == 'monthly']
 
 df_summit.shape
-df_nse_kge.shape
+df_metrics.shape
 # %%
 # # ECDF of NSE and KGE
 
 # # define which metric to use (e.g., NSE, or KGE)
 # metr_in = 'NSE'
 
-# cdf = ECDF(df_nse_kge[metr_in])
+# cdf = ECDF(df_metrics[metr_in])
 
 # # define lower limit for x (NSE)
 # xlow = -1
@@ -581,4 +595,4 @@ df_nse_kge.shape
 
 # print(p)
 
-# print(f'median NSE: {np.median(df_nse_kge[metr_in])}')
+# print(f'median NSE: {np.median(df_metrics[metr_in])}')
