@@ -88,16 +88,16 @@ df_id = pd.read_csv(
 if 'df_metrics' in globals():
     del(df_metrics)
 
-for time_scale in time_scales[0:1]:
-    for clust_meth in clust_meths[0:1]:
+for time_scale in time_scales:
+    for clust_meth in clust_meths:
         if clust_meth == 'None':
             regions = ['All']
         else:
             regions = df_id[clust_meth].unique()
 
-        for model_work in model_works[0:1]:
-            for train_val in train_vals[0:1]:
-                for region in regions[0:1]:
+        for model_work in model_works:
+            for train_val in train_vals:
+                for region in regions:
 
                 
 
@@ -186,7 +186,7 @@ for time_scale in time_scales[0:1]:
                         # df_testinexpl.drop('STAID', axis = 1, inplace = True)
                         # df_testinWY = df_testinWY['Ann_WY_cm']
                         df_valnitexpl.drop('STAID', axis = 1, inplace = True)
-                        df_valnitnWY = df_valnitWY['Ann_WY_cm']
+                        df_valnitWY = df_valnitWY['Ann_WY_cm']
 
                     if(time_scale == 'annual'):
 
@@ -404,7 +404,7 @@ for time_scale in time_scales[0:1]:
 
 
                     # %% 
-                    # Plot
+                    # Calc metrics
                     #############
                 
                     if model_work == 'regr_precip':
@@ -507,8 +507,10 @@ for time_scale in time_scales[0:1]:
                     residuals = y_pred - df_WY_in
 
                     df_temp = pd.DataFrame({
+                        'STAID': STAID_in['STAID'],
                         'y_obs': df_WY_in,
-                        'y_'
+                        'y_pred': y_pred,
+                        'residuals': residuals
                     })
 
                     df_temp['clust_method'] = np.repeat(clust_meth, df_temp.shape[0])

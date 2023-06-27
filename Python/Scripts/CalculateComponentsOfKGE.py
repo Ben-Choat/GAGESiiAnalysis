@@ -187,7 +187,7 @@ for time_scale in time_scales:
                         # df_testinexpl.drop('STAID', axis = 1, inplace = True)
                         # df_testinWY = df_testinWY['Ann_WY_cm']
                         df_valnitexpl.drop('STAID', axis = 1, inplace = True)
-                        df_valnitnWY = df_valnitWY['Ann_WY_cm']
+                        df_valnitWY = df_valnitWY['Ann_WY_cm']
 
                     if(time_scale == 'annual'):
 
