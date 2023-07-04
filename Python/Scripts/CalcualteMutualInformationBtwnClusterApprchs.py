@@ -31,7 +31,7 @@ dir_figout = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
 
 
 # the heatmap figs should be written to file (True or False)?
-write_fig = True
+write_fig = False
 # if write_fig = True, then provide filenames for the output files
 file_trainout = f'{dir_figout}/AMI_train.png' 
 file_testout = f'{dir_figout}/AMI_valnit.png'
@@ -40,8 +40,8 @@ file_testout = f'{dir_figout}/AMI_valnit.png'
 cols_in = [
     'Class',
     'AggEcoregion', 
-    'ECO3_Site', 
-    'USDA_LRR_Site', 
+    # 'ECO3_Site', 
+    # 'USDA_LRR_Site', 
     'CAMELS', 
     'HLR', 
     'All_0', 'All_1', 'All_2',
