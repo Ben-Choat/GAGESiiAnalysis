@@ -98,9 +98,31 @@ All1_noise = df_all1_temp.loc[
 # %% Run loop to get all ranks and scores by clustering method
 ################################
 
-
+# delete output dfs, in case they are left over from a previous execution
 if 'df_rankSave' in globals():
-        del(df_rankSave, df_rankSavema)
+        del(df_rankSave)
+if 'df_rankSavema' in globals():
+        del(df_rankSavema)
+
+
+# create list to hold top 5 performing clustering approaches for each model
+# annual or monthly
+list_bestPerf = []
+# list to hold rankings results
+list_rankings = []
+# mean annual
+# create list to hold top 5 performing clustering approaches for each model
+list_bestPerfma = []
+# list to hold rankings results
+list_rankingsma = []
+
+
+# read in main dfs
+df_month_ann = pd.read_csv(f'{dir_work}/NSEComponents_KGE.csv',
+                            dtype = {'STAID': 'string'})
+
+df_ma = pd.read_csv(f'{dir_work}/PerfMetrics_MeanAnnual.csv',
+                            dtype = {'STAID': 'string'})
 
 # turn into for loop producing plots for each combo of variables above
 for trainval_in, timescale_in, model_in, metric_in, drop_noise in \
@@ -108,39 +130,19 @@ for trainval_in, timescale_in, model_in, metric_in, drop_noise in \
             metrics_in, drop_noises):
     print(trainval_in, timescale_in, model_in, metric_in, drop_noise)
 
-
-    # edit string to use in title to test if file already exsits
-    if trainval_in == 'train':
-        trainval_temp = 'train'
-    else:
-        trainval_temp = 'test'
-    if timescale_in in ['monthly', 'annual']:
-        metric_temp = metric_in
-    else:
-        metric_temp = 'Res'
-
-    # metric_temp = metric_in
-
-    # define file name for ranking performance based on current set of data
-    if drop_noise:
-        fig_name = f'{dir_figs}/Regionalization_{metric_temp}_{timescale_in}_DropNoise'\
-                    f'{trainval_temp}.png'
-    else:
-        fig_name = f'{dir_figs}/Regionalization_{metric_temp}_{timescale_in}_{trainval_temp}'\
-                            f'{metric_temp}.png' 
-    
-    # if file exists already, then continue to next combo
-    # if os.path.exists(fig_name):
-    #     continue
-
-
     # %% read in metrics to df
     #####################################
 
+    # calc quantile df
+    # quantiles to loop through
+    qntls = np.round(np.arange(0.05, 1.0, 0.05), 2)
 
-    if 'monthly' in time_scale or 'annual' in time_scale:
-        df_work = pd.read_csv(f'{dir_work}/NSEComponents_KGE.csv',
-                            dtype = {'STAID': 'string'})
+    if timescale_in in ['monthly', 'annual']:
+        if metric_in == 'Res':
+            continue
+        df_work = df_month_ann.copy()
+        # df_work = pd.read_csv(f'{dir_work}/NSEComponents_KGE.csv',
+        #                     dtype = {'STAID': 'string'})
         # edit region labels for those with labels in common
         df_work['region'] = df_work['clust_method'].str.cat(\
             df_work['region'].astype(str), sep = '_')
@@ -149,12 +151,79 @@ for trainval_in, timescale_in, model_in, metric_in, drop_noise in \
             df_work = df_work[~df_work['region'].str.contains('-1')]
 
         # drop all noise identified by All_1 and see how scores change
-        df_work = df_work[~df_work['STAID'].isin(All1_noise)]
+        # df_work = df_work[~df_work['STAID'].isin(All1_noise)]
+
+
+        # monthly and annual
+        df_qntl = pd.DataFrame()
+        for q in qntls:
+
+            temp_df = df_work.groupby(
+                        ['clust_method', 'model', 'train_val', 'time_scale']
+                    )[
+                        ['NSE', 'KGE', 'r', 'alpha', 'beta', 'PercBias', 'RMSE']
+                        ].quantile(q).reset_index()
+            
+            if q == qntls[0]:
+                df_qntl[['clust_method', 'model', 'train_val', 'time_scale']] = \
+                    temp_df[['clust_method', 'model', 'train_val', 'time_scale']]
+            df_qntl[
+                [f'NSE_Q{q}', f'KGE_Q{q}', f'r_Q{q}', f'beta_Q{q}', f'alpha_Q{q}']
+                ] = temp_df[['NSE', 'KGE', 'r', 'beta', 'alpha']]
+
+
+        # get means across all quantiles for each model, trainval and timescale row
+        df_PerfMean = df_qntl.iloc[:, 0:4]
+        df_PerfMean['meanKGE'] = df_qntl.loc[
+            :, df_qntl.columns.str.contains('KGE')
+            ].apply('mean', axis = 1)
+
+        df_PerfMean['meanNSE'] = df_qntl.loc[
+            :, df_qntl.columns.str.contains('NSE')
+            ].apply('mean', axis = 1)
+        
+
+        # annual or monthly
+
+        # create dataframe to add results, if not already exist
+        if not 'df_rankSave' in globals():
+            df_rankSave = pd.DataFrame(columns = df_PerfMean.columns)
+            # df_rankSavema = pd.DataFrame(columns = df_PerfMeanma.columns)
+
+        temp_df = df_PerfMean[(df_PerfMean['model'] == model_in) &\
+                        (df_PerfMean['train_val'] == trainval_in) &\
+                            (df_PerfMean['time_scale'] == timescale_in)].reset_index(
+                                drop = True
+                            )
+        
+        # get rankings
+        tempRnk_df = temp_df.copy()
+        tempRnk_df = tempRnk_df.reset_index(drop = True)
+        tempRnk_df['Rank'] = temp_df[f'mean{metric_in}'].rank(ascending = False)
+        # add noise column to df_rankSave
+        # print(drop_noise)
+        tempRnk_df['dropNoise'] = np.repeat(drop_noise, temp_df.shape[0])
+        # tempRnk_df[f'mean{metric_in}'] = temp_df[f'mean{metric_in}']
+        list_rankings.append(tempRnk_df)
+               
+        # get top 5 best performing groupings
+        tempOut_df = temp_df.sort_values(by = f'mean{metric_in}').tail(5)            
+        # print(temp_df)
+        list_bestPerf.append(tempOut_df)
+
+        # df_ranked = pd.concat(list_rankings)
+        # # compile all results
+        # df_rankSave = pd.concat([df_rankSave, df_ranked])
+        # df_bestPerf = pd.concat(list_bestPerf)
+
 
         
-    if 'mean_annual' in time_scale:
-        df_workma = pd.read_csv(f'{dir_work}/PerfMetrics_MeanAnnual.csv',
-                            dtype = {'STAID': 'string'})
+    elif 'mean_annual' == timescale_in:
+        if metric_in in ['NSE', 'KGE']:
+            continue
+        df_workma = df_month_ann.copy()
+        # df_workma = pd.read_csv(f'{dir_work}/PerfMetrics_MeanAnnual.csv',
+        #                     dtype = {'STAID': 'string'})
         # edit region labels for those with labels in common
         df_workma['region'] = df_workma['clust_method'].str.cat(\
             df_workma['region'].astype(str), sep = '_')
@@ -165,134 +234,78 @@ for trainval_in, timescale_in, model_in, metric_in, drop_noise in \
         # drop all noise identified by All_1 and see how scores change
         df_workma = df_workma[~df_workma['STAID'].isin(All1_noise)]
 
+
+        # mean annual
+        df_qntlma = pd.DataFrame()
+        df_workma['|residuals|'] = np.abs(df_workma['residuals'])
+        for q in qntls:
+
+            temp_df = df_workma.groupby(
+                        ['clust_method', 'model', 'train_val', 'time_scale']
+                    )[
+                        ['|residuals|']
+                        ].quantile(q).reset_index()
+            
+            if q == qntls[0]:
+                df_qntlma[['clust_method', 'model', 'train_val', 'time_scale']] = \
+                    temp_df[['clust_method', 'model', 'train_val', 'time_scale']]
+            df_qntlma[f'|residuals|_Q{q}'] = temp_df['|residuals|']
+
+
+        # get means across all quantiles for each model, trainval and timescale row
+        df_PerfMeanma = df_qntlma.iloc[:, 0:4]
+        df_PerfMeanma['meanRes'] = df_qntlma.loc[
+            :, df_qntlma.columns.str.contains('|residuals|')
+            ].apply('mean', axis = 1)
+        
+
+        # annual or monthly
+        # create dataframe to add results, if not already exist
+        if not 'df_rankSavema' in globals():
+            # df_rankSave = pd.DataFrame(columns = df_PerfMean.columns)
+            df_rankSavema = pd.DataFrame(columns = df_PerfMeanma.columns)
+
+        temp_df = df_PerfMeanma[(df_PerfMeanma['model'] == model_in) &\
+                    (df_PerfMeanma['train_val'] == trainval_in) &\
+                        (df_PerfMeanma['time_scale'] == timescale_in)].reset_index(
+                            drop = True
+                        )
+        
+        # get rankings
+        tempRnk_df = temp_df.copy()
+        tempRnk_df = tempRnk_df.reset_index(drop = True)
+        tempRnk_df['Rank'] = temp_df[f'mean{metric_in}'].rank(ascending = False)
+        # add noise column to df_rankSave
+        # print(drop_noise)
+        tempRnk_df['dropNoise'] = np.repeat(drop_noise, temp_df.shape[0])
+        # tempRnk_df[f'mean{metric_in}'] = temp_df[f'mean{metric_in}']
+        list_rankingsma.append(tempRnk_df)
+
+        # get top 5 best performing groupings
+        tempOut_df = temp_df.sort_values(by = f'mean{metric_in}').head(5)
+        # print(temp_df)
+        list_bestPerfma.append(tempOut_df)
+
+        # df_rankedma = pd.concat(list_rankingsma)
+        # # compile all results
+        # df_rankSavema = pd.concat([df_rankSavema, df_rankedma])
+        # df_bestPerfma = pd.concat(list_bestPerfma)
+        
+
+
     else:
         print('Incorrect time_scale provided. Should be monthly, annual, or mean_annual')
 
 
-    
+df_rankSave = pd.concat(list_rankings)
+# compile all results
+# df_rankSave = pd.concat([df_rankSave, df_ranked])
+df_bestPerf = pd.concat(list_bestPerf)
 
-
-
-
-
-
-
-    # %% get quantiles for all clust_methods
-    #####################################
-
-
-    # calc quantile df
-    # quantiles to loop through
-    qntls = np.round(np.arange(0.05, 1.0, 0.05), 2)
-
-       
-
-    # monthly and annual
-    df_qntl = pd.DataFrame()
-    for q in qntls:
-
-        temp_df = df_work.groupby(
-                    ['clust_method', 'model', 'train_val', 'time_scale']
-                )[
-                    ['NSE', 'KGE', 'r', 'alpha', 'beta', 'PercBias', 'RMSE']
-                    ].quantile(q).reset_index()
-        
-        if q == qntls[0]:
-            df_qntl[['clust_method', 'model', 'train_val', 'time_scale']] = \
-                temp_df[['clust_method', 'model', 'train_val', 'time_scale']]
-        df_qntl[
-            [f'NSE_Q{q}', f'KGE_Q{q}', f'r_Q{q}', f'beta_Q{q}', f'alpha_Q{q}']
-            ] = temp_df[['NSE', 'KGE', 'r', 'beta', 'alpha']]
-
-
-    # get means across all quantiles for each model, trainval and timescale row
-    df_PerfMean = df_qntl.iloc[:, 0:4]
-    df_PerfMean['meanKGE'] = df_qntl.loc[
-        :, df_qntl.columns.str.contains('KGE')
-        ].apply('mean', axis = 1)
-
-    df_PerfMean['meanNSE'] = df_qntl.loc[
-        :, df_qntl.columns.str.contains('NSE')
-        ].apply('mean', axis = 1)
-
-
-    # mean annual
-    df_qntlma = pd.DataFrame()
-    df_workma['|residuals|'] = np.abs(df_workma['residuals'])
-    for q in qntls:
-
-        temp_df = df_workma.groupby(
-                    ['clust_method', 'model', 'train_val', 'time_scale']
-                )[
-                    ['|residuals|']
-                    ].quantile(q).reset_index()
-        
-        if q == qntls[0]:
-            df_qntlma[['clust_method', 'model', 'train_val', 'time_scale']] = \
-                temp_df[['clust_method', 'model', 'train_val', 'time_scale']]
-        df_qntlma[f'|residuals|_Q{q}'] = temp_df['|residuals|']
-
-
-    # get means across all quantiles for each model, trainval and timescale row
-    df_PerfMeanma = df_qntlma.iloc[:, 0:4]
-    df_PerfMeanma['meanRes'] = df_qntlma.loc[
-        :, df_qntlma.columns.str.contains('|residuals|')
-        ].apply('mean', axis = 1)
-
-
-    # annual or monthly
-    # create list to hold top 5 performing clustering approaches for each model
-    list_bestPerf = []
-    # list to hold rankings results
-    list_rankings = []
-    # create dataframe to add results, if not already exist
-    if not 'df_rankSave' in globals():
-        df_rankSave = pd.DataFrame(columns = df_PerfMean.columns)
-        df_rankSavema = pd.DataFrame(columns = df_PerfMeanma.columns)
-
-    # get rankings
-    tempRnk_df = temp_df.copy()
-
-    if timescale_in in ['monthly', 'annual']:
-
-        temp_df = df_PerfMean[(df_PerfMean['model'] == model_in) &\
-                        (df_PerfMean['train_val'] == trainval_in) &\
-                            (df_PerfMean['time_scale'] == timescale_in)]
-        # get top 5 best performing groupings
-        tempOut_df = temp_df.sort_values(by = f'mean{metric_temp}').tail(5)
-        
-    else:
-        temp_df = df_PerfMeanma[(df_PerfMeanma['model'] == model_in) &\
-                            (df_PerfMeanma['train_val'] == trainval_in) &\
-                                (df_PerfMeanma['time_scale'] == timescale_in)]
-        
-        # get top 5 best performing groupings
-        tempOut_df = temp_df.sort_values(by = f'mean{metric_temp}').head(5)
-    
-    tempRnk_df['Rank'] = temp_df[f'mean{metric_temp}'].rank(ascending = False)
-    
-        
-    # add noise column to df_rankSave
-    # print(drop_noise)
-    tempRnk_df['dropNoise'] = np.repeat(drop_noise, tempRnk_df.shape[0])
-    # tempRnk_df[f'mean{metric_in}'] = temp_df[f'mean{metric_in}']
-    list_rankings.append(tempRnk_df)
-
-    
-    # print(temp_df)
-    list_bestPerf.append(tempOut_df)
-
-    if timescale_in in ['monthly', 'annual']:
-        df_ranked = pd.concat(list_rankings)
-        # compile all results
-        df_rankSave = pd.concat([df_rankSave, df_ranked])
-        df_bestPerf = pd.concat(list_bestPerf)
-    else:
-        df_rankedma = pd.concat(list_rankings)
-        # compile all results
-        df_rankSavema = pd.concat([df_rankSavema, df_rankedma])
-        df_bestPerfma = pd.concat(list_bestPerf)
-
+df_rankSavema = pd.concat(list_rankingsma)
+# compile all results
+# df_rankSavema = pd.concat([df_rankSavema, df_rankedma])
+df_bestPerfma = pd.concat(list_bestPerfma)
     
 if write_rankCSV:
     # write rank dfs to csvs
@@ -312,6 +325,25 @@ if write_rankCSV:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # %% Loop through combos of variables and make some plots
 # turn into for loop producing plots for each combo of variables above
 for trainval_in, timescale_in, model_in, metric_in, drop_noise in \
@@ -319,10 +351,35 @@ for trainval_in, timescale_in, model_in, metric_in, drop_noise in \
             metrics_in, drop_noises):
     print(trainval_in, timescale_in, model_in, metric_in, drop_noise)
 
+    # edit string to use in title to test if file already exsits
+    if trainval_in == 'train':
+        trainval_temp = 'train'
+    else:
+        trainval_temp = 'test'
+
     if timescale_in in ['monthly', 'annual']:
         metric_temp = metric_in
     else:
         metric_temp = 'residuals'
+
+    if timescale_in in ['monthly', 'annual']:
+        if metric_in == 'Res':
+            continue
+        metric_temp = metric_in
+    else:
+        if metric_in in ['NSE', 'KGE']:
+            continue
+        metric_temp = 'Res'
+
+    # metric_temp = metric_in
+
+    # define file name for ranking performance based on current set of data
+    if drop_noise:
+        fig_name = f'{dir_figs}/Regionalization_{metric_temp}_{timescale_in}_DropNoise'\
+                    f'{trainval_temp}.png'
+    else:
+        fig_name = f'{dir_figs}/Regionalization_{metric_temp}_{timescale_in}_{trainval_temp}'\
+                            f'{metric_temp}.png'
 
     # %% get heatmap presenting order of performance for various models and timescales
     #######################################################
