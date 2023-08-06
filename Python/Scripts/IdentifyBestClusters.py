@@ -93,22 +93,6 @@ dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/ModelPerformance'
 
 
 
-# %%
-# define function to calc weighted average of ranks
-###########################
-
-
-def wtd_avg(df, cols):
-    '''
-    inputs:
-        df: pandas dataframe
-        cols: names of columns in dataframe, for which to calulate
-            the weighted average - rowwise
-
-    outputs:
-        array of weighted averages with len = nrows(df)
-    '''
-
 
 
 # %%
