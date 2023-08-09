@@ -39,6 +39,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from itertools import product
 import string
 # import os
@@ -140,7 +141,7 @@ for trainval_in, timescale_in, metric_in,in \
     #######################################################
 
     # define file name for ranking performance based on current set of data
-    title_in = f'Rank of Regionalization Approach Based on {metric_temp} and '\
+    title_in = f'Rank of regionalization approach based on {metric_temp} and '\
                 f'{timescale_in} {trainval_temp}ing data'
 
     df_plotDrop = pd.DataFrame('', 
@@ -171,7 +172,10 @@ for trainval_in, timescale_in, metric_in,in \
     #     'darkblue', 'purple', 'blueviolet', 'orchid', 'deeppink'
     # ]
     # colors_in = 'Greys_r'
-    colors_in = 'pink'
+    if timescale_in == 'mean_annual':
+        colors_in = 'pink_r'
+    else:
+        colors_in = 'pink'
 
     # define order for y- and x-axes
     yaxis_order = [
@@ -276,10 +280,41 @@ for trainval_in, timescale_in, metric_in,in \
     df_annotDrop = df_annotDrop.astype(float).round(2).astype(str)
     df_annotWnoise = df_annotWnoise.astype(float).round(2).astype(str)
         
+    df_boxdrop = df_ranked[
+        (df_ranked['dropNoise'] == True) &
+        (df_ranked['train_val'] == trainval_in)].reset_index(drop = True)
+    
+    df_boxwith = df_ranked[
+        (df_ranked['dropNoise'] == False) &
+        (df_ranked['train_val'] == trainval_in)].reset_index(drop = True)
+    
+    df_boxdiff = pd.DataFrame({
+        'clust_method': df_boxdrop['clust_method'],
+        'model': df_boxdrop['model'],
+        'diff': df_boxdrop[f'{metric_in}_qmean'] - \
+                df_boxwith[f'{metric_in}_qmean']
+    })
+
     # plot heatmap
 
     # Plot the correlogram heatmap
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(9, 6), sharey = True)
+    # fig, axs = plt.subplots(2, 3, figsize=(9, 9), # , sharey = True,
+    #                     gridspec_kw={'height_ratios': [3, 1], 'width_ratios':[1, 1, 1]})
+    
+
+
+    # Create a 2x3 grid with different row heights
+    fig = plt.figure(figsize=(10, 9))
+    gs = GridSpec(2, 3, height_ratios=[3, 1])  # First row twice as tall as the second row
+
+    # Create subplots
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+    ax3 = fig.add_subplot(gs[0, 2], sharey=ax1)
+    ax4 = fig.add_subplot(gs[1, 0])
+    ax5 = fig.add_subplot(gs[1, 1], sharey=ax4)
+    ax6 = fig.add_subplot(gs[1, 2])
+    
     sns.heatmap(df_plotDrop.astype(int),
                 annot = df_annotDrop, # show ami value
                 fmt = 's', # '.02f', # '.2f'two decimal places
@@ -309,6 +344,25 @@ for trainval_in, timescale_in, metric_in,in \
                 annot_kws = {'fontsize': 9},
                 ax = ax3)
     
+    sns.boxplot(
+        x = df_boxdrop['model'],
+        y = df_boxdrop[f'{metric_in}_qmean'],
+        order = ['regr_precip', 'strd_mlr', 'strd_PCA_mlr', 'XGBoost'],
+        ax = ax4)
+    
+    sns.boxplot(
+        x = df_boxwith['model'],
+        y = df_boxwith[f'{metric_in}_qmean'],
+        order = ['regr_precip', 'strd_mlr', 'strd_PCA_mlr', 'XGBoost'],
+        ax = ax5)
+    
+    sns.boxplot(
+        x = df_boxdiff['model'],
+        y = df_boxdiff['diff'],
+        order = ['regr_precip', 'strd_mlr', 'strd_PCA_mlr', 'XGBoost'],
+        ax = ax6)
+
+   
 
     # cbar tick locations
     # cbar_tickloc = map(str, list(np.arange(0.5, 15.5, 1)))
@@ -316,34 +370,66 @@ for trainval_in, timescale_in, metric_in,in \
     # # make cbar labels larger
     cbar = ax3.collections[0].colorbar
     cbar.set_label('Within-Model Rank')
-    # cbar = plt.colorbar(ticks = range(15))
-    # # cbar.set_ticks(15)
-    # plt.clim(-0.5, 15)
-    # cbar.set_ticklabels(list(range(0, 15)))
-    # cbar.ax.tick_params(labelsize = 10)
-    # # cbar.ax.set_yticklabels(range(1, 16))
-    # cbar.set_label('Rank', fontsize = 10)
+
 
     # add titles to individual plots
-    ax1.set_title('Noise Dropped', fontsize = 10)
-    ax2.set_title('With Noise', fontsize = 10)
-    ax3.set_title('Noise Dropped-With Noise', fontsize = 10)
+    ax1.set_title('W/O Noise', fontsize = 10)
+    ax2.set_title('W Noise', fontsize = 10)
+    ax3.set_title('W/O Noise - W Noise', fontsize = 10)
+    ax5.set_title(
+        'Range of performance metrics across all clustering methods',
+        loc = 'right'
+        )
+    ax6.set_title('Range of gains with noise removed')
+
+    ax1.set_ylabel('Clustering Method')
+    ax5.set_ylabel('')
+    ax6.set_ylabel('W/O Noise - W Noise')
 
 
     # rotate x tick labels
-    for ax in (ax1, ax2, ax3):
+    for ax in (ax1, ax2, ax3,): 
+        ax.set_xticklabels(
+            labels = '',
+            rotation = 45,
+            ha = 'right',
+            rotation_mode = 'anchor'
+        )
+        
+    for ax in (ax4, ax5, ax6): #ax1, ax2, ax3,
         ax.set_xticklabels(
             labels = xaxis_order,
             rotation = 45,
             ha = 'right',
             rotation_mode = 'anchor'
         )
+
+
+    labels = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)']
+    for i, ax in enumerate([ax1, ax2, ax3, ax4, ax5, ax6]):
+        if i < 3:
+            xloc = -0.01
+            yloc = 1.0
+        else:
+            xloc = 0.11
+            yloc = 0.90
+        ax.text(
+            xloc, yloc, 
+            labels[i], 
+            ha='right', 
+            va='bottom', 
+            transform = ax.transAxes
+            )
+
     # ax.tick_params(axis = 'x', rotation = 45)
     # make tick labels larger
     plt.xticks(fontsize = 10)
     plt.yticks(fontsize = 10)
  
     plt.suptitle(title_in, fontsize = 12)
+
+    # Adjust layout
+    plt.tight_layout()
 
 
 
@@ -352,6 +438,7 @@ for trainval_in, timescale_in, metric_in,in \
                     bbox_inches = 'tight',
                     dpi = 300)
     else:
+        
         plt.show()
 
     # plt.close()
