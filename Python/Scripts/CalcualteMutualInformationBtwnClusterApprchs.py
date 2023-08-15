@@ -2,7 +2,7 @@
 
 2023/06/22 BChoat
 
-Calcualte adjusted mutual information between groups of clusters results
+Calcualte adjusted mutual information between groups of cluster results
 from each clustering group.
 
 '''
