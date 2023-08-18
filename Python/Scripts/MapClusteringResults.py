@@ -86,14 +86,18 @@ geo_df_valnit = geo_df_valnit.merge(df_IDvalnit, on = 'STAID')
 # %% Input vars for plotting
 ################################
 
+# save figure with maps w/cluster results (True or False)
+save_maps  = True
+
 # 'training' or 'valint' data?
-# part_in = 'training'
 part_in = 'valnit'
+# part_in = 'valnit'
 
 alpha_in = 1
 marker_in = 'o' 
+# markers_in = ['d', 'o', '+']
 # ',' # 'x'
-msize_in = 2 # markersize
+msize_in = 1.5 # markersize
 cmap_str = 'tab20b'
 
 
@@ -104,6 +108,7 @@ clust_meths_in =  [
        'Anth_0', 'Anth_1'
        ]
 
+# clust_meths_in = ['Nat_3']
 
 # %% Calculate AMI for plotting
 ###################################
@@ -138,7 +143,7 @@ df_ami = df_ami.astype(float)
 
 # define base axes as state boundaries
 # fig, (ax1, ax2) = plt.subplots(2, 1, figsize = (3, 3), sharex = True)
-fig, axs = plt.subplots(5, 3, figsize = (10, 11)) # ,
+fig, axs = plt.subplots(5, 3, figsize = (10, 10)) # ,
                         # gridspec_kw = {'height_ratios': ht_ratios, 
                         #                'width_ratios': wd_ratios}) # , 
                                 # sharex = True, sharey = True)
@@ -150,6 +155,7 @@ fig, axs = plt.subplots(5, 3, figsize = (10, 11)) # ,
 axes = axs.flatten()
 
 for i, ax1 in enumerate(axes): # in range(15):
+
     # ax1 = axes[i]
     if i != 14:
         row, col = divmod(i, 3)
@@ -165,16 +171,32 @@ for i, ax1 in enumerate(axes): # in range(15):
         if clust_meth in ['All_0', 'All_1', 'All_2', 
                         'Nat_0','Nat_1', 'Nat_2', 'Nat_3', 'Nat_4',
                         'Anth_0', 'Anth_1']:   
-            add_colors = ['black', 'orange', 'cyan', 'peru', 'magenta',  'aquamarine', 
-                        'blueviolet', 'lime']
+            # add_colors = ['black', 'gray', 'cyan', 'blue', 'magenta',  'dodgerblue', 
+            #             'orangered', 'lime']
+            cmap_in = ['black', 'orange', 'blue', 'purple', 'brown', 
+            'gray', 'dodgerblue',  'lightcoral', 'darkkhaki', 'lime', 'cyan', 
+            'red', 'slateblue', 'pink', 'indigo', 'maroon', 'chocolate', 'teal',
+            'yellowgreen', 'silver', 'yellow', 'darkgoldenrod', 'deeppink',
+            'lightgreen', 'peru', 'crimson', 'saddlebrown', 'green']
+            #'orange',
         else:
-            add_colors = ['orange', 'cyan', 'peru', 
-                        'magenta', 'aquamarine', 'blueviolet', 'lime']
-        add_rgb = [mcolors.to_rgb(col) for col in add_colors]
-        all_colors = add_rgb + list(cm_org.colors)
-        all_colors = all_colors[0:Nclust]
-        cm_cust = mcolors.ListedColormap(all_colors)
-        cmap_in = cm_cust
+            # add_colors = ['orange', 'cyan', 'peru', 
+            #             'magenta', 'aquamarine', 'blueviolet', 'lime']
+            cmap_in = ['orange', 'blue', 'purple', 'brown', 
+            'gray', 'dodgerblue',  'lightcoral', 'darkkhaki', 'lime', 'cyan', 
+            'red', 'slateblue', 'pink', 'indigo', 'maroon', 'chocolate', 'teal',
+            'yellowgreen', 'silver', 'yellow', 'darkgoldenrod', 'deeppink',
+            'lightgreen', 'peru', 'crimson', 'saddlebrown', 'green']
+            
+            
+        
+        # add_rgb = [mcolors.to_rgb(col) for col in add_colors]
+        # all_colors = add_rgb + list(cm_org.colors)
+        # all_colors = all_colors[0:Nclust]
+        # cm_cust = mcolors.ListedColormap(all_colors)        
+        # cmap_in = cm_cust
+        cmap_in = cmap_in[0:Nclust]
+        cmap_in = mcolors.ListedColormap(cmap_in)
 
         # define title for each subplot
         sp_title = f'{clust_meth} ({Nclust} clusters)'
@@ -182,8 +204,8 @@ for i, ax1 in enumerate(axes): # in range(15):
         states.boundary.plot(
             ax = ax1,
             # figsize = (12, 9), 
-            color = 'Gray',
-            linewidth = 1,
+            color = 'black',
+            linewidth = 0.2,
             zorder = 0
         )
     
@@ -210,6 +232,7 @@ for i, ax1 in enumerate(axes): # in range(15):
             spine.set_visible(False)
 
     else:
+        # if heatmap
         mask = np.tri(*df_ami.shape, k = -1).T
 
         # Plot the correlogram heatmap
@@ -238,10 +261,15 @@ for i, ax1 in enumerate(axes): # in range(15):
 
         hm.set_yticklabels(
             labels = clust_meths_in,
-            rotation = 35,
+            rotation = 30,
             ha = 'right',
             rotation_mode = 'anchor'
         )
+
+        # adjust size
+        ax1.set_box_aspect(17/20)
+        # hm_pos = ax1.get_position()
+        # ax1.set_position([hm_pos.x0, hm_pos.y0, hm_pos.width * 0.5, hm_pos.height * 0.5])
 
         # make cbar labels larger
         cbar = hm.collections[0].colorbar
@@ -249,10 +277,9 @@ for i, ax1 in enumerate(axes): # in range(15):
         cbar.set_label('Adjusted Mutual Information', fontsize = 7)
 
 
-        # make tick labels larger
+        # edti tick label size
         plt.xticks(fontsize = 7)
         plt.yticks(fontsize = 7)
-        
 
         plt.title('Similarity Between All Approaches' , fontsize = 8)
                         
@@ -265,11 +292,15 @@ for i, ax1 in enumerate(axes): # in range(15):
                  y = 0.9)
 
 # adjust white space
-plt.subplots_adjust(wspace = 0.25, hspace = 0.0)
+plt.subplots_adjust(wspace = 0.17, hspace = 0.0)
 
 # fig.tight_layout()
-
-plt.show()
+if save_maps:
+    plt.savefig(f'{dir_figs}/Map_ClusterResults_{part_in}.png', 
+        dpi = 300, bbox_inches = 'tight'
+                )
+else:
+    plt.show()
 
 
 
@@ -283,34 +314,34 @@ plt.show()
 ###################
 
 # get number of clusters
-Nclust  = len(geo_df_train['HLR'].unique())
+# Nclust  = len(geo_df_train['HLR'].unique())
 
-# define colormap
-cm_org = plt.get_cmap(cmap_str)
+# # define colormap
+# cm_org = plt.get_cmap(cmap_str)
 
-add_colors = ['black', 'sandybrown', 'cyan', 'peru', 'hotpink',  'aquamarine', 
-                'blueviolet', 'lime']
+# add_colors = ['black', 'sandybrown', 'cyan', 'peru', 'hotpink',  'aquamarine', 
+#                 'blueviolet', 'lime']
 
-add_rgb = [mcolors.to_rgb(col) for col in add_colors]
-all_colors = add_rgb + list(cm_org.colors)
-all_colors = all_colors[0:Nclust]
-cm_cust = mcolors.ListedColormap(all_colors)
-cmap_in = cm_cust
-
-
-# HLC dir
-dir_hl = 'D:/DataWorking/hlrshape/hlrshape'
-
-hl_shp = gpd.read_file(
-    f'{dir_hl}/hlrus.shp'
-)
-
-hl_shp['HLR'] = hl_shp['HLR'].astype(str)
+# add_rgb = [mcolors.to_rgb(col) for col in add_colors]
+# all_colors = add_rgb + list(cm_org.colors)
+# all_colors = all_colors[0:Nclust]
+# cm_cust = mcolors.ListedColormap(all_colors)
+# cmap_in = cm_cust
 
 
-ax = hl_shp.plot(column = 'HLR', cmap = cmap_in)
-ax.set_xlim(-2.1e6, 2.7e6)
-ax.set_ylim(-2.2e6, 1e6)
+# # HLC dir
+# dir_hl = 'D:/DataWorking/hlrshape/hlrshape'
+
+# hl_shp = gpd.read_file(
+#     f'{dir_hl}/hlrus.shp'
+# )
+
+# hl_shp['HLR'] = hl_shp['HLR'].astype(str)
+
+
+# ax = hl_shp.plot(column = 'HLR', cmap = cmap_in)
+# ax.set_xlim(-2.1e6, 2.7e6)
+# ax.set_ylim(-2.2e6, 1e6)
 
 # %%
 
