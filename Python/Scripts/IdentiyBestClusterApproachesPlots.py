@@ -76,9 +76,9 @@ ecdf_metrin = 'KGE'
 
 
 # should heat map of performance metrics and rank be saved?
-write_hmfig = True
+write_hmfig = False
 # should ecdfs be svaed?
-write_ecdf = True
+write_ecdf = False
 
 
 
@@ -133,7 +133,7 @@ for trainval_in, timescale_in, metric_in,in \
         metric_temp = 'residuals'
 
     # define file name for ranking performance based on current set of data
-    fig_name = f'{dir_figs}/Regionalization_{metric_temp}_{timescale_in}'\
+    fig_name = f'{dir_figs}/Rank_HeatMap/Regionalization_{metric_temp}_{timescale_in}'\
                 f'{trainval_temp}.png'
 
 
@@ -176,6 +176,7 @@ for trainval_in, timescale_in, metric_in,in \
         colors_in = 'pink_r'
     else:
         colors_in = 'pink'
+    colors_in2 = 'pink'
 
     # define order for y- and x-axes
     yaxis_order = [
@@ -338,7 +339,7 @@ for trainval_in, timescale_in, metric_in,in \
     sns.heatmap(df_diff.astype(int),
                 annot = df_annotdiff, # show ami value
                 fmt = 's',#'.2f'two decimal places
-                cmap = colors_in,
+                cmap = colors_in2,
                 vmin = 1,
                 vmax = 15,
                 annot_kws = {'fontsize': 9},

@@ -87,12 +87,63 @@ for cl in clust_meth:
 
 
 for timescale in time_scale:
+    timescale = 'monthly'
+
+    print(timescale)
 
     # load results file to get best model
     # read in results for the time_scale being worked with
     results_summAll = pd.read_pickle(
         f'{dir_work}/data_out/{timescale}/combined/All_SummaryResults_{timescale}.pkl'
     )
+
+    # ind_results = pd.read_pickle(
+    #     f'{dir_work}/data_out/{timescale}/combined/All_IndResults_{timescale}.pkl'
+    # )
+    # ind_results = ind_results[ind_results['train_val'] == 'valnit']
+        
+    # mean annual
+    if timescale ==  'mean_annual':
+        ind_results = pd.read_csv(
+            'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/PerfMetrics_MeanAnnual.csv',
+            dtype = {'STAID': 'string'}
+        )
+        ind_results['abs(residuals)'] = ind_results.residuals.abs()
+        ind_results = ind_results[ind_results['model'] == 'regr_precip']
+
+        max_temp = ind_results.groupby('STAID')['abs(residuals)'].min().reset_index()
+
+        ind_max = pd.merge(
+            max_temp, ind_results, 
+            on = ['STAID', 'abs(residuals)'], how = 'left'
+        )
+
+    else:
+        ind_results = pd.read_csv(
+            'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/NSEComponents_KGE.csv',
+            dtype = {'STAID': 'string'}
+        )
+
+        ind_results = ind_results[ind_results['train_val'] == 'valnit']
+        ind_results = ind_results[ind_results['model'] == 'regr_precip']
+
+        metric_in = 'KGE'
+        max_temp = ind_results.groupby('STAID')[metric_in].max().reset_index()
+
+        ind_max = pd.merge(
+            max_temp, ind_results, 
+            on = ['STAID', metric_in], how = 'left'
+        )
+
+    print(ind_max.groupby('clust_method').count()['STAID'])
+    ind_max['clust_method'].hist(xrot = 45)
+    print(ind_max.groupby('model')['STAID'].count())
+    ind_max['model'].hist()
+   
+
+ 
+
+    ind_results.sort_values(by = 'abs(residuals)')
 
     # load data to get colnames for output dataframe (all expl vars)
     df_expl, df_WY, df_ID = load_data_fun(

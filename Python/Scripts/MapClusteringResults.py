@@ -32,6 +32,11 @@ from sklearn.metrics import adjusted_mutual_info_score
 # read in data
 ##################
 
+# save figure with maps w/cluster results (True or False)
+save_maps  = False
+# save barplot of noise counts?
+save_NoiseCount = True
+
 # spatial file of us
 states = gpd.read_file(
     'D:/DataWorking/cb_2018_us_state_20m/cb_2018_us_state_20m.shp'
@@ -86,8 +91,6 @@ geo_df_valnit = geo_df_valnit.merge(df_IDvalnit, on = 'STAID')
 # %% Input vars for plotting
 ################################
 
-# save figure with maps w/cluster results (True or False)
-save_maps  = True
 
 # 'training' or 'valint' data?
 part_in = 'valnit'
@@ -307,7 +310,84 @@ else:
 
 
 
+# %% make barplot showing how many catchments identified as noise under each approach
+########################
 
+colsIn = ['All_0', 'All_1', 'All_2', 
+                        'Nat_0','Nat_1', 'Nat_2', 'Nat_3', 'Nat_4',
+                        'Anth_0', 'Anth_1']
+
+
+# got count of training catchments
+trainCount = df_IDtrain.shape[0]
+valnitCount = df_IDvalnit.shape[0]
+
+df_trainWrk = df_IDtrain[colsIn]
+trainWrk = df_trainWrk.applymap(lambda x: x == '-1').sum()
+
+df_trainWrk = pd.DataFrame({
+    'train_val': 'training',
+    'Count': trainWrk,
+    'Percent': trainWrk/trainCount*100
+})
+
+df_valnitWrk = df_IDvalnit[colsIn]
+valnitWrk = df_valnitWrk.applymap(lambda x: x == '-1').sum()
+
+df_valnitWrk = pd.DataFrame({
+    'train_val': 'testing',
+    'Count': valnitWrk,
+    'Percent': valnitWrk/valnitCount*100
+})
+
+df_work  = pd.concat([df_trainWrk, df_valnitWrk])
+df_work = df_work.reset_index()
+df_work.rename(columns = {'index': 'Method'}, inplace = True)
+
+
+fig = plt.figure(figsize = (6, 4))
+ax1 = plt.subplot(121)
+# ax2 = ax1.twinx(
+ax2 = plt.subplot(122)
+
+sns.barplot(
+    y = df_work['Method'],
+    x = df_work['Count'],
+    hue = df_work['train_val'],
+    orient = 'h',
+    ax = ax1
+)
+
+sns.barplot(
+    y = df_work['Method'],
+    x = df_work['Percent'],
+    hue = df_work['train_val'],
+    orient = 'h',
+    ax = ax2
+)
+
+# plt.xlabel('Clustering Method')
+ax1.set_ylabel('Clustering Method')
+ax1.set_xlabel('Count')
+ax1.legend().set_visible(False)
+ax1.xaxis.grid(True)
+ax1.legend(title = '', loc = 'best')
+ax2.set_xlabel('Percent (%)')
+ax2.legend().set_visible(False)
+ax2.set_yticklabels('')
+ax2.set_ylabel('')
+ax2.xaxis.grid(True)
+plt.suptitle('Catchments Identified as Noise')
+
+# adjust white space
+plt.subplots_adjust(wspace = 0.0, hspace = 0.0)
+
+if save_NoiseCount:
+    plt.savefig(f'{dir_figs}/NoiseCounts_Barplot.png', 
+        dpi = 300, bbox_inches = 'tight'
+                )
+else:
+    plt.show()
 
 
 # %% plot original HLR data
