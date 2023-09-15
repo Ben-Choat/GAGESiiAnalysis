@@ -16,6 +16,7 @@ model combos (RPMs) based on:
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import seaborn as sns
 import numpy as np
 from itertools import product
@@ -92,6 +93,8 @@ init_model = models_in[0]
 init_part = parts_in[0]
 init_metr = metrics_in[0]
 
+
+
 for part_in, metric_in in product(parts_in, metrics_in):
 
 
@@ -111,11 +114,11 @@ for part_in, metric_in in product(parts_in, metrics_in):
 
     df_work = pd.concat([df_work, ma_work], axis = 0)
 
-    fig, axs = plt.subplots(3, 3, sharex = True, sharey = True)
+    fig, axs = plt.subplots(3, 3, sharex = True, sharey = True, figsize = (8, 8))
     for i, ax in enumerate(axs.flatten()):
     # for timescale, model_in in \
         # product(timescales, models_in): # parts_in,
-        print(f'\n\n{timescale, metric_in, part_in}\n\n')
+        
         # print(i)
         if i in range(0, 3):
             timescale = 'mean_annual'
@@ -124,6 +127,8 @@ for part_in, metric_in in product(parts_in, metrics_in):
         else:
             timescale = 'monthly'
 
+        print(f'\n\n{timescale, metric_in, part_in}\n\n')
+
         if i in [0, 3, 6]:
             model_in = 'regr_precip'
         elif i in [1, 4, 7]:
@@ -131,29 +136,28 @@ for part_in, metric_in in product(parts_in, metrics_in):
         else:
             model_in = 'XGBoost'
 
-        if i in [6, 7, 8]:
-            xlabel = 'Cluster Method'
+        if i in [7]: # [6, 7, 8]:
+            xlabel = 'Regionalization Scheme'
         else:
             xlabel = ''
         
         if i == 0:
             title_in = 'SLR'
-            ylabel = 'mean annual\ncount'
+            ylabel = 'mean annual count'
         elif i == 1:
             title_in = 'MLR'
             ylabel = ''
         elif i == 2:
             title_in = 'XGBoost'
         elif i == 3:
-            ylabel = 'annual\ncount'
+            ylabel = 'annual count'
             title_in = ''
         elif i == 6:
-            ylabel = 'monthly\ncount'
+            ylabel = 'monthly count'
         else:
             title_in = ''
             ylabel = ''
         
-
         print(f'\n\n\n {timescale}, {part_in}, {metric_in}, {model_in}\n\n\n') #
 
         if timescale ==  'mean_annual':
@@ -211,8 +215,9 @@ for part_in, metric_in in product(parts_in, metrics_in):
             hue_order = hue_order,
             ax = ax
             )
+        sns.set_style('whitegrid')
         g.set_xticklabels(order_in, 
-                        rotation = 45, 
+                        rotation = 60, 
                         ha = 'right', 
                         rotation_mode = 'anchor',
                         fontsize = 8
@@ -228,6 +233,7 @@ for part_in, metric_in in product(parts_in, metrics_in):
             xlabel = xlabel,
             ylabel = ylabel
         )
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(100))
         # if 'train' in part_in:
         #     g.set_ylim([0, 750])
         # else:
@@ -236,9 +242,10 @@ for part_in, metric_in in product(parts_in, metrics_in):
         # legend = ax.legend(title = 'Cluster Method', loc = 'upper right', ncol = 3, frameon = True)
         # legend.get_frame().set_alpha(0.5)
 
-        plt.suptitle(
-            f'{part_in}: {metric_in}'
-        )
+
+    plt.suptitle(
+        f'{part_in}: {metric_in}'
+    )
 
     if write_figs:
         plt.savefig(
@@ -284,3 +291,175 @@ for part_in, metric_in in product(parts_in, metrics_in):
 # %%
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+for part_in, metric_in in product(parts_in, metrics_in):
+
+
+    init_part = part_in
+
+    df_work = annmy_results[
+        (annmy_results['train_val'].isin(part_in))
+    ]
+    df_work = df_work[[
+        'STAID', metric_in, 'clust_method', 'region',\
+        'model', 'time_scale'
+    ]]
+
+    ma_work = ma_results.rename({'abs(residuals)': metric_in}, axis = 1)
+    ma_work = ma_work['train_val'].isin(part_in)
+    ma_work = ma_work.drop(columns = 'train_val')
+
+    df_work = pd.concat([df_work, ma_work], axis = 0)
+
+    fig, axs = plt.subplots(3, 3, sharex = True, sharey = True, figsize = (8, 8))
+    for i, ax in enumerate(axs.flatten()):
+    # for timescale, model_in in \
+        # product(timescales, models_in): # parts_in,
+        
+        # print(i)
+        if i in range(0, 3):
+            timescale = 'mean_annual'
+        elif i in range(3, 6):
+            timescale = 'annual'
+        else:
+            timescale = 'monthly'
+
+        print(f'\n\n{timescale, metric_in, part_in}\n\n')
+
+        if i in [0, 3, 6]:
+            model_in = 'regr_precip'
+        elif i in [1, 4, 7]:
+            model_in = 'strd_mlr'
+        else:
+            model_in = 'XGBoost'
+
+        if i in [7]: # [6, 7, 8]:
+            xlabel = 'Regionalization Scheme'
+        else:
+            xlabel = ''
+        
+        if i == 0:
+            title_in = 'SLR'
+            ylabel = 'mean annual count'
+        elif i == 1:
+            title_in = 'MLR'
+            ylabel = ''
+        elif i == 2:
+            title_in = 'XGBoost'
+        elif i == 3:
+            ylabel = 'annual count'
+            title_in = ''
+        elif i == 6:
+            ylabel = 'monthly count'
+        else:
+            title_in = ''
+            ylabel = ''
+        
+        print(f'\n\n\n {timescale}, {part_in}, {metric_in}, {model_in}\n\n\n') #
+
+        if timescale ==  'mean_annual':
+            metric_temp = '|residuals|'
+
+            df_plot = df_work[df_work['model'] == model_in]
+            # df_plot = df_work[df_work['train_val'].isin(part_in)]
+
+            max_temp = df_plot.groupby('STAID')[metric_in].min().reset_index()
+
+            ind_max = pd.merge(
+                max_temp, df_plot, 
+                on = ['STAID', metric_in], how = 'left'
+            )
+
+        elif timescale != 'mean_annual':
+            metric_temp = metric_in
+
+            df_plot = df_work[df_work['time_scale'] == timescale]
+            # df_plot = df_plot[df_plot['train_val'].isin(part_in)]
+            df_plot = df_plot[df_plot['model'] == model_in]
+
+            max_temp = df_plot.groupby('STAID')[metric_in].max().reset_index()
+
+            ind_max = pd.merge(
+                max_temp, df_plot, 
+                on = ['STAID', metric_in], how = 'left'
+            )
+        
+        else:
+            continue
+
+        # print(ind_max.groupby('clust_method').count()['STAID'])
+
+        # # count plots
+
+        # define some inputs for plots
+        models_name = '_'.join(str(j) for j in model_in)
+        parts_name = '_'.join(str(j) for j in part_in)
+        if part_in == ['train']:
+            part_name = 'training data'
+        elif part_in == ['valnit']:
+            part_name = 'testing data'
+        elif part_in == ['train', 'valnit']:
+            part_name = 'all data'
+
+        # clust_method counts
+        # xlabels = ind_max['clust_method'].value_counts().index.values
+        hue_order  = ind_max['model'].value_counts().index.values
+        g = sns.countplot(
+            data = ind_max.sort_values(by = 'clust_method'), 
+            x = 'clust_method', 
+            # hue = 'model',
+            order = order_in,
+            hue_order = hue_order,
+            ax = ax
+            )
+        sns.set_style('whitegrid')
+        g.set_xticklabels(order_in, 
+                        rotation = 60, 
+                        ha = 'right', 
+                        rotation_mode = 'anchor',
+                        fontsize = 8
+                        )
+        # ax.set_title(
+        #     f'Number of {timescale} models performing best\nbased on {metric_temp} & {part_name}'
+        #     )
+        g.set(
+            title = title_in,
+            # title = \
+            #     f'{model_in[0]}: Number of {timescale} models performing best\n'\
+            #         f'based on {metric_temp} & {part_name}',
+            xlabel = xlabel,
+            ylabel = ylabel
+        )
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(100))
+        # if 'train' in part_in:
+        #     g.set_ylim([0, 750])
+        # else:
+        #     g.set_ylim([0, 350])
+        plt.legend([],[], frameon = False)
+        # legend = ax.legend(title = 'Cluster Method', loc = 'upper right', ncol = 3, frameon = True)
+        # legend.get_frame().set_alpha(0.5)
+
+
+    plt.suptitle(
+        f'{part_in}: {metric_in}'
+    )
+
+    if write_figs:
+        plt.savefig(
+            f'{dir_figs}/NumbCatchBestPredicted_{metric_in}_{timescale}_{parts_name}_{models_name}.csv',
+            dpi = 300,
+            bbox_inches = 'tight')
+    else:
+        plt.show()
