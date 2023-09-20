@@ -30,9 +30,7 @@ from itertools import product
 ##################
 
 # save figure with maps w/cluster results (True or False)
-save_maps  = False
-# save barplot of noise counts?
-save_NoiseCount = False
+save_maps  = True
 
 # spatial file of us
 states = gpd.read_file(
@@ -62,20 +60,22 @@ dir_in = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results'
 # mean annual
 df_mnan_results = pd.read_csv(
                 f'{dir_in}/PerfMetrics_MeanAnnual.csv',
-                dtype = {'STAID': 'string'}
+                dtype = {'STAID': 'string',
+                         'region': 'string'}
             )
 
-df_mnan_results['abs(residuals)'] = df_mnan_results.residuals.abs()
+# df_mnan_results['residuals'] = df_mnan_results.residuals.abs()
 
 df_mnan_results = df_mnan_results[[
-                'STAID', 'abs(residuals)', 'clust_method', 'region',\
+                'STAID', 'residuals', 'clust_method', 'region',\
                             'model', 'time_scale', 'train_val'
             ]]
 
 # annual, montly
 df_anm_results = pd.read_csv(
                 f'{dir_in}/NSEComponents_KGE.csv',
-                dtype = {'STAID': 'string'}
+                dtype = {'STAID': 'string',
+                         'region': 'string'}
             )
 
 
@@ -124,7 +124,7 @@ timescales = ['mean_annual', 'annual', 'monthly']
 # as list
 models_in = ['XGBoost', 'regr_precip', 'strd_mlr'] # ['regr_precip', 'strd_mlr', 'XGBoost]
 
-metrics_in = ['KGE', 'NSE', '(abs)_residuals']
+metrics_in = ['residuals', 'KGE', 'NSE']
 
 remove_noises = [True, False]
 
@@ -133,7 +133,7 @@ marker_in = 'o'
 # markers_in = ['d', 'o', '+']
 # ',' # 'x'
 msize_in = 1.5 # markersize
-cmap_str = 'bwr_r' # 'cool' # 'gist_heat' # 'hsv' # 'plasma' #  # 
+cmap_str = 'Spectral' # 'RdYlBu' #'terrain' 'viridis' #  # 'bwr_r' # 'cool' # 'gist_heat' # 'hsv' # 'plasma' #  # 
 
 
 clust_meths_in =  [
@@ -152,9 +152,11 @@ clust_meths_in =  [
 for part_in, timescale, model_in, remove_noise, metric_in in \
     product(parts_in, timescales, models_in, remove_noises, metrics_in):
 
-    if (timescale == 'mean_annual') & (metric_in != '|residuals|'):
+    print(part_in, timescale, model_in, remove_noise, metric_in)
+
+    if (timescale == 'mean_annual') & (metric_in != 'residuals'):
         continue
-    if (timescale != 'mean_annual') & (metric_in == '|residuals|'):
+    if (timescale != 'mean_annual') & (metric_in == 'residuals'):
         continue
         
 
@@ -170,19 +172,29 @@ for part_in, timescale, model_in, remove_noise, metric_in in \
     if timescale == 'mean_annual':
         df_temp = df_mnan_results.loc[
             (df_mnan_results['train_val'] == part_in) &\
-                (df_mnan_results['model'].isin(models_in)), ['STAID', metric_in]
+                (df_mnan_results['model'] == model_in), 
+                ['STAID', metric_in, 'clust_method', 'region']
             ]
-        metric_in = '|residuals|'
+        
+        vmin_in = -7.5
+        vmax_in = 7.5
+        ticks_in = np.arange(vmin_in, vmax_in, 1)
+        # metric_in = 'residuals'
     else:
         df_temp = df_anm_results.loc[
             (df_anm_results['train_val'] == part_in) &\
-                (df_anm_results['model'].isin(models_in)) &\
-                (df_anm_results['time_scale'] == timescale)
+                (df_anm_results['model'] == model_in) &\
+                (df_anm_results['time_scale'] == timescale), 
+                ['STAID', metric_in, 'clust_method', 'region']
         ]
 
+        vmin_in = -1
+        vmax_in = 1
+        ticks_in = np.arange(vmin_in, vmax_in, 0.25)
 
 
-    geo_df_in = pd.merge(geo_df_in, df_temp, 
+
+    geo_df_in = pd.merge(geo_df_in[['STAID', 'LAT_GAGE', 'LNG_GAGE', 'geometry']], df_temp, 
                             on = ['STAID'])
 
     if remove_noise:
@@ -194,7 +206,6 @@ for part_in, timescale, model_in, remove_noise, metric_in in \
 
     for i, ax1 in enumerate(axes):
 
-
         row, col = divmod(i, 3)
         ax1.sharex(axes[col])
         ax1.sharey(axes[row])
@@ -205,12 +216,30 @@ for part_in, timescale, model_in, remove_noise, metric_in in \
 
             # get number of clusters
             Nclust  = len(geo_df_train[clust_meth].unique())
+            # get median of per metric for reporting
+            q50 = geo_df_plot[metric_in].median().round(4)
             # define title for each subplot
-            sp_title = f'{clust_meth} ({Nclust} clusters)'
+            sp_title = f'{clust_meth}: median({metric_in})={q50})' # ({Nclust} clusters,
             
 
         else:
-            geo_df_plot = geo_df_in.groupby('STAID').max()
+            if timescale == 'mean_annual':
+                # define function to return closest to zero
+                # def closest_to_zero(series):
+                #     return series.abs().min()
+                geo_df_plot = geo_df_in.copy()
+                geo_df_plot['DiffZero'] = geo_df_plot['residuals'].abs()
+                geo_df_plot.sort_values(by = 'DiffZero', inplace = True)
+                geo_df_plot = geo_df_plot.groupby(
+                    ['STAID', 'LAT_GAGE', 'LNG_GAGE']
+                    )[metric_in].first().reset_index() # agg(closest_to_zero).reset_index() # max().
+                # geo_df_plot.drop('DiffZero')
+                # if '_r' in cmap_in:
+                #     cmap_in = cmap_in.split('_')[0]
+                # else:
+                #     cmap_in = cmap_in + '_r'
+            else:
+                geo_df_plot = geo_df_in.groupby('STAID').max()
             geo_df_plot = gpd.GeoDataFrame(
                 geo_df_plot, geometry = gpd.points_from_xy(
                     geo_df_plot['LNG_GAGE'], geo_df_plot['LAT_GAGE']
@@ -218,7 +247,7 @@ for part_in, timescale, model_in, remove_noise, metric_in in \
                 crs = geo_df_in.crs
             )
             # define title for each subplot
-            sp_title = f'Best scores'
+            sp_title = f'Best Scores'
 
         # define colormap
         cmap_in = cmap_str
@@ -244,7 +273,7 @@ for part_in, timescale, model_in, remove_noise, metric_in in \
             marker = marker_in,
             legend = legend_in,
             cmap = cmap_in,
-            vmin = -1, vmax = 1,
+            vmin = vmin_in, vmax = vmax_in,
             alpha = alpha_in,
             zorder = 5)
 
@@ -259,37 +288,44 @@ for part_in, timescale, model_in, remove_noise, metric_in in \
         for spine in ax1.spines.values():
             spine.set_visible(False)
 
-    fig.subplots_adjust(bottom=0.1, top=0.95, left=0.1, right=0.83,
-                        wspace=0.0, hspace=0.0)
+    fig.subplots_adjust(bottom=0.025, top=0.95, left=0.025, right=0.85,
+                        wspace=0., hspace=0.0)
 
     # add an axes, lower left corner in [0.83, 0.1] measured in figure coordinate with axes width 0.02 and height 0.8
-    cb_ax = fig.add_axes([0.83, 0.3, 0.015, 0.4])
-    p = ax1.scatter([], [], c=[], cmap=cmap_in, vmin=-1, vmax=1)
+    cb_ax = fig.add_axes([0.90, 0.3, 0.015, 0.4])
+    p = ax1.scatter([], [], c=[], cmap=cmap_in, vmin=vmin_in, vmax=vmax_in)
     cbar = fig.colorbar(p, cax=cb_ax)
-    cbar.ax.text(0.9, 1.05, metric_in, transform=cbar.ax.transAxes,
-                va='center', ha='center', fontsize=12)  # Adjust the position as needed
-
-    # cbar.set_label('Color Intensity', labelpad=0, size=12, loc='top', rotation=0)
-
-
+    
     #  set the colorbar ticks and tick labels
-    cbar.set_ticks(np.arange(-1, 1, 0.25))
-    cbar.set_ticklabels(np.arange(-1, 1, 0.25))
-    # cbar.set_label(metric_in, position = 'top', labelpad = 15) #  rotation=270, labelpad=15)
+    if timescale == 'mean_annual':
+        cbar.set_ticks(ticks_in)
+        cbar.set_ticklabels(ticks_in)
+        cbar.ax.text(0.9, 1.05, metric_in + '(cm)', transform=cbar.ax.transAxes,
+                va='center', ha='center', fontsize=12)  # Adjust the position as needed
+    else:
+        cbar.set_ticks(ticks_in)
+        cbar.set_ticklabels(ticks_in)
+        cbar.ax.text(0.9, 1.05, metric_in, transform=cbar.ax.transAxes,
+                va='center', ha='center', fontsize=12)  # Adjust the position as needed
+    
 
     if part_in == 'train': 
         part_name = 'training'
     if part_in == 'valnit': 
         part_name = 'testing'
     if remove_noise: 
-        ns_name = 'w/Noise removed'
-    else:
         ns_name = 'w/o Noise'
+        fl_name = 'woNoise'
+    else:
+        ns_name = 'w/Noise'
+        fl_name = 'wNoise'
 
-    plt.suptitle(f'{metric_in} for {part_name} data using {models_in[0]} {ns_name}')
+    plt.suptitle(f'{metric_in} for {timescale} {part_name} data using {model_in} {ns_name}')
 
-    if save_figs:
-        plt.savefig(f'{dir_figs}/MapOfPerMetrics')
-    plt.show()
+    if save_maps:
+        plt.savefig(f'{dir_figs}/MapOfPerMetrics_{timescale}_{model_in}_{metric_in}_{part_name}_{fl_name}.png',
+                    dpi = 300)
+    else:
+        plt.show()
 
 # %%
