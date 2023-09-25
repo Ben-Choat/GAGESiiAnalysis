@@ -23,7 +23,8 @@ import matplotlib.pyplot as plt
 
 # Define directory variables
 # directory with data to work with
-dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out' 
+# dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out' 
+dir_work = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results' 
 
 # directory where SHAP values are located
 dir_shap = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
@@ -41,47 +42,80 @@ dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
 ###########
 
 # independent results for each catchment
-# mean annual
-df_resind_mannual = pd.read_pickle(
-    f'{dir_work}/mean_annual/combined/All_IndResults_mean_annual.pkl'
-)
+# # mean annual
+# df_resind_mannual = pd.read_pickle(
+#     f'{dir_work}/mean_annual/combined/All_IndResults_mean_annual.pkl'
+# )
 
-# annual
-df_resind_annual = pd.read_pickle(
-    f'{dir_work}/annual/combined/All_IndResults_annual.pkl'
-)
-# month
-df_resind_monthly = pd.read_pickle(
-    f'{dir_work}/monthly/combined/All_IndResults_monthly.pkl'
-)
+# # annual
+# df_resind_annual = pd.read_pickle(
+#     f'{dir_work}/annual/combined/All_IndResults_annual.pkl'
+# )
+# # month
+# df_resind_monthly = pd.read_pickle(
+#     f'{dir_work}/monthly/combined/All_IndResults_monthly.pkl'
+# )
+
+# mean annual
+df_resind_mannual = pd.read_csv(
+        f'{dir_work}/PerfMetrics_MeanAnnual.csv',
+        dtype = {'STAID': 'string',
+                    'region': 'string'}
+    )
+
+df_resind_mannual['|residuals|'] = df_resind_mannual.residuals.abs()
+
+df_resind_mannual = df_resind_mannual[[
+        'STAID', 'residuals', '|residuals|', 'clust_method', 'region',\
+                    'model', 'time_scale', 'train_val'
+    ]]
+
+# annual and monthy 
+df_resind_All = pd.read_csv(
+        f'{dir_work}/NSEComponents_KGE.csv',
+        dtype = {'STAID': 'string',
+                'region': 'string'}
+    )
+
+df_resind_annual = df_resind_All[
+    df_resind_All['time_scale'] == 'annual'
+    ]
+
+df_resind_monthly = df_resind_All[
+    df_resind_All['time_scale'] == 'monthly'
+    ]
+
+# results_summAll = results_summAll[
+#     results_summAll['train_val'] == part_in
+# ]
 
 # summary results for each catchment
 # mean annual
-df_ressumm_mannual = pd.read_pickle(
-    f'{dir_work}/mean_annual/combined/All_SummaryResults_mean_annual.pkl'
-)
-# annual
-df_ressumm_annual = pd.read_pickle(
-    f'{dir_work}/annual/combined/All_SummaryResults_annual.pkl'
-)
+# df_ressumm_mannual = pd.read_pickle(
+#     f'{dir_work}/mean_annual/combined/All_SummaryResults_mean_annual.pkl'
+# )
+# # annual
+# df_ressumm_annual = pd.read_pickle(
+#     f'{dir_work}/annual/combined/All_SummaryResults_annual.pkl'
+# )
 
-# month
-df_ressumm_monthly = pd.read_pickle(
-    f'{dir_work}/monthly/combined/All_SummaryResults_monthly.pkl'
-)
+# # month
+# df_ressumm_monthly = pd.read_pickle(
+#     f'{dir_work}/monthly/combined/All_SummaryResults_monthly.pkl'
+# )
 
 # SHAP values
 # mean annual
 df_shap_mannual = pd.read_csv(
-    f'{dir_shap}/MeanShap_mean_annual.csv'
+    f'{dir_shap}/MeanShap_valnit_mean_annual.csv'
 )
 # annual
 df_shap_annual = pd.read_csv(
-    f'{dir_shap}/MeanShap_annual.csv'
+    f'{dir_shap}/MeanShap_valnit_annual.csv'
 )
 # mean annual
 df_shap_monthly = pd.read_csv(
-    f'{dir_shap}/MeanShap_monthly.csv'
+    f'{dir_shap}/MeanShap_valnit_monthly.csv'
 )
 
 
@@ -184,8 +218,10 @@ data_in_month.sort_values(
 
 
 ####
-clust_meth_in = 'Class'
+clust_meth_in = 'Nat_3'
 model_in = 'XGBoost'
+metric_in = 'KGE'
+
 data_in_mannual = data_in_mannual[
     (data_in_mannual['clust_method'] == clust_meth_in) &
     (data_in_mannual['model'] == model_in)
@@ -223,13 +259,13 @@ ax1.get_legend().set_title('Region')
 
 
 ax2.set_xlim(-1, 1)
-ax2.set(xlabel = 'NSE')
+ax2.set(xlabel = metric_in)
 ax2.annotate('(b)', xy = (0.8, 0.02))
 ax2.grid()
 ax2.title.set_text('Annual')
 sns.ecdfplot(
     data = data_in_annual,
-    x = 'NSE',
+    x = metric_in,
     hue = 'region',
     linestyle = '--',
     palette = 'Paired',
@@ -239,13 +275,13 @@ sns.ecdfplot(
 
 
 ax3.set_xlim(-1, 1)
-ax3.set(xlabel = 'NSE')
+ax3.set(xlabel = metric_in)
 ax3.annotate('(c)', xy = (0.8, 0.02))
 ax3.grid()
 ax3.title.set_text('Monthly')
 sns.ecdfplot(
     data = data_in_month,
-    x = 'NSE',
+    x = metric_in,
     hue = 'region',
     linestyle = '--',
     palette = 'Paired',
@@ -266,13 +302,30 @@ sns.ecdfplot(
 # heatmap of shap values using all variables
 ##############
 
+
+clust_meth_in = 'Nat_3'
+model_in = 'XGBoost'
+# metric_in = 'KGE'
+
+vmin_mannual = -4
+vmax_mannual = 4
+
+vmin_annual = -3
+vmax_annual = 3
+
+vmin_month = -1
+vmax_month = 1
+
 # read in data
 # mean annual
-shap_mannual = df_shap_mannual.drop(
+shap_mannual = df_shap_mannual[df_shap_mannual['clust_meth'] == clust_meth_in]
+shap_mannual = shap_mannual.drop(
     ['clust_meth', 'region', 'best_model', 'best_score',
-    'd1_prcp','d1_tmax', 'd1_tmin'], axis = 1
+     'tmin_1', 'tmax_1', 'prcp_1', 'vp_1', 'swe_1'], axis = 1
 )
-shap_mannual.index = df_shap_mannual['region']
+shap_mannual.index = df_shap_mannual.loc[
+    df_shap_mannual['clust_meth'] == clust_meth_in, 'region'
+                    ]
 shap_mannual.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
     inplace = True
@@ -289,26 +342,50 @@ shap_mannual.rename(
 
 
 # annual
-shap_annual = df_shap_annual.drop(
+shap_annual = df_shap_annual[df_shap_annual['clust_meth'] == clust_meth_in]
+shap_annual = shap_annual.drop(
     ['clust_meth', 'region', 'best_model', 'best_score'], axis = 1
 )
-shap_annual.index = df_shap_annual['region']
+shap_annual.index = df_shap_annual.loc[
+    df_shap_annual['clust_meth'] == clust_meth_in, 'region'
+    ]
 shap_annual.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
     inplace = True
 )
+
 # shap_annual.columns = shap_annual.columns.str.replace(
 #     'TS_', ''
 # )
 
 # monthly
-shap_monthly = df_shap_monthly.drop(
+shap_monthly = df_shap_monthly[df_shap_monthly['clust_meth'] == clust_meth_in]
+shap_monthly = shap_monthly.drop(
     ['clust_meth', 'region', 'best_model', 'best_score'], axis = 1
 )
-shap_monthly.index = df_shap_monthly['region']
+shap_monthly.index = df_shap_monthly.loc[
+    df_shap_monthly['clust_meth'] == clust_meth_in, 'region'
+    ]
 shap_monthly.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
     inplace = True
+)
+shap_monthly['AntPrecip'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('prcp_')]
+    ].apply('sum', axis = 1)
+shap_monthly['Ant_swe'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('swe_')]
+    ].apply('sum', axis = 1)
+shap_monthly['Ant_vp'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('vp_')]
+    ].apply('sum', axis = 1)
+
+shap_monthly = shap_monthly.drop(
+    shap_monthly.columns[
+        (shap_monthly.columns.str.contains('prcp_')) | \
+        (shap_monthly.columns.str.contains('swe_')) | \
+        (shap_monthly.columns.str.contains('vp_'))
+    ],  axis = 1  
 )
 # shap_monthly.columns = shap_monthly.columns.str.replace(
 #     'TS_', ''
@@ -359,8 +436,8 @@ sns.heatmap(
     ax = ax1, 
     cmap = sns.color_palette('coolwarm_r', 100), # cust_color, # 'RdYlBu', # 'jet'
     center = 0,
-    vmin = -0.2, # np.min(np.min(data_mannualin.iloc[:, 0:30])),
-    vmax = 0.2,
+    vmin = vmin_mannual, # np.min(np.min(data_mannualin.iloc[:, 0:30])),
+    vmax = vmax_mannual,
     cbar_kws = {'label': 'SHAP (Impact on model output)',
                 'use_gridspec': False,
                 'location': 'bottom'} # ,
@@ -368,8 +445,8 @@ sns.heatmap(
     )
 ax1.set(xlabel = 'Region', ylabel = 'Explanatory Variables') # xlabel = 'Explanatory Varaibles',
 # ax1.set_xticklabels(mannual_data_plot.columns[0:40], ha = 'center')
-# ax1.tick_params(axis = 'x',
-#                 rotation = 90)
+ax1.tick_params(axis = 'x',
+                rotation = 90)
 # color climate variables
 # for x in np.where(mannual_data_plot.columns.isin(clim_feats))[0]: # np.arange(5, 20, 1): 
     # ax1.get_xticklabels()[x].set_color('blue')
@@ -422,8 +499,8 @@ sns.heatmap(
     ax = ax2,
     cmap = sns.color_palette('coolwarm_r', 100), # cust_color, # 'RdYlBu', # 'jet'
     center = 0,
-    vmin = -0.2, # np.min(np.min(data_annualin.iloc[:, 0:30])),
-    vmax = 0.2,
+    vmin = vmin_annual, # np.min(np.min(data_annualin.iloc[:, 0:30])),
+    vmax = vmax_annual,
     cbar_kws = {'label': 'SHAP (Impact on model output)',
                 'use_gridspec': False,
                 'location': 'bottom'} # ,
@@ -431,8 +508,8 @@ sns.heatmap(
     )
 ax2.set(xlabel = 'Region') # (xlabel = 'Explanatory Varaibles', 
 # ax2.set_xticklabels(annual_data_plot.columns[0:40], ha = 'center')
-# ax2.tick_params(axis = 'x',
-#                 rotation = 90)
+ax2.tick_params(axis = 'x',
+                rotation = 90)
 # color climate variables
 # for x in np.where(annual_data_plot.columns.isin(clim_feats))[0]: # np.arange(5, 20, 1): 
 #     ax2.get_xticklabels()[x].set_color('blue')
@@ -485,16 +562,16 @@ sns.heatmap(
     ax = ax3,
     cmap = sns.color_palette('coolwarm_r', 100), # cust_color, # 'RdYlBu', # 'jet'
     center = 0,
-    vmin = -0.02, # np.min(np.min(data_monthlyin.iloc[:, 0:30])),
-    vmax = 0.02,
+    vmin = vmin_month, # np.min(np.min(data_monthlyin.iloc[:, 0:30])),
+    vmax = vmax_month,
     cbar_kws = {'label': 'SHAP (Impact on model output)',
                 'use_gridspec': False,
                 'location': 'bottom'} # ,
     # robust = True
     )
 ax3.set(xlabel = 'Region')# ylabel = 'Explanatory Varaibles',
-# ax3.tick_params(axis = 'x',
-#                 rotation = 66)
+ax3.tick_params(axis = 'x',
+                rotation = 90)
 # color climate variables
 # for x in np.where(monthly_data_plot.columns.isin(clim_feats))[0]: # np.arange(5, 20, 1): 
 #     ax3.get_xticklabels()[x].set_color('blue')
@@ -532,11 +609,26 @@ ax3.annotate('(c)', xy = (12, 30.5), annotation_clip = False)
 # heatmap of shap values using Anthropogenic variables
 ##############
 
+
+clust_meth_in = 'Nat_3'
+model_in = 'XGBoost'
+# metric_in = 'KGE'
+
+vmin_mannual = -4
+vmax_mannual = 4
+
+vmin_annual = -3
+vmax_annual = 3
+
+vmin_month = -1
+vmax_month = 1
+
+
 # read in data
 # mean annual
 shap_mannual = df_shap_mannual.drop(
     ['clust_meth', 'region', 'best_model', 'best_score',
-    'd1_prcp','d1_tmax', 'd1_tmin'], axis = 1
+     'tmin_1', 'tmax_1', 'prcp_1', 'vp_1', 'swe_1'], axis = 1
 )
 shap_mannual.index = df_shap_mannual['region']
 shap_mannual.rename(

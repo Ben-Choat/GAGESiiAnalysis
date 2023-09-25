@@ -36,12 +36,12 @@ import xgboost as xgb
 # clustering methods
 # clust_meth = ['None', 'Class', 'AggEcoregion']
 
-# clust_meth = ['None', 'Class', 'AggEcoregion', 
-#         'All_0', 'All_1', 'All_2', 'Anth_0', 'Anth_1', 
-#         'CAMELS', 'HLR', 'Nat_0', 'Nat_1', 'Nat_2',
-#         'Nat_3', 'Nat_4']
+clust_meths = ['None', 'Class', 'AggEcoregion', 
+        'All_0', 'All_1', 'All_2', 'Anth_0', 'Anth_1', 
+        'CAMELS', 'HLR', 'Nat_0', 'Nat_1', 'Nat_2',
+        'Nat_3', 'Nat_4']
 
-clust_meths = ['Nat_3']
+# clust_meths = ['Nat_3']
 
 # clust_meth = ['Anth_0'] # ,'Anth_0', 'Nat_0']
 
@@ -135,7 +135,7 @@ def q_metr(df_work, perf_metric):
     #     df_work = df_work[df_work['region'] != '-1']
 
     for q in qnts_in:
-        # print(f'q: {q}')
+        print(f'q: {q}')
         if df_qntls is None:
             # if first q, then create new dataframe
             df_qntls = df_work.groupby(
@@ -451,8 +451,6 @@ for timescale in time_scale:
 
 
 
-
-
             # %% 
             # build best model
             ############
@@ -469,26 +467,6 @@ for timescale in time_scale:
             X_in = df_expl['prcp']
 
 
-
-            # %%
-            # lasso
-            ##########
-            # if best_model.values == 'strd_lasso':
-            #     # extract alpha if model is lasso
-            #     alpha_in = best_params.str.replace('alpha', '')
-
-            #     # define model and parameters
-            #     model = Lasso(
-            #         alpha = float(alpha_in),
-            #         max_iter = 10000,
-            #         tol = 1e-5
-            #     )
-
-            #     # fit model
-            #     model.fit(df_expl, df_WY)
-
-            #     # # define X_in so you can call it below without needing to edit the text
-            #     X_in = df_expl
             # %% MLR
             #########################
             # read in regression variables for mlr if best_model is strd_mlr
@@ -603,7 +581,8 @@ for timescale in time_scale:
                 # define explainer
                 explainer = shap.TreeExplainer(model)
                 # calc shap values
-                shap_values = explainer(X_in) # df_expl)
+                # check_additivity = False because one model
+                shap_values = explainer(X_in, check_additivity = False) # df_expl)
                 
                 df_shap_valout = pd.DataFrame(
                     shap_values.values,
@@ -655,7 +634,7 @@ for timescale in time_scale:
                 ignore_index = True
             )
     
-    df_shap_out = df_shap_out.drop_duplicates().reset_index(drop = True)
+    # df_shap_out = df_shap_out.drop_duplicates().reset_index(drop = True)
 
     # convert best_models to array, so dtype and name aren't written with each
     best_models = np.concatenate(
@@ -667,6 +646,8 @@ for timescale in time_scale:
     df_shap_out['region'] = regions_out
     df_shap_out['best_model'] = best_models
     df_shap_out['best_score'] = best_scores
+
+    df_shap_out = df_shap_out.drop_duplicates().reset_index(drop = True)
 
     # write df_shap_out to csv
     df_shap_out.to_csv(
@@ -682,3 +663,4 @@ for timescale in time_scale:
         mode = 'a'
     )
 
+print("\n\n---------------COMPLETE----------------\n\n")
