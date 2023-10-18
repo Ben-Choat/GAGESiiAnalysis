@@ -2,6 +2,9 @@
 BChoat 10/18/2022
 
 Main script to produce results figures.
+
+to do:
+...
 '''
 
 # %%
@@ -29,14 +32,31 @@ dir_work = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results'
 # directory where SHAP values are located
 dir_shap = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
 
+# save figs (True of False?)
+save_figs = True
 # directory where to write figs
-dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
+dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/SHAP'
 
 # directory where to place outputs
 # dir_umaphd = 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN'
 
+# which partition to use "train" or  "valnit"
+part_in = 'valnit'
 
+# cluster method to use
+# ['None', 'Class', 'AggEcoregion', 'All_0', 'All_1', 'All_2', 'Anth_0', 'Anth_1', 
+#         'CAMELS', 'HLR', 'Nat_0', 'Nat_1', 'Nat_2', 'Nat_3', 'Nat_4']
+# clust_meth_in = ['AggEcoregion']
+clust_meth_in = ['None', 'Class', 'AggEcoregion']
+# which model to calc shaps for
+model_in = 'XGBoost'
+# which metric to use when plotting eCDFs (')
+metric_in = 'KGE'
+# drop noise?
+drop_noise = False
 
+# plot parameters
+cmap_title = 'Impact on model output; mean(SHAP)/mean(Q) [cm/cm]'
 
 # %% load data
 ###########
@@ -107,15 +127,15 @@ df_resind_monthly = df_resind_All[
 # SHAP values
 # mean annual
 df_shap_mannual = pd.read_csv(
-    f'{dir_shap}/MeanShap_valnit_mean_annual.csv'
+    f'{dir_shap}/MeanShap_{part_in}_mean_annual_normQ.csv'
 )
 # annual
 df_shap_annual = pd.read_csv(
-    f'{dir_shap}/MeanShap_valnit_annual.csv'
+    f'{dir_shap}/MeanShap_{part_in}_annual_normQ.csv'
 )
 # mean annual
 df_shap_monthly = pd.read_csv(
-    f'{dir_shap}/MeanShap_valnit_monthly.csv'
+    f'{dir_shap}/MeanShap_{part_in}_monthly_normQ.csv'
 )
 
 
@@ -166,9 +186,11 @@ anland_feats = feat_cats.loc[
 # eCDF plots
 ##############
 
+cmap_str = 'tab20b'
+
 # mean annual
 data_in_mannual = df_resind_mannual[
-    df_resind_mannual['train_val'] == 'valnit'
+    df_resind_mannual['train_val'] == part_in
 ]
 
 # data_in_mannual = pd.merge(
@@ -186,7 +208,7 @@ data_in_mannual.sort_values(
 
 # annual
 data_in_annual = df_resind_annual[
-    df_resind_annual['train_val'] == 'valnit'
+    df_resind_annual['train_val'] == part_in
 ]
 
 # data_in_annual = pd.merge(
@@ -202,7 +224,7 @@ data_in_annual.sort_values(
 
 # month
 data_in_month = df_resind_monthly[
-    df_resind_monthly['train_val'] == 'valnit'
+    df_resind_monthly['train_val'] == part_in
 ]
 
 # data_in_month = pd.merge(
@@ -218,24 +240,33 @@ data_in_month.sort_values(
 
 
 ####
-clust_meth_in = 'Nat_3'
-model_in = 'XGBoost'
-metric_in = 'KGE'
+
 
 data_in_mannual = data_in_mannual[
-    (data_in_mannual['clust_method'] == clust_meth_in) &
+    (data_in_mannual['clust_method'].isin(clust_meth_in)) &
     (data_in_mannual['model'] == model_in)
 ]
 
 data_in_annual = data_in_annual[
-    (data_in_annual['clust_method'] == clust_meth_in) &
+    (data_in_annual['clust_method'].isin(clust_meth_in)) &
     (data_in_annual['model'] == model_in)
 ]
 
 data_in_month = data_in_month[
-    (data_in_month['clust_method'] == clust_meth_in) &
+    (data_in_month['clust_method'].isin(clust_meth_in)) &
     (data_in_month['model'] == model_in)
 ]
+
+if drop_noise:
+    data_in_mannual = data_in_mannual[
+        data_in_mannual['region'] != '-1'
+    ]
+    data_in_annual = data_in_annual[
+        data_in_annual['region'] != '-1'
+    ]
+    data_in_month = data_in_month[
+        data_in_month['region'] != '-1'
+    ]
 ####
 
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize = (10, 5), sharey = True)
@@ -251,7 +282,7 @@ sns.ecdfplot(
     x = '|residuals|',
     hue = 'region',
     linestyle = '--',
-    palette = 'Paired',
+    palette = cmap_str,
     ax = ax1
 )
 sns.move_legend(ax1, 'lower center')
@@ -268,7 +299,7 @@ sns.ecdfplot(
     x = metric_in,
     hue = 'region',
     linestyle = '--',
-    palette = 'Paired',
+    palette = cmap_str,
     ax = ax2,
     legend = False
 )
@@ -284,18 +315,21 @@ sns.ecdfplot(
     x = metric_in,
     hue = 'region',
     linestyle = '--',
-    palette = 'Paired',
+    palette = cmap_str,
     ax = ax3,
     legend = False
 )
 
 
-# # save fig
-# plt.savefig(
-#     f'{dir_figs}/ecdfs.png', 
-#     dpi = 300,
-#     bbox_inches = 'tight'
-#     )
+# save fig
+if save_figs:
+    plt.savefig(
+        f'{dir_figs}/ecdfs_{part_in}_{clust_meth_in}_{model_in}.png', 
+        dpi = 300,
+        bbox_inches = 'tight'
+        )
+else:
+    plt.show()
 
 
 # %%
@@ -303,28 +337,28 @@ sns.ecdfplot(
 ##############
 
 
-clust_meth_in = 'Nat_3'
-model_in = 'XGBoost'
+# clust_meth_in = 'Nat_3'
+# model_in = 'XGBoost'
 # metric_in = 'KGE'
 
-vmin_mannual = -4
-vmax_mannual = 4
+vmin_mannual = -0.15
+vmax_mannual = 0.15
 
-vmin_annual = -3
-vmax_annual = 3
+vmin_annual = vmin_mannual
+vmax_annual = vmax_mannual
 
-vmin_month = -1
-vmax_month = 1
+vmin_month = vmin_mannual
+vmax_month = vmax_mannual
 
 # read in data
 # mean annual
-shap_mannual = df_shap_mannual[df_shap_mannual['clust_meth'] == clust_meth_in]
+shap_mannual = df_shap_mannual[df_shap_mannual['clust_meth'].isin(clust_meth_in)]
 shap_mannual = shap_mannual.drop(
     ['clust_meth', 'region', 'best_model', 'best_score',
      'tmin_1', 'tmax_1', 'prcp_1', 'vp_1', 'swe_1'], axis = 1
 )
 shap_mannual.index = df_shap_mannual.loc[
-    df_shap_mannual['clust_meth'] == clust_meth_in, 'region'
+    df_shap_mannual['clust_meth'].isin(clust_meth_in), 'region'
                     ]
 shap_mannual.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
@@ -342,12 +376,12 @@ shap_mannual.rename(
 
 
 # annual
-shap_annual = df_shap_annual[df_shap_annual['clust_meth'] == clust_meth_in]
+shap_annual = df_shap_annual[df_shap_annual['clust_meth'].isin(clust_meth_in)]
 shap_annual = shap_annual.drop(
     ['clust_meth', 'region', 'best_model', 'best_score'], axis = 1
 )
 shap_annual.index = df_shap_annual.loc[
-    df_shap_annual['clust_meth'] == clust_meth_in, 'region'
+    df_shap_annual['clust_meth'].isin(clust_meth_in), 'region'
     ]
 shap_annual.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
@@ -359,31 +393,41 @@ shap_annual.rename(
 # )
 
 # monthly
-shap_monthly = df_shap_monthly[df_shap_monthly['clust_meth'] == clust_meth_in]
+shap_monthly = df_shap_monthly[df_shap_monthly['clust_meth'].isin(clust_meth_in)]
 shap_monthly = shap_monthly.drop(
     ['clust_meth', 'region', 'best_model', 'best_score'], axis = 1
 )
 shap_monthly.index = df_shap_monthly.loc[
-    df_shap_monthly['clust_meth'] == clust_meth_in, 'region'
+    df_shap_monthly['clust_meth'].isin(clust_meth_in), 'region'
     ]
 shap_monthly.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
     inplace = True
 )
-shap_monthly['AntPrecip'] = shap_monthly[
+shap_monthly['Ant Precip'] = shap_monthly[
     shap_monthly.columns[shap_monthly.columns.str.contains('prcp_')]
     ].apply('sum', axis = 1)
-shap_monthly['Ant_swe'] = shap_monthly[
+shap_monthly['Ant SWE'] = shap_monthly[
     shap_monthly.columns[shap_monthly.columns.str.contains('swe_')]
     ].apply('sum', axis = 1)
-shap_monthly['Ant_vp'] = shap_monthly[
+shap_monthly['Ant Vapor Pressure'] = shap_monthly[
     shap_monthly.columns[shap_monthly.columns.str.contains('vp_')]
     ].apply('sum', axis = 1)
+shap_monthly['Ant Max Temp'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('tmax_')]
+    ].apply('sum', axis = 1)
+shap_monthly['Ant Min Temp'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('tmin_')]
+    ].apply('sum', axis = 1)
+
 
 shap_monthly = shap_monthly.drop(
     shap_monthly.columns[
         (shap_monthly.columns.str.contains('prcp_')) | \
         (shap_monthly.columns.str.contains('swe_')) | \
+        (shap_monthly.columns.str.contains('vp_')) | \
+        (shap_monthly.columns.str.contains('tmax_')) | \
+        (shap_monthly.columns.str.contains('tmin_')) | \
         (shap_monthly.columns.str.contains('vp_'))
     ],  axis = 1  
 )
@@ -425,7 +469,7 @@ monthly_data_plot = data_monthlyin.iloc[:, 0:30].T
 
 fig, (ax1, ax2, ax3) = plt.subplots(nrows = 1, ncols = 3, 
                         layout = 'constrained',
-                        figsize = (11, 7.75)) # ,
+                        figsize = (11, 8)) # ,
                         # gridspec_kw={'width_ratios': [0.3, 0.3, 0.3]})
 # fig, ax1 = plt.subplots(figsize = (2.75, 11)) # (12, 4))
 ax1.title.set_text('Mean Annual')
@@ -438,9 +482,10 @@ sns.heatmap(
     center = 0,
     vmin = vmin_mannual, # np.min(np.min(data_mannualin.iloc[:, 0:30])),
     vmax = vmax_mannual,
-    cbar_kws = {'label': 'SHAP (Impact on model output)',
-                'use_gridspec': False,
-                'location': 'bottom'} # ,
+    cbar = False
+    # cbar_kws = {'label': 'SHAP (Impact on model output)',
+    #             'use_gridspec': False,
+    #             'location': 'bottom'} # ,
     # robust = True
     )
 ax1.set(xlabel = 'Region', ylabel = 'Explanatory Variables') # xlabel = 'Explanatory Varaibles',
@@ -501,7 +546,11 @@ sns.heatmap(
     center = 0,
     vmin = vmin_annual, # np.min(np.min(data_annualin.iloc[:, 0:30])),
     vmax = vmax_annual,
-    cbar_kws = {'label': 'SHAP (Impact on model output)',
+    cbar_kws = {'label': cmap_title,
+                'extend': 'both',
+                'ticks': [vmin_annual, 0, vmax_annual],
+                'shrink': 2,
+                'pad': 0.01,
                 'use_gridspec': False,
                 'location': 'bottom'} # ,
     # robust = True
@@ -528,11 +577,12 @@ for x in np.where(annual_data_plot.index.isin(anhyd_feats))[0]: # np.arange(5, 2
 
 
 # # save fig
-# plt.savefig(
-#     f'{dir_figs}/Heat_AllVars_annual.png', # Heat_AllVars_annual_Horz.png', 
-#     dpi = 300,
-#     bbox_inches = 'tight'
-#     )
+# if save_figs:
+#     plt.savefig(
+#         f'{dir_figs}/Heat_AllVars_{part_in}_{clust_meth_in}_{model_in}.png', # Heat_AllVars_annual_Horz.png', 
+#         dpi = 300,
+#         bbox_inches = 'tight'
+#         )
 
 
 
@@ -564,9 +614,10 @@ sns.heatmap(
     center = 0,
     vmin = vmin_month, # np.min(np.min(data_monthlyin.iloc[:, 0:30])),
     vmax = vmax_month,
-    cbar_kws = {'label': 'SHAP (Impact on model output)',
-                'use_gridspec': False,
-                'location': 'bottom'} # ,
+    cbar = False
+    # cbar_kws = {'label': 'SHAP (Impact on model output)',
+    #             'use_gridspec': False,
+    #             'location': 'bottom'} # ,
     # robust = True
     )
 ax3.set(xlabel = 'Region')# ylabel = 'Explanatory Varaibles',
@@ -593,13 +644,15 @@ ax1.annotate('(a)', xy = (12, 30.5), annotation_clip = False)
 ax2.annotate('(b)', xy = (12, 30.5), annotation_clip = False)
 ax3.annotate('(c)', xy = (12, 30.5), annotation_clip = False)
 
-# # save fig
-# plt.savefig(
-#     f'{dir_figs}/Heat_AllVars_AllTimescales.png', # Heat_AllVars_monthly_Horz.png
-#     dpi = 300,
-#     bbox_inches = 'tight'
-#     )
-
+# save fig
+if save_figs:
+    plt.savefig(
+        f'{dir_figs}/Heat_AllVars_AllTimescales_{part_in}_{clust_meth_in}_{model_in}.png', # Heat_AllVars_monthly_Horz.png
+        dpi = 300,
+        bbox_inches = 'tight'
+        )
+else:
+    plt.show()
 
 
 
@@ -610,56 +663,90 @@ ax3.annotate('(c)', xy = (12, 30.5), annotation_clip = False)
 ##############
 
 
-clust_meth_in = 'Nat_3'
-model_in = 'XGBoost'
+# clust_meth_in = 'Nat_3'
+# model_in = 'XGBoost'
 # metric_in = 'KGE'
 
-vmin_mannual = -4
-vmax_mannual = 4
+vmin_mannual = -0.025
+vmax_mannual = 0.025
 
-vmin_annual = -3
-vmax_annual = 3
+vmin_annual = vmin_mannual
+vmax_annual = vmax_mannual
 
-vmin_month = -1
-vmax_month = 1
+vmin_month = vmin_mannual
+vmax_month = vmax_mannual
 
 
 # read in data
 # mean annual
-shap_mannual = df_shap_mannual.drop(
+shap_mannual = df_shap_mannual[df_shap_mannual['clust_meth'].isin(clust_meth_in)]
+shap_mannual = shap_mannual.drop(
     ['clust_meth', 'region', 'best_model', 'best_score',
      'tmin_1', 'tmax_1', 'prcp_1', 'vp_1', 'swe_1'], axis = 1
 )
-shap_mannual.index = df_shap_mannual['region']
+shap_mannual.index = df_shap_mannual.loc[
+    df_shap_mannual['clust_meth'].isin(clust_meth_in), 'region'
+                    ]
 shap_mannual.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
     inplace = True
 )
+
 # shap_mannual.columns = shap_mannual.columns.str.replace(
 #     'TS_', ''
 # )
 
 # annual
-shap_annual = df_shap_annual.drop(
+shap_annual = df_shap_annual[df_shap_annual['clust_meth'].isin(clust_meth_in)]
+shap_annual = shap_annual.drop(
     ['clust_meth', 'region', 'best_model', 'best_score'], axis = 1
 )
-shap_annual.index = df_shap_annual['region']
+shap_annual.index = df_shap_annual.loc[
+    df_shap_annual['clust_meth'].isin(clust_meth_in), 'region'
+    ]
 shap_annual.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
     inplace = True
 )
-# shap_annual.columns = shap_annual.columns.str.replace(
-#     'TS_', ''
-# )
 
 # monthly
-shap_monthly = df_shap_monthly.drop(
+shap_monthly = df_shap_monthly[df_shap_monthly['clust_meth'].isin(clust_meth_in)]
+shap_monthly = shap_monthly.drop(
     ['clust_meth', 'region', 'best_model', 'best_score'], axis = 1
 )
-shap_monthly.index = df_shap_monthly['region']
+shap_monthly.index = df_shap_monthly.loc[
+    df_shap_monthly['clust_meth'].isin(clust_meth_in), 'region'
+    ]
 shap_monthly.rename(
     columns = dict(zip(feat_cats['Features'], feat_cats['Alias'])),
     inplace = True
+)
+shap_monthly['Ant Precip'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('prcp_')]
+    ].apply('sum', axis = 1)
+shap_monthly['Ant SWE'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('swe_')]
+    ].apply('sum', axis = 1)
+shap_monthly['Ant Vapor Pressure'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('vp_')]
+    ].apply('sum', axis = 1)
+shap_monthly['Ant Max Temp'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('tmax_')]
+    ].apply('sum', axis = 1)
+shap_monthly['Ant Min Temp'] = shap_monthly[
+    shap_monthly.columns[shap_monthly.columns.str.contains('tmin_')]
+    ].apply('sum', axis = 1)
+
+
+shap_monthly = shap_monthly.drop(
+    shap_monthly.columns[
+        (shap_monthly.columns.str.contains('prcp_')) | \
+        (shap_monthly.columns.str.contains('swe_')) | \
+        (shap_monthly.columns.str.contains('vp_')) | \
+        (shap_monthly.columns.str.contains('tmax_')) | \
+        (shap_monthly.columns.str.contains('tmin_')) | \
+        (shap_monthly.columns.str.contains('vp_'))
+    ],  axis = 1  
 )
 # shap_monthly.columns = shap_monthly.columns.str.replace(
 #     'TS_', ''
@@ -718,18 +805,19 @@ sns.heatmap(
     ax = ax1,
     cmap = sns.color_palette('coolwarm_r', 100), # cust_color, # 'RdYlBu', # 'jet'
     center = 0,
-    vmin = -0.04, # np.min(np.min(data_mannualin.iloc[:, 0:30])),
-    vmax = 0.04,
-    cbar_kws = {'label': 'SHAP (Impact on model output)',
-                'use_gridspec': False,
-                'location': 'bottom'} # ,
+    vmin = vmin_mannual, # np.min(np.min(data_mannualin.iloc[:, 0:30])),
+    vmax = vmax_mannual,
+    cbar = False
+    # cbar_kws = {'label': 'SHAP (Impact on model output)',
+    #             'use_gridspec': False,
+    #             'location': 'bottom'} # ,
     # robust = True
     )
 ax1.set(xlabel = 'Region', ylabel = 'Explanatory Variables') # ylabel = 'Region') # xlabel = 'Explanatory Varaibles',
 # ax1.set_xticklabels(mannual_data_plot.columns, ha = 'center')
 
-# ax1.tick_params(axis = 'x',
-#                 rotation = 90)
+ax1.tick_params(axis = 'x',
+                rotation = 90)
 # color climate variables
 # plt.axes(ax1)
 
@@ -772,17 +860,21 @@ sns.heatmap(
     ax = ax2,
     cmap = sns.color_palette('coolwarm_r', 100), # cust_color, # 'RdYlBu', # 'jet'
     center = 0,
-    vmin = -0.04, # np.min(np.min(data_annualin.iloc[:, 0:30])),
-    vmax = 0.04,
-    cbar_kws = {'label': 'SHAP (Impact on model output)',
+    vmin = vmin_annual, # np.min(np.min(data_annualin.iloc[:, 0:30])),
+    vmax = vmax_annual,
+    cbar_kws = {'label': cmap_title,
+                'extend': 'both',
+                'ticks': [vmin_annual, 0, vmax_annual],
                 'use_gridspec': False,
+                'shrink': 2,
+                'pad': 0.01,
                 'location': 'bottom'} # ,
     # robust = True
     )
 ax2.set(xlabel = 'Region') # ylabel = 'Region') # (xlabel = 'Explanatory Varaibles', 
 # ax2.set_xticklabels(annual_data_plot.columns, ha = 'center')
-# ax2.tick_params(axis = 'x',
-#                 rotation = 90)
+ax2.tick_params(axis = 'x',
+                rotation = 90)
 
 # color anthropogenic hydrologic alteration variables
 # for x in np.where(annual_data_plot.columns.isin(anhyd_feats))[0]: # np.arange(5, 20, 1): 
@@ -823,17 +915,21 @@ sns.heatmap(
     ax = ax3,
     cmap = sns.color_palette('coolwarm_r', 100), # cust_color, # 'RdYlBu', # 'jet'
     center = 0,
-    vmin = -0.003, # np.min(np.min(data_monthlyin.iloc[:, 0:30])),
-    vmax = 0.003,
-    cbar_kws = {'label': 'SHAP (Impact on model output)',
-                'use_gridspec': False,
-                'location': 'bottom'} # ,
+    vmin = vmin_month, # np.min(np.min(data_monthlyin.iloc[:, 0:30])),
+    vmax = vmax_month,
+    cbar = False
+    # cbar_kws = {'label': 'SHAP (Impact on model output)',
+    #             'use_gridspec': False,
+    #             'location': 'bottom'} # ,
     # robust = True
     )
 ax3.set(xlabel = 'Region', ylabel = '') 
+ax3.set_yticks([x+0.5 for x in range(len(monthly_data_plot.index))])
+ax3.set_yticklabels(monthly_data_plot.index)
+# ax3.tick_params(axis = 'y', labelrotation = 45)
+ax3.tick_params(axis = 'x',
+                rotation = 90)
 # color anthropogenic hydrologic alteration variables
-# for x in np.where(monthly_data_plot.columns.isin(anhyd_feats))[0]: # np.arange(5, 20, 1): 
-#     ax3.get_xticklabels()[x].set_color('red')
 for x in np.where(monthly_data_plot.index.isin(anhyd_feats))[0]: # np.arange(5, 20, 1): 
     ax3.get_yticklabels()[x].set_color('red')
 
@@ -844,26 +940,62 @@ ax2.annotate('(b)', xy = (12, 21.5), annotation_clip = False)
 ax3.annotate('(c)', xy = (12, 21.5), annotation_clip = False)
 
 
-# # save fig
-# plt.savefig(
-#     f'{dir_figs}/Heat_AnthVars_AllTimescales.png',  # Heat_AnthVars_monthly_Horz.png', 
-#     dpi = 300,
-#     bbox_inches = 'tight'
-#     )
+# save fig
+if save_figs:
+    plt.savefig(
+        f'{dir_figs}/Heat_AnthVars_{part_in}_{clust_meth_in}_{model_in}.png',  # Heat_AnthVars_monthly_Horz.png', 
+        dpi = 300,
+        bbox_inches = 'tight'
+        )
+    
+else:
+    plt.show()
 
 
 
 
 
+
+##############################################################
+#############################################################
+##############################################################
 
 
 
 # %%
 # calculate total mean SHAP for each variable type
 
+
+
+
+# define features that are climate
+clim_feats = feat_cats.loc[
+    feat_cats['Coarse_Cat'] == 'Climate', 'Features'
+].reset_index(drop = True)
+clim_feats = clim_feats.str.replace('TS_', '')
+
+# define features that are Physiography features
+phys_feats = feat_cats.loc[
+    feat_cats['Coarse_Cat'] == 'Physiography', 'Features'
+].reset_index(drop = True)
+phys_feats = phys_feats.str.replace('TS_', '')
+
+# define features that are Anthro_Hydro
+anhyd_feats = feat_cats.loc[
+    feat_cats['Coarse_Cat'] == 'Anthro_Hydro', 'Features'
+].reset_index(drop = True)
+anhyd_feats = anhyd_feats.str.replace('TS_', '')
+
+# define features that are Anthro_Land features
+anland_feats = feat_cats.loc[
+    feat_cats['Coarse_Cat'] == 'Anthro_Land', 'Features'
+].reset_index(drop = True)
+anland_feats = anhyd_feats.str.replace('TS_', '')
+
 # mean annual
 
 df_shap_mannual.columns = df_shap_mannual.columns.str.replace('TS_', '')
+df_shap_mannual = df_shap_mannual[df_shap_mannual['clust_meth'].isin(clust_meth_in)]
 
 # climate
 tempclim = df_shap_mannual.iloc[
@@ -882,8 +1014,6 @@ templand = df_shap_mannual.iloc[
     :, df_shap_mannual.columns.isin(anland_feats)
 ]
 
-
-
 df_shaptotout_mannual = pd.DataFrame({
     'Region': df_shap_mannual['region'],
     'Climate_Impact': tempclim.abs().sum(axis = 1),
@@ -897,6 +1027,7 @@ df_shaptotout_mannual = pd.DataFrame({
 # annual
 
 df_shap_annual.columns = df_shap_annual.columns.str.replace('TS_', '')
+df_shap_annual = df_shap_annual[df_shap_annual['clust_meth'].isin(clust_meth_in)]
 
 # climate
 tempclim = df_shap_annual.iloc[
@@ -930,6 +1061,7 @@ df_shaptotout_annual = pd.DataFrame({
 # monthly
 
 df_shap_monthly.columns = df_shap_monthly.columns.str.replace('TS_', '')
+df_shap_monthly = df_shap_monthly[df_shap_monthly['clust_meth'].isin(clust_meth_in)]
 
 # climate
 tempclim = df_shap_monthly.iloc[
@@ -963,8 +1095,9 @@ df_shaptotout_monthly = pd.DataFrame({
 # barplots
 
 # mean annual
-df_shaptotout_mannual.index = df_shaptotout_mannual['Region']
-df_shaptotout_mannual.drop('Region', axis = 1, inplace = True)
+if not df_shaptotout_mannual.index.name == 'Region':
+    df_shaptotout_mannual.index = df_shaptotout_mannual['Region']
+    df_shaptotout_mannual.drop('Region', axis = 1, inplace = True)
 
 
 df_inmannual = pd.DataFrame(
@@ -972,53 +1105,57 @@ df_inmannual = pd.DataFrame(
 )
 
 # # normalize data
-# df_inmannual['Climate'] = df_shaptotout_mannual['Climate_Impact']/df_shaptotout_mannual.sum(axis = 1)
-# df_inmannual['Physiography'] = df_shaptotout_mannual['Physiography_Impact']/df_shaptotout_mannual.sum(axis = 1)
-# df_inmannual['AnthroHydro'] = df_shaptotout_mannual['AnthroHydro_Impact']/df_shaptotout_mannual.sum(axis = 1)
-# df_inmannual['AnthroLand'] = df_shaptotout_mannual['AnthroLand_Impact']/df_shaptotout_mannual.sum(axis = 1)
+df_inmannual['Climate'] = df_shaptotout_mannual['Climate_Impact']/df_shaptotout_mannual.sum(axis = 1)
+df_inmannual['Physiography'] = df_shaptotout_mannual['Physiography_Impact']/df_shaptotout_mannual.sum(axis = 1)
+df_inmannual['AnthroHydro'] = df_shaptotout_mannual['AnthroHydro_Impact']/df_shaptotout_mannual.sum(axis = 1)
+df_inmannual['AnthroLand'] = df_shaptotout_mannual['AnthroLand_Impact']/df_shaptotout_mannual.sum(axis = 1)
 # unnormalized data
-df_inmannual['Climate'] = df_shaptotout_mannual['Climate_Impact']
-df_inmannual['Physiography'] = df_shaptotout_mannual['Physiography_Impact']
-df_inmannual['AnthroHydro'] = df_shaptotout_mannual['AnthroHydro_Impact']
-df_inmannual['AnthroLand'] = df_shaptotout_mannual['AnthroLand_Impact']
+# df_inmannual['Climate'] = df_shaptotout_mannual['Climate_Impact']
+# df_inmannual['Physiography'] = df_shaptotout_mannual['Physiography_Impact']
+# df_inmannual['AnthroHydro'] = df_shaptotout_mannual['AnthroHydro_Impact']
+# df_inmannual['AnthroLand'] = df_shaptotout_mannual['AnthroLand_Impact']
 
 
 # annual
-df_shaptotout_annual.index = df_shaptotout_annual['Region']
-df_shaptotout_annual.drop('Region', axis = 1, inplace = True)
+if not df_shaptotout_annual.index.name == 'Region':
+    df_shaptotout_annual.index = df_shaptotout_annual['Region']
+    df_shaptotout_annual.drop('Region', axis = 1, inplace = True)
 
 df_inannual = pd.DataFrame(
     columns = ['Climate', 'Physiography', 'AnthroHydro', 'AnthroLand']
 )
 # # Normalize data
-# df_inannual['Climate'] = df_shaptotout_annual['Climate_Impact']/df_shaptotout_annual.sum(axis = 1)
-# df_inannual['Physiography'] = df_shaptotout_annual['Physiography_Impact']/df_shaptotout_annual.sum(axis = 1)
-# df_inannual['AnthroHydro'] = df_shaptotout_annual['AnthroHydro_Impact']/df_shaptotout_annual.sum(axis = 1)
-# df_inannual['AnthroLand'] = df_shaptotout_annual['AnthroLand_Impact']/df_shaptotout_annual.sum(axis = 1)
+df_inannual['Climate'] = df_shaptotout_annual['Climate_Impact']/df_shaptotout_annual.sum(axis = 1)
+df_inannual['Physiography'] = df_shaptotout_annual['Physiography_Impact']/df_shaptotout_annual.sum(axis = 1)
+df_inannual['AnthroHydro'] = df_shaptotout_annual['AnthroHydro_Impact']/df_shaptotout_annual.sum(axis = 1)
+df_inannual['AnthroLand'] = df_shaptotout_annual['AnthroLand_Impact']/df_shaptotout_annual.sum(axis = 1)
 # unormalized data
-df_inannual['Climate'] = df_shaptotout_annual['Climate_Impact']
-df_inannual['Physiography'] = df_shaptotout_annual['Physiography_Impact']
-df_inannual['AnthroHydro'] = df_shaptotout_annual['AnthroHydro_Impact']
-df_inannual['AnthroLand'] = df_shaptotout_annual['AnthroLand_Impact']
+# df_inannual['Climate'] = df_shaptotout_annual['Climate_Impact']
+# df_inannual['Physiography'] = df_shaptotout_annual['Physiography_Impact']
+# df_inannual['AnthroHydro'] = df_shaptotout_annual['AnthroHydro_Impact']
+# df_inannual['AnthroLand'] = df_shaptotout_annual['AnthroLand_Impact']
+
+
 # monthly
-df_shaptotout_monthly.index = df_shaptotout_monthly['Region']
-df_shaptotout_monthly.drop('Region', axis = 1, inplace = True)
+if not df_shaptotout_monthly.index.name == 'Region':
+    df_shaptotout_monthly.index = df_shaptotout_monthly['Region']
+    df_shaptotout_monthly.drop('Region', axis = 1, inplace = True)
 
 df_inmonthly = pd.DataFrame(
     columns = ['Climate', 'Physiography', 'AnthroHydro', 'AnthroLand']
 )
 
 # # Normalize data
-# df_inmonthly['Climate'] = df_shaptotout_monthly['Climate_Impact']/df_shaptotout_monthly.sum(axis = 1)
-# df_inmonthly['Physiography'] = df_shaptotout_monthly['Physiography_Impact']/df_shaptotout_monthly.sum(axis = 1)
-# df_inmonthly['AnthroHydro'] = df_shaptotout_monthly['AnthroHydro_Impact']/df_shaptotout_monthly.sum(axis = 1)
-# df_inmonthly['AnthroLand'] = df_shaptotout_monthly['AnthroLand_Impact']/df_shaptotout_monthly.sum(axis = 1)
+df_inmonthly['Climate'] = df_shaptotout_monthly['Climate_Impact']/df_shaptotout_monthly.sum(axis = 1)
+df_inmonthly['Physiography'] = df_shaptotout_monthly['Physiography_Impact']/df_shaptotout_monthly.sum(axis = 1)
+df_inmonthly['AnthroHydro'] = df_shaptotout_monthly['AnthroHydro_Impact']/df_shaptotout_monthly.sum(axis = 1)
+df_inmonthly['AnthroLand'] = df_shaptotout_monthly['AnthroLand_Impact']/df_shaptotout_monthly.sum(axis = 1)
 
 # unnormalize data
-df_inmonthly['Climate'] = df_shaptotout_monthly['Climate_Impact']
-df_inmonthly['Physiography'] = df_shaptotout_monthly['Physiography_Impact']
-df_inmonthly['AnthroHydro'] = df_shaptotout_monthly['AnthroHydro_Impact']
-df_inmonthly['AnthroLand'] = df_shaptotout_monthly['AnthroLand_Impact']
+# df_inmonthly['Climate'] = df_shaptotout_monthly['Climate_Impact']
+# df_inmonthly['Physiography'] = df_shaptotout_monthly['Physiography_Impact']
+# df_inmonthly['AnthroHydro'] = df_shaptotout_monthly['AnthroHydro_Impact']
+# df_inmonthly['AnthroLand'] = df_shaptotout_monthly['AnthroLand_Impact']
 
 
 # df_inmannual = df_inmannual.reindex(df_inannual.columns, axis = 1)
@@ -1031,7 +1168,7 @@ fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize = (12, 4), sharey = True)
 ax1.title.set_text('Mean Annual')
 df_inmannual.plot(
     kind = 'bar', stacked = True, ax = ax1,
-    color = color
+    color = color, width = 0.8
 )
 ax1.set(ylabel = 'Relative contribution of each variable type')
 ax1.annotate('(a)', xy = (10.51, 1.01))
@@ -1040,62 +1177,79 @@ ax1.annotate('(a)', xy = (10.51, 1.01))
 ax2.title.set_text('Annual')
 df_inannual.plot(
     kind = 'bar', stacked = True, ax = ax2, legend = False,
-    color = color
+    color = color, width = 0.8
 )
 ax2.annotate('(b)', xy = (10.51, 1.01))
 
 ax3.title.set_text('Monthly')
 df_inmonthly.plot(
     kind = 'bar', stacked = True, ax = ax3, legend = False,
-    color = color
+    color = color, width = 0.8
 )
 ax3.annotate('(c)', xy = (10.51, 1.01))
 
-# # save fig
-# plt.savefig(
-#     f'{dir_figs}/RelativeContributions_NonNormalized.png', 
-#     dpi = 300,
-#     bbox_inches = 'tight'
-#     )
-
+# save fig
+if save_figs:
+    plt.savefig(
+        f'{dir_figs}/RelativeContributions_{part_in}_{clust_meth_in}_{model_in}.png', 
+        dpi = 300,
+        bbox_inches = 'tight'
+        )
+else:
+    plt.show()
 
 
 # %%
 # df_inmannual['Climate'] = df_shaptotout_mannual['Climate_Impact']/df_shaptotout_mannual.sum(axis = 1)
+if not df_shaptotout_mannual.index.name == 'Region':
+    df_shaptotout_mannual.index = df_shaptotout_mannual['Region']
+    df_shaptotout_mannual.drop('Region', axis = 1, inplace = True)
 
-df_shaptotout_mannual.index = df_shaptotout_mannual['Region']
-df_shaptotout_mannual.drop('Region', axis = 1, inplace = True)
+df_inmannual = pd.DataFrame(
+    columns = ['Physiography', 'AnthroHydro', 'AnthroLand']
+)
 
-
-df_shaptotout_mannual.drop('Climate_Impact', axis = 1, inplace = True)
-df_inmannual['Physiography'] = df_shaptotout_mannual['Physiography_Impact']/df_shaptotout_mannual.sum(axis = 1)
-df_inmannual['AnthroHydro'] = df_shaptotout_mannual['AnthroHydro_Impact']/df_shaptotout_mannual.sum(axis = 1)
-df_inmannual['AnthroLand'] = df_shaptotout_mannual['AnthroLand_Impact']/df_shaptotout_mannual.sum(axis = 1)
+# define temp shaptout dataframe to work with
+df_shaptout_temp = df_shaptotout_mannual.copy()
+if 'Climate_Impact' in df_shaptout_temp.columns:
+    df_shaptout_temp = df_shaptout_temp.drop('Climate_Impact', axis = 1)
+# df_shaptout_temp.drop('Climate_Impact', axis = 1, inplace = True)
+df_inmannual['Physiography'] = df_shaptout_temp['Physiography_Impact']/df_shaptout_temp.sum(axis = 1)
+df_inmannual['AnthroHydro'] = df_shaptout_temp['AnthroHydro_Impact']/df_shaptout_temp.sum(axis = 1)
+df_inmannual['AnthroLand'] = df_shaptout_temp['AnthroLand_Impact']/df_shaptout_temp.sum(axis = 1)
 
 # annual
-df_shaptotout_annual.drop('Climate_Impact', axis = 1, inplace = True)
-df_shaptotout_annual.index = df_shaptotout_annual['Region']
-df_shaptotout_annual.drop('Region', axis = 1, inplace = True)
+# df_shaptotout_annual.drop('Climate_Impact', axis = 1, inplace = True)
+if not df_shaptotout_annual.index.name == 'Region':
+    df_shaptotout_annual.index = df_shaptotout_annual['Region']
+    df_shaptotout_annual.drop('Region', axis = 1, inplace = True)
 
 df_inannual = pd.DataFrame(
     columns = ['Physiography', 'AnthroHydro', 'AnthroLand']
 )
 
-df_inannual['Physiography'] = df_shaptotout_annual['Physiography_Impact']/df_shaptotout_annual.sum(axis = 1)
-df_inannual['AnthroHydro'] = df_shaptotout_annual['AnthroHydro_Impact']/df_shaptotout_annual.sum(axis = 1)
-df_inannual['AnthroLand'] = df_shaptotout_annual['AnthroLand_Impact']/df_shaptotout_annual.sum(axis = 1)
+df_shaptout_temp = df_shaptotout_annual.copy()
+if 'Climate_Impact' in df_shaptout_temp.columns:
+    df_shaptout_temp = df_shaptout_temp.drop('Climate_Impact', axis = 1)
+df_inannual['Physiography'] = df_shaptout_temp['Physiography_Impact']/df_shaptout_temp.sum(axis = 1)
+df_inannual['AnthroHydro'] = df_shaptout_temp['AnthroHydro_Impact']/df_shaptout_temp.sum(axis = 1)
+df_inannual['AnthroLand'] = df_shaptout_temp['AnthroLand_Impact']/df_shaptout_temp.sum(axis = 1)
 
 # monthly
-df_shaptotout_monthly.drop('Climate_Impact', axis = 1, inplace = True)
-df_shaptotout_monthly.index = df_shaptotout_monthly['Region']
-df_shaptotout_monthly.drop('Region', axis = 1, inplace = True)
+# df_shaptout_temp.drop('Climate_Impact', axis = 1, inplace = True)
+if not df_shaptotout_mannual.index.name == 'Region':
+    df_shaptout_temp.index = df_shaptout_temp['Region']
+    df_shaptout_temp.drop('Region', axis = 1, inplace = True)
 
 df_inmonthly = pd.DataFrame(
     columns = ['Physiography', 'AnthroHydro', 'AnthroLand']
 )
-df_inmonthly['Physiography'] = df_shaptotout_monthly['Physiography_Impact']/df_shaptotout_monthly.sum(axis = 1)
-df_inmonthly['AnthroHydro'] = df_shaptotout_monthly['AnthroHydro_Impact']/df_shaptotout_monthly.sum(axis = 1)
-df_inmonthly['AnthroLand'] = df_shaptotout_monthly['AnthroLand_Impact']/df_shaptotout_monthly.sum(axis = 1)
+df_shaptout_temp = df_shaptotout_monthly.copy()
+if 'Climate_Impact' in df_shaptout_temp.columns:
+    df_shaptout_temp = df_shaptout_temp.drop('Climate_Impact', axis = 1)
+df_inmonthly['Physiography'] = df_shaptout_temp['Physiography_Impact']/df_shaptout_temp.sum(axis = 1)
+df_inmonthly['AnthroHydro'] = df_shaptout_temp['AnthroHydro_Impact']/df_shaptout_temp.sum(axis = 1)
+df_inmonthly['AnthroLand'] = df_shaptout_temp['AnthroLand_Impact']/df_shaptout_temp.sum(axis = 1)
 
 # df_inannual.drop('Climate', axis = 1, inplace = True)
 # df_inmonthly.drop('Climate', axis = 1, inplace = True)
@@ -1109,7 +1263,7 @@ fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize = (12, 4), sharey = True)
 ax1.title.set_text('Mean Annual')
 df_inmannual.plot(
     kind = 'bar', stacked = True, ax = ax1,
-    color = color
+    color = color, width = 0.8
 )
 ax1.set(ylabel = 'Relative contribution of each variable type')
 ax1.annotate('(a)', xy = (10.51, 1.01))
@@ -1117,22 +1271,26 @@ ax1.annotate('(a)', xy = (10.51, 1.01))
 ax2.title.set_text('Annual')
 df_inannual.plot(
     kind = 'bar', stacked = True, ax = ax2, legend = False,
-    color = color
+    color = color, width = 0.8
 )
 ax2.annotate('(b)', xy = (10.51, 1.01))
+
 
 
 ax3.title.set_text('Monthly')
 df_inmonthly.plot(
     kind = 'bar', stacked = True, ax = ax3, legend = False,
-    color = color
+    color = color, width = 0.8
 )
 ax3.annotate('(c)', xy = (10.51, 1.01))
 
 # save fig
-# plt.savefig(
-#     f'{dir_figs}/RelativeContributions_WO_Climate.png', 
-#     dpi = 300,
-#     bbox_inches = 'tight'
-#     )
+if save_figs:
+    plt.savefig(
+        f'{dir_figs}/RelativeContributions_WO_Climate_{part_in}_{clust_meth_in}_{model_in}.png', 
+        dpi = 300,
+        bbox_inches = 'tight'
+        )
+else:
+    plt.show()
 # %%

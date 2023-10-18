@@ -54,7 +54,7 @@ df_ID = pd.read_csv(
 # time scales
 time_scale = ['monthly', 'annual', 'mean_annual']
 
-# partition in (training or valint (aka testing))
+# partition in (train or valint (aka testing))
 part_in = 'valnit'
 
 # use 'NSE' or 'KGE'? '|residuals| always used for mean_annual
@@ -331,16 +331,16 @@ for timescale in time_scale:
            
             if timescale == 'mean_annual':
                 best_score = np.min(df_summTemp.loc[
-                    df_summTemp['train_val'] == 'valnit', f'{metric_temp}_qmean'
+                    df_summTemp['train_val'] == part_in, f'{metric_temp}_qmean'
                 ])
             else:
                 best_score = np.max(df_summTemp.loc[
-                    df_summTemp['train_val'] == 'valnit', f'{metric_temp}_qmean'
+                    df_summTemp['train_val'] == part_in, f'{metric_temp}_qmean'
                 ])
 
             # subset to best model based on max valnit NSE    
             best_model = df_summTemp.loc[
-                (df_summTemp['train_val'] == 'valnit') &
+                (df_summTemp['train_val'] == part_in) &
                 (df_summTemp[f'{metric_temp}_qmean'] == best_score),
                 'model'
             ].reset_index(drop = True)
@@ -628,6 +628,8 @@ for timescale in time_scale:
                     df_shap_valout.abs().mean() * np.array(shap_dirxn),
                 ).T
 
+                df_shapmean = df_shapmean/df_WY.mean()
+
             # add current df_shapmean to df_shap_out
             df_shap_out = pd.concat(
                 [df_shap_out, df_shapmean], 
@@ -651,14 +653,14 @@ for timescale in time_scale:
 
     # write df_shap_out to csv
     df_shap_out.to_csv(
-        f'{dir_shapout}/MeanShap_{timescale}.csv',
+        f'{dir_shapout}/MeanShap_{part_in}_{timescale}_normQ.csv',
         index = False,
         mode = 'a'
     )
 
     # write pcas to csv
     df_pca95.to_csv(
-        f'{dir_pcaout}/PCA95_{timescale}.csv',
+        f'{dir_pcaout}/PCA95_{part_in}_{timescale}.csv',
         index = False,
         mode = 'a'
     )
