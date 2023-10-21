@@ -37,7 +37,7 @@ clust_meth =  'AggEcoregion' # 'Class' # 'None' # 'AggEcoregion', 'None',
 # CntlPlains, EastHghlnds, MxWdShld, NorthEast, SECstPlain, SEPlains, 
 # WestMnts, WestPlains, WestXeric 
 # define which region to work with
-region =  'NorthEast' # 'All' # 'CntlPlains' # 'Non-ref' # 'All'
+region =  'SECstPlain' # 'WestMnts' # 'All' # 'CntlPlains' # 'Non-ref' # 'All'
              
 # define time scale working with. This vcombtrainariable will be used to read and
 # write data from and to the correct directories
@@ -73,14 +73,22 @@ model.load_model(
 # voi = 'WTDEPAVE'
 # voi = 'prcp'
 # voi = 'prcp_1'
+voi = 'TS_NLCD_21'
 # voi = 'TS_NLCD_24'
 # voi = 'TS_NLCD_71'
+# voi = 'TS_NLCD_31'
+# voi = 'TS_NLCD_52'
+# voi = 'TS_NLCD_11'
+# voi = 'TS_ag_irrig'
+# voi = 'TS_WaterUse_wu'
+# voi = 'STOR_NID_2009'
 # voi = 'swe'
 # voi = 'SLOPE_PCT'
 # voi = 'BDAVE'
 # voi = 'TS_Housing_HDEN'
 # voi = 'CANALS_PCT'
-voi = 'TOPWET'
+# voi = 'TOPWET'
+
 
 # print trees to dataframe
 df_tree = model.get_booster().trees_to_dataframe()
@@ -89,15 +97,88 @@ df_tree = model.get_booster().trees_to_dataframe()
 df_tree['Feature'] = df_tree['Feature'].str.replace('_x', '')
 
 # subset to shallower branches
-df_tree = df_tree[
-    (df_tree['ID'].str.split('-').str[1] == '0') | \
-    (df_tree['ID'].str.split('-').str[1] == '1')   
-    # df_tree['ID'].str.contains('|'.join(['-0', '-1'])).tolist()
-]
+# df_tree = df_tree[
+#     (df_tree['ID'].str.split('-').str[1] == '0') | \
+#     (df_tree['ID'].str.split('-').str[1] == '1')   
+#     # df_tree['ID'].str.contains('|'.join(['-0', '-1'])).tolist()
+# ]
+
+df_treeGain = df_tree.groupby(['Feature', 'Split'])['Gain'].sum().reset_index()
+df_treeGain['Feat_Split'] = \
+    df_treeGain['Feature'] + '-' + df_treeGain['Split'].round(2).astype(str)
+df_treeGain.sort_values(by = 'Gain', ascending = False).head(20)
+# drop 'leaaf' feature
+df_tree = df_tree[df_tree['Feature'] != 'Leaf']
+
+
+################################
+# gains of each split of each var
+# Calculate the count of values in the 'Category' column
+# value_counts = df_tree['Feature'].value_counts()[20:40]
+
+df_plot = df_treeGain.sort_values(
+    by = 'Gain', ascending = False
+    ).reset_index(drop = True)[120:130]
+df_plot.loc[0:125, 'Feature'].unique()
+# Create a bar plot
+plt.bar(df_plot['Feat_Split'], df_plot['Gain'])
+
+# Adding labels and title
+plt.xlabel('Category')
+plt.ylabel('Gain')
+plt.title('Total gain at split value')
+# Rotate x-axis tick labels and anchor them to the end
+plt.xticks(rotation=45, horizontalalignment='right')
+# Show the plot
+plt.show()
+
+#####################
+
+################################
+# gain of each split
+# Calculate the count of values in the 'Category' column
+# value_counts = df_tree['Feature'].value_counts()[20:40]
+
+# Create a bar plot
+plt.bar(
+    df_tree.loc[df_tree['Feature'] == voi, 'Split'], 
+    df_tree.loc[df_tree['Feature'] == voi, 'Gain'],
+    width = 1)
+
+# Adding labels and title
+plt.xlabel('Split')
+plt.ylabel('Gain')
+plt.title(f'Gains at Specific Split Values - {voi} - {region}')
+# Rotate x-axis tick labels and anchor them to the end
+plt.xticks(rotation=45, horizontalalignment='right')
+# Show the plot
+plt.show()
+
+#####################
+
+
+################################
+# count of each var
+# Calculate the count of values in the 'Category' column
+value_counts = df_tree['Feature'].value_counts()[20:40]
+
+# Create a bar plot
+plt.bar(value_counts.index, value_counts.values)
+
+# Adding labels and title
+plt.xlabel('Category')
+plt.ylabel('Count')
+plt.title('Count of Splits Using Feature')
+# Rotate x-axis tick labels and anchor them to the end
+plt.xticks(rotation=45, horizontalalignment='right')
+# Show the plot
+plt.show()
+
+#####################
 
 print(df_tree.sort_values(
     by = 'Gain', ascending = False
-    ).reset_index(drop = True).loc[0:1000, 'Feature'].unique())
+    ).reset_index(drop = True)['Feature'].unique())
 
 
 # subset trees to nodes where voi appears
@@ -128,6 +209,58 @@ ax = df_tree_voi.Split.hist(bins = nbins)
 ax.set_title(f'Counts of splits in {voi}')
 plt.show()
 df_tree_voi.value_counts('Split')
+
+
+# %% find peaks and plot
+#############################
+
+# define data
+# Compute the histogram
+
+from scipy.signal import find_peaks
+
+df_plot = df_tree[
+    df_tree['Feature'] == voi
+    ].sort_values(by = 'Split').reset_index(drop = True)
+
+df_plot = df_plot.groupby(['Split'])['Gain'].sum().reset_index()
+
+x = df_plot['Split']
+y = df_plot['Gain']
+
+# calc distance threshold and prominence_threshold
+data_range = np.max(y) - np.min(y)
+distance_fraction = 0.0005  # 10% of data range
+prominence_fraction = 0.3  # 20% of data range
+distance_threshold = data_range * distance_fraction
+if distance_threshold < 20: distance_threshold = 20
+prominence_threshold = data_range * prominence_fraction
+print(f'\n\ndistance_threshold: {distance_threshold}')
+print(f'\nprominence_threshold: {prominence_threshold}')
+
+peaks, _ = find_peaks(
+    df_plot['Gain'], 
+    distance = distance_threshold, prominence = prominence_threshold
+    )
+
+# plot
+plt.figure(figsize=(8, 4))
+
+# Plot the continuous data
+plt.plot(
+    x, y,
+    label='Continuous Data', color='b')
+plt.scatter(x.iloc[peaks], 
+            y.iloc[peaks], 
+            c='r', marker='o', label='Peaks')
+
+plt.title(f"Identifying Peaks in Split Values of {voi} Based on Gain")
+plt.xlabel("Split Value")
+plt.ylabel("Gain")
+plt.legend()
+plt.grid(True)
+plt.show()
+
 
 # %%
 # plot tree
