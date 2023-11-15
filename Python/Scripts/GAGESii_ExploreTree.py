@@ -20,19 +20,14 @@ import os
 
 
 
-# from xgboost import plot_tree # can't get to work on 
-# windows (try on linux)
-
-
 #################### To-Do #############################
-# get aliases from FeaturesCategories.csv
-# xxxxxxxxxxxloop through all regions/cluster methods(?)
-# add string labels to peaks in plots
-# use alias name from feature_categories 
+# COMPLETExxxget aliases from FeaturesCategories.csv
+# COMPLETExxxloop through all regions/cluster methods(?)
+# COMPLETExxxadd string labels to peaks in plots
+# COMPLETExxxuse alias name from feature_categories 
 # plot and save plot only if in top n most important features
-# write distance threshold, prominence_threshold, height to data frame
-# write same parameters to 
-# add units to feature_categories.csv and include them in figs/tables
+# COMPLETExxxwrite distance threshold, prominence_threshold, height to data frame
+# COMPLETExxxadd units to feature_categories.csv and include them in figs/tables
 #    units for features uesd in splits
 
 
@@ -64,7 +59,7 @@ dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/Thresholds'
 
 # csv with aliases and categories
 feat_cats = pd.read_csv(
-    'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories.csv'
+    'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories_wUnits.csv'
 )
 
 # csv with general info about catchments
@@ -72,6 +67,55 @@ df_ID = pd.read_csv(
     'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/' \
         'GAGESiiVariables/ID_train.csv'
 )
+
+
+# save fig(s)? (True or False)
+save_fig = False
+
+
+
+# define function to get aliases. Writing so antecedent 
+# aliases are handled
+
+def func_AntAlias(voi_in):
+    # voi_in: varaible of interest
+    patterns = ['prcp_', 'swe_', 'tmax_', 'tmin_', 'vp_']
+
+    if any([x in voi_in for x in patterns]):
+        temp_split = voi_in.split('_')
+
+        temp_alias = feat_cats.loc[
+            feat_cats['Features'] == temp_split[0], 'Alias'
+            ].values[0]
+        
+        temp_alias = f'{temp_alias}-{temp_split[1]}'
+
+    else:
+        temp_alias = feat_cats.loc[
+            feat_cats['Features'] == voi_in, 'Alias'
+            ].values[0]
+
+    return(temp_alias)
+    
+# create same but for units
+def func_AntUnit(voi_in):
+    # voi_in: varaible of interest
+    patterns = ['prcp_', 'swe_', 'tmax_', 'tmin_', 'vp_']
+
+    if any([x in voi_in for x in patterns]):
+        temp_split = voi_in.split('_')
+
+        temp_unit = feat_cats.loc[
+            feat_cats['Features'] == temp_split[0], 'Units'
+            ].values[0]
+        
+    else:
+        temp_unit = feat_cats.loc[
+            feat_cats['Features'] == voi_in, 'Units'
+            ].values[0]
+
+    return(temp_unit)
+
 
 
 # %%
@@ -113,6 +157,9 @@ if not os.path.exists(file_out):
     prominences = []
     left_bases = []
     right_bases = []
+    thresh_dist = []
+    thresh_prom = []
+    thresh_height = []
 
 
     # %%
@@ -146,7 +193,6 @@ if not os.path.exists(file_out):
             
             # loop through variables of interest and find peaks
             for voi in model.get_booster().feature_names:
-
 
     # # %%
     # Write tree to dataframe and Return branches with specified variable
@@ -225,6 +271,9 @@ if not os.path.exists(file_out):
                     prominences = np.append(prominences, 'NA')
                     left_bases = np.append(left_bases, 'NA')
                     right_bases = np.append(right_bases, 'NA')
+                    thresh_dist = np.append(thresh_dist, 'NA')
+                    thresh_prom = np.append(thresh_prom, 'NA')
+                    thresh_height = np.append(thresh_height, 'NA')
 
                     continue
 
@@ -313,6 +362,24 @@ if not os.path.exists(file_out):
                 prominences = np.append(prominences, peakMetrics['prominences'])
                 left_bases = np.append(left_bases, peakMetrics['left_bases'])
                 right_bases = np.append(right_bases, peakMetrics['right_bases'])
+                # tresholds
+                thresh_dist = np.append(
+                    thresh_dist,
+                    np.repeat(distance_threshold, len(peakMetrics['peak_heights']))
+                )
+                thresh_prom = np.append(
+                    thresh_prom,
+                    np.repeat(prominence_threshold, len(peakMetrics['peak_heights']))
+                )
+                thresh_height = np.append(
+                    thresh_height,
+                    np.repeat(height_in, len(peakMetrics['peak_heights']))
+                )
+
+
+    # Get alias_array and units_array
+    alias_array = [func_AntAlias(x) for x in voi_array]
+    units_array = [func_AntUnit(x) for x in voi_array]
 
     # create output dataframe
     df_peaksOut = pd.DataFrame({
@@ -320,12 +387,17 @@ if not os.path.exists(file_out):
         'region': region_out,
         'timescale': timescale_out,
         'variable': voi_array,
+        'alias': alias_array,
+        'units': units_array,
         'peaks': peaks_out,
         'peakGain': peak_gains,
         'peak_heights': peak_heights,
         'prominences': prominences,
         'left_base': left_bases,
-        'right_bases': right_bases
+        'right_bases': right_bases,
+        'distance_threshold': thresh_dist,
+        'prominance_threshold': thresh_prom,
+        'height_threshold': thresh_height
     })
 
     df_peaksOut.to_csv(file_out, index = False)
@@ -365,15 +437,25 @@ reg = 'WestMnts'
 # voi = 'TS_WaterUse_wu'
 # voi = 'TS_Housing_HDEN'
 # voi = 'TS_NLCD_95' # emergent herbaceous wetlands
+# voi = 'TS_NLCD_11' # open water
+voi = 'TS_NLCD_12'
 # voi = 'DRAIN_SQKM'
 # voi = 'CANALS_PCT'
-voi = 'STOR_NID_2009'
+# voi = 'STOR_NID_2009'
 # df_peakPlot = df_peaksOut[
 #     (df_peaksOut['timescale'] == ts) &
 #     (df_peaksOut['clust_meth'] == cm) & 
 #     (df_peaksOut['region'] == reg) & 
 #     (df_peaksOut['variable'] == voi)
 # ]
+
+# get alias and units
+alias_in = feat_cats.loc[
+    feat_cats['Features'] == voi, 'Alias'
+].reset_index(drop = True)[0]
+units_in = feat_cats.loc[
+    feat_cats['Features'] == voi, 'Units'
+].reset_index(drop = True)[0]
 
 ## %% find peaks and plot
 ############################
@@ -518,15 +600,17 @@ for j in range(len(np.array(x)[peaks]) if len(x) > 1 else 1):
         fontsize=12, ha='center', va='bottom')
 
 
-plt.title(f"Peaks in Split Values of {voi} Based on Gain ({ts}, {cm}, {reg})")
+plt.title(f"Peaks in Split Values of {alias_in} [{units_in}]\nBased on Gain ({ts}, {cm}, {reg})")
 plt.xlabel("Split Value")
 plt.ylabel("Gain")
 plt.legend()
 plt.grid(True)
-# plt.show()
-plt.savefig(
-    f'{dir_figs}/Thresholds_{ts}_{cm}_{reg}_{voi}.png', dpi = 300
-)
+if save_fig:
+    plt.savefig(
+        f'{dir_figs}/Thresholds_{ts}_{cm}_{reg}_{voi}.png', dpi = 300
+    )
+else:
+    plt.show()
 
 
 
