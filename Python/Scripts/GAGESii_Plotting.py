@@ -33,7 +33,7 @@ dir_work = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results'
 dir_shap = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
 
 # save figs (True of False?)
-save_figs = True
+save_figs = False
 # directory where to write figs
 dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/SHAP'
 
@@ -144,6 +144,7 @@ df_shap_monthly = pd.read_csv(
 # into cats of interest
 feat_cats = pd.read_csv(
     'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories.csv'
+    # 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories_wUnits.csv'
     )
 # feat_cats['Features'] = feat_cats['Features'].str.replace('TS_', '')
 
@@ -182,16 +183,39 @@ anland_feats = feat_cats.loc[
 ].reset_index(drop = True)
 # anland_feats = anland_feats.str.replace('TS_', '')
 
-# %%
-# eCDF plots
-##############
 
-cmap_str = 'tab20b'
+
+# %% create a custom color map to associate specific colors with regions
+############################
+from matplotlib.colors import ListedColormap
+color_dict = {
+    'CntlPlains': 'blue',
+    'EastHghlnds': 'cyan',
+    'MxWdShld': 'darkgoldenrod',
+    'NorthEast': 'orange',
+    'SECstPlain': 'green',
+    'SEPlains': 'lime',
+    'WestMnts': 'firebrick',
+    'WestPlains': 'tomato',
+    'WestXeric': 'saddlebrown',
+    'Non-ref': 'purple',
+    'Ref': 'palevioletred',
+    'All': 'dimgray'
+}
+custom_cmap = ListedColormap([color_dict[key] for key in color_dict])
+custom_pallete = [color_dict[key] for key in color_dict]
+
+# %%
+# eCDF plots (all three timescales)
+##############
+# metric_in = 'NSE'
+
+cmap_str = custom_pallete
 
 # mean annual
-data_in_mannual = df_resind_mannual[
-    df_resind_mannual['train_val'] == part_in
-]
+data_in_mannual = df_resind_mannual.copy() #[
+#     df_resind_mannual['train_val'] == part_in
+# ]
 
 # data_in_mannual = pd.merge(
 #     data_in_mannual, df_shap_mannual,
@@ -207,9 +231,9 @@ data_in_mannual.sort_values(
 
 
 # annual
-data_in_annual = df_resind_annual[
-    df_resind_annual['train_val'] == part_in
-]
+data_in_annual = df_resind_annual.copy() # [
+#     df_resind_annual['train_val'] == part_in
+# ]
 
 # data_in_annual = pd.merge(
 #     data_in_annual, df_shap_annual,
@@ -223,9 +247,9 @@ data_in_annual.sort_values(
 
 
 # month
-data_in_month = df_resind_monthly[
-    df_resind_monthly['train_val'] == part_in
-]
+data_in_month = df_resind_monthly.copy() # [
+#     df_resind_monthly['train_val'] == part_in
+# ]
 
 # data_in_month = pd.merge(
 #     data_in_month, df_shap_monthly,
@@ -269,33 +293,34 @@ if drop_noise:
     ]
 ####
 
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize = (10, 5), sharey = True)
+fig, axs = plt.subplots(2, 3, figsize = (10, 8), sharey = True)#, sharex = True)
+ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
 
-ax1.set(xlabel = '|residuals| [ft]', 
-        ylabel = 'Non-Exceedence Probability')
-ax1.set_xlim(0, 3)
-ax1.annotate('(a)', xy = (2.7, 0.02))
+# training
+ax1.set_xlim(0, 90)
+ax1.annotate('(a)', xy = (5, 0.2)) #(80, 0.02))
 ax1.grid()
 ax1.title.set_text('Mean Annual')
 sns.ecdfplot(
-    data = data_in_mannual,
+    data = data_in_mannual.query('train_val == "train"'),
     x = '|residuals|',
     hue = 'region',
     linestyle = '--',
     palette = cmap_str,
     ax = ax1
 )
-sns.move_legend(ax1, 'lower center')
+ax1.set(xlabel = '', # '|residuals| [cm]', 
+        ylabel = 'Non-Exceedence Probability (Training Data)')
+sns.move_legend(ax1, 'lower center', ncol = 1)
 ax1.get_legend().set_title('Region')
 
 
 ax2.set_xlim(-1, 1)
-ax2.set(xlabel = metric_in)
-ax2.annotate('(b)', xy = (0.8, 0.02))
+ax2.annotate('(b)', xy = (-0.9, 0.2)) # (0.8, 0.02))
 ax2.grid()
 ax2.title.set_text('Annual')
 sns.ecdfplot(
-    data = data_in_annual,
+    data = data_in_annual.query('train_val == "train"'),
     x = metric_in,
     hue = 'region',
     linestyle = '--',
@@ -303,15 +328,15 @@ sns.ecdfplot(
     ax = ax2,
     legend = False
 )
+ax2.set(xlabel = '') #metric_in)
 
 
 ax3.set_xlim(-1, 1)
-ax3.set(xlabel = metric_in)
-ax3.annotate('(c)', xy = (0.8, 0.02))
+ax3.annotate('(c)', xy = (-0.9, 0.2)) # (0.8, 0.02))
 ax3.grid()
 ax3.title.set_text('Monthly')
 sns.ecdfplot(
-    data = data_in_month,
+    data = data_in_month.query('train_val == "train"'),
     x = metric_in,
     hue = 'region',
     linestyle = '--',
@@ -319,12 +344,65 @@ sns.ecdfplot(
     ax = ax3,
     legend = False
 )
+ax3.set(xlabel = '') # metric_in)
+
+# testing
+ax4.set(xlabel = '|residuals| [cm]', 
+        ylabel = 'Non-Exceedence Probability (Testing Data)')
+ax4.set_xlim(0, 90)
+ax4.annotate('(d)', xy = (5, 0.2)) #(80, 0.02))
+ax4.grid()
+ax4.title.set_text('') # Mean Annual')
+sns.ecdfplot(
+    data = data_in_mannual.query('train_val == "valnit"'),
+    x = '|residuals|',
+    hue = 'region',
+    linestyle = '--',
+    palette = cmap_str,
+    ax = ax4,
+    legend = False
+)
+# sns.move_legend(ax1, 'lower center')
+# ax1.get_legend().set_title('Region')
+
+
+ax5.set_xlim(-1, 1)
+ax5.set(xlabel = metric_in)
+ax5.annotate('(e)', xy = (-0.9, 0.2)) # (0.8, 0.02))
+ax5.grid()
+ax5.title.set_text('') # Annual')
+sns.ecdfplot(
+    data = data_in_annual.query('train_val == "valnit"'),
+    x = metric_in,
+    hue = 'region',
+    linestyle = '--',
+    palette = cmap_str,
+    ax = ax5,
+    legend = False
+)
+
+
+ax6.set_xlim(-1, 1)
+ax6.set(xlabel = metric_in)
+ax6.annotate('(f)', xy = (-0.9, 0.2)) # (0.8, 0.02))
+ax6.grid()
+ax6.title.set_text('') # Monthly')
+sns.ecdfplot(
+    data = data_in_month.query('train_val == "valnit"'),
+    x = metric_in,
+    hue = 'region',
+    linestyle = '--',
+    palette = cmap_str,
+    ax = ax6,
+    legend = False
+)
 
 
 # save fig
 if save_figs:
     plt.savefig(
-        f'{dir_figs}/ecdfs_{part_in}_{clust_meth_in}_{model_in}.png', 
+        # f'{dir_figs}/ecdfs_{part_in}_{clust_meth_in}_{model_in}.png', 
+        f'{dir_figs}/ecdfs_TrainTest_{metric_in}_{clust_meth_in}_{model_in}.png', 
         dpi = 300,
         bbox_inches = 'tight'
         )
@@ -332,9 +410,30 @@ else:
     plt.show()
 
 
+
+
+
+
+
+
+
+
 # %%
 # heatmap of shap values using all variables
 ##############
+# part_in = 'train'
+part_in = 'valnit'
+df_shap_mannual = pd.read_csv(
+    f'{dir_shap}/MeanShap_{part_in}_mean_annual_normQ.csv'
+)
+# annual
+df_shap_annual = pd.read_csv(
+    f'{dir_shap}/MeanShap_{part_in}_annual_normQ.csv'
+)
+# mean annual
+df_shap_monthly = pd.read_csv(
+    f'{dir_shap}/MeanShap_{part_in}_monthly_normQ.csv'
+)
 
 
 # clust_meth_in = 'Nat_3'
@@ -549,9 +648,10 @@ sns.heatmap(
     cbar_kws = {'label': cmap_title,
                 'extend': 'both',
                 'ticks': [vmin_annual, 0, vmax_annual],
-                'shrink': 2,
+                'shrink': 1.5,
                 'pad': 0.01,
                 'use_gridspec': False,
+                'anchor': (0.9, 0), # 'SW',
                 'location': 'bottom'} # ,
     # robust = True
     )
@@ -640,9 +740,9 @@ for x in np.where(monthly_data_plot.index.isin(anhyd_feats))[0]: # np.arange(5, 
     ax3.get_yticklabels()[x].set_color('red')
 
 # annotate 
-ax1.annotate('(a)', xy = (12, 30.5), annotation_clip = False)
-ax2.annotate('(b)', xy = (12, 30.5), annotation_clip = False)
-ax3.annotate('(c)', xy = (12, 30.5), annotation_clip = False)
+ax1.annotate('(a)', xy = (-1.5, 30.5), annotation_clip = False)
+ax2.annotate('(b)', xy = (-1.5, 30.5), annotation_clip = False)
+ax3.annotate('(c)', xy = (-1.5, 30.5), annotation_clip = False)
 
 # save fig
 if save_figs:
@@ -866,11 +966,13 @@ sns.heatmap(
                 'extend': 'both',
                 'ticks': [vmin_annual, 0, vmax_annual],
                 'use_gridspec': False,
-                'shrink': 2,
+                'anchor': (1, 0), # 'SW',
+                'shrink': 1.5,
                 'pad': 0.01,
                 'location': 'bottom'} # ,
     # robust = True
     )
+
 ax2.set(xlabel = 'Region') # ylabel = 'Region') # (xlabel = 'Explanatory Varaibles', 
 # ax2.set_xticklabels(annual_data_plot.columns, ha = 'center')
 ax2.tick_params(axis = 'x',
@@ -935,9 +1037,10 @@ for x in np.where(monthly_data_plot.index.isin(anhyd_feats))[0]: # np.arange(5, 
 
 
 # annotate 
-ax1.annotate('(a)', xy = (12, 21.5), annotation_clip = False)
-ax2.annotate('(b)', xy = (12, 21.5), annotation_clip = False)
-ax3.annotate('(c)', xy = (12, 21.5), annotation_clip = False)
+# annotate 
+ax1.annotate('(a)', xy = (-1.5, 22.5), annotation_clip = False)
+ax2.annotate('(b)', xy = (-1.5, 22.5), annotation_clip = False)
+ax3.annotate('(c)', xy = (-1.5, 22.5), annotation_clip = False)
 
 
 # save fig

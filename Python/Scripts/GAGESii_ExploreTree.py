@@ -45,14 +45,16 @@ import os
 # define time scale working with. This vcombtrainariable will be used to read and
 # write data from and to the correct directories
 timescales = ['monthly', 'annual', 'mean_annual']
-# time_scale = 'monthly' # 'mean_annual', 'annual', 'monthly', 'daily'
+# time_scale = 'monthly' # 'mean_annual', 'annual', 'monthly ', 'daily'
 
 # directory with data to work with
 dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work' 
 # dir_work = '/media/bchoat/Local Disk/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/'
 
 # name to save output peaks dataframe to
-file_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/Peaks.csv'
+file_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/Peaks_Node0.csv'
+# file_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/Peaks_Node0.csv'
+# file_out = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results/Peaks.csv'
 
 # directory in which to save figs, if created I in second half
 dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/Thresholds'
@@ -67,6 +69,11 @@ df_ID = pd.read_csv(
     'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/' \
         'GAGESiiVariables/ID_train.csv'
 )
+
+# which level of tree: 'All', '0', '1'
+# tree_level = '1'
+# tree_level = '0'
+tree_level = '0'
 
 
 # save fig(s)? (True or False)
@@ -193,6 +200,7 @@ if not os.path.exists(file_out):
             
             # loop through variables of interest and find peaks
             for voi in model.get_booster().feature_names:
+                # print(voi)
 
     # # %%
     # Write tree to dataframe and Return branches with specified variable
@@ -205,16 +213,25 @@ if not os.path.exists(file_out):
                 df_tree['Feature'] = df_tree['Feature'].str.replace('_x', '')
 
                 # subset to shallower branches
-                # df_tree = df_tree[
-                #     (df_tree['ID'].str.split('-').str[1] == '0') | \
-                #     (df_tree['ID'].str.split('-').str[1] == '1')   
-                #     # df_tree['ID'].str.contains('|'.join(['-0', '-1'])).tolist()
-                # ]
+                if tree_level == '0':                        
+                    df_tree = df_tree[
+                        df_tree['Node'].isin([0]) # , 1, 2])
+                        # (df_tree['ID'].str.split('-').str[1] == '0') | \
+                        # (df_tree['ID'].str.split('-').str[1] == '1')   
+                        # df_tree['ID'].str.contains('|'.join(['-0', '-1'])).tolist()
+                    ]
+                if tree_level == '1':                        
+                    df_tree = df_tree[
+                        df_tree['Node'].isin([1, 2]) # , 1, 2])
+                        # (df_tree['ID'].str.split('-').str[1] == '0') | \
+                        # (df_tree['ID'].str.split('-').str[1] == '1')   
+                        # df_tree['ID'].str.contains('|'.join(['-0', '-1'])).tolist()
+                    ]
 
-                df_treeGain = df_tree.groupby(['Feature', 'Split'])['Gain'].sum().reset_index()
-                df_treeGain['Feat_Split'] = \
-                    df_treeGain['Feature'] + '-' + df_treeGain['Split'].round(2).astype(str)
-                df_treeGain.sort_values(by = 'Gain', ascending = False).head(20)
+                # df_treeGain = df_tree.groupby(['Feature', 'Split', 'Node'])['Gain'].sum().reset_index()
+                # df_treeGain['Feat_Split'] = \
+                #     df_treeGain['Feature'] + '-' + df_treeGain['Split'].round(2).astype(str)
+                # df_treeGain.sort_values(by = 'Gain', ascending = False).head(20)
                 # drop 'leaaf' feature
                 df_tree = df_tree[df_tree['Feature'] != 'Leaf']
 
@@ -231,10 +248,10 @@ if not os.path.exists(file_out):
                 # # df_tree_voi.loc[df_tree_voi['Feature'] == 'DRAIN_SQKM', 'Split'].value_counts().head(20)
 
                 # sum total gain by each value of area used for splitting nodes
-                df_splitGain = df_tree_voi.groupby('Split').sum('Gain').sort_values(
-                    by = 'Gain', ascending = False
-                    ).head(20)[['Gain']]
-                df_splitGain = df_splitGain.reset_index()
+                # df_splitGain = df_tree_voi.groupby(['Split', 'Node']).sum('Gain').sort_values(
+                #     by = 'Gain', ascending = False
+                #     ).head(20)[['Gain']]
+                # df_splitGain = df_splitGain.reset_index()
 
 
                 # %% find peaks and plot
@@ -403,7 +420,10 @@ if not os.path.exists(file_out):
     df_peaksOut.to_csv(file_out, index = False)
 
 else:
-    df_peaksOut = pd.read_csv(file_out).drop('Unnamed: 0', axis = 1)
+    try:
+        df_peaksOut = pd.read_csv(file_out).drop('Unnamed: 0', axis = 1)
+    except:
+        df_peaksOut = pd.read_csv(file_out)
 
 
 
@@ -424,13 +444,33 @@ df_ex.head(30)
 df_ex.head(100).variable.unique()
 
 
-# %%
+df_expl = pd.merge(
+    df_peaksOut, feat_cats,
+    left_on = ['variable'], right_on = ['Features']
+)
+
+
+df_expl[df_expl['Coarsest_Cat'] == 'Anthro'].sort_values(by = 'peakGain').tail(20)
+
+# %% Plot 
+#####################################
+
 if not os.path.exists(dir_figs):
     os.mkdir(dir_figs)
 # subset data to df for plotting
-ts = 'monthly'
+ts = 'annual'
 cm = 'AggEcoregion'
-reg = 'WestMnts'
+# cm = 'Anth_1'
+# cm = 'None'
+# reg = 'WestMnts'
+reg = 'SECstPlain'
+# reg = '16'
+# reg = 'All'
+# which level of tree: 'All', '0', '1'
+# tree_level = '1'
+# tree_level = '0'
+# tree_level = 'All'
+model._Booster
 # voi = 'BDAVE'
 # voi = 'prcp'
 # voi = 'prcp_1'
@@ -438,10 +478,14 @@ reg = 'WestMnts'
 # voi = 'TS_Housing_HDEN'
 # voi = 'TS_NLCD_95' # emergent herbaceous wetlands
 # voi = 'TS_NLCD_11' # open water
-voi = 'TS_NLCD_12'
+# voi = 'TS_NLCD_12'
+# voi = 'TS_NLCD_21'
+voi = 'TS_NLCD_24'
+# voi = 'TS_ag_irrig'
 # voi = 'DRAIN_SQKM'
 # voi = 'CANALS_PCT'
 # voi = 'STOR_NID_2009'
+# voi = 'PPTAVG_BASIN'
 # df_peakPlot = df_peaksOut[
 #     (df_peaksOut['timescale'] == ts) &
 #     (df_peaksOut['clust_meth'] == cm) & 
@@ -463,7 +507,6 @@ units_in = feat_cats.loc[
 # define data
 # Compute the histogram
 
-
 # first define xgbreg object
 model = xgb.XGBRegressor()
 
@@ -476,13 +519,21 @@ model.load_model(
     f'/Models/XGBoost_{temp_time}_{cm}_{reg}_model.json'
     )
 
-
 # print trees to dataframe
 df_tree = model.get_booster().trees_to_dataframe()
 
 # remove '_x' from DRAIN_SQKM feature label
 df_tree['Feature'] = df_tree['Feature'].str.replace('_x', '')
 
+# subset to shallower branches
+if tree_level == '0':                        
+    df_tree = df_tree[
+        df_tree['Node'].isin([0])
+    ]
+if tree_level == '1':                        
+    df_tree = df_tree[
+        df_tree['Node'].isin([1, 2])
+    ]
 
 df_treeGain = df_tree.groupby(['Feature', 'Split'])['Gain'].sum().reset_index()
 df_treeGain['Feat_Split'] = \
@@ -491,15 +542,14 @@ df_treeGain.sort_values(by = 'Gain', ascending = False).head(20)
 # drop 'leaaf' feature
 df_tree = df_tree[df_tree['Feature'] != 'Leaf']
 
-
 # # subset trees to nodes where voi appears
 df_tree_voi = df_tree[df_tree['Feature'] == voi]
 
 # sum total gain by each value of area used for splitting nodes
-df_splitGain = df_tree_voi.groupby('Split').sum('Gain').sort_values(
-    by = 'Gain', ascending = False
-    ).head(20)[['Gain']]
-df_splitGain = df_splitGain.reset_index()
+# df_splitGain = df_tree_voi.groupby('Split').sum('Gain').sort_values(
+#     by = 'Gain', ascending = False
+#     ).head(20)[['Gain']]
+# df_splitGain = df_splitGain.reset_index()
 
 
 ## %% find peaks and plot
@@ -526,6 +576,7 @@ y = []
 range_len = np.round(x_temp.max()/100, 1) # length of values to sum over
 if range_len == 0: range_len = np.round(x_temp.max()/100, 4)
 if range_len == 0: range_len = np.round(x_temp.max()/100, 6)
+if range_len == 0: range_len = np.round(x_temp.max()/100, 7)
 
 for i in np.arange(0, np.ceil(x_temp.max() + range_len), range_len):
 
