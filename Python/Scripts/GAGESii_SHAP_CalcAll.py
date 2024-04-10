@@ -34,12 +34,12 @@ import xgboost as xgb
 # which to work
 
 # clustering methods
-# clust_meth = ['None', 'Class', 'AggEcoregion']
+clust_meths = ['None', 'Class', 'AggEcoregion']
 
-clust_meths = ['None', 'Class', 'AggEcoregion', 
-        'All_0', 'All_1', 'All_2', 'Anth_0', 'Anth_1', 
-        'CAMELS', 'HLR', 'Nat_0', 'Nat_1', 'Nat_2',
-        'Nat_3', 'Nat_4']
+# clust_meths = ['None', 'Class', 'AggEcoregion', 
+#         'All_0', 'All_1', 'All_2', 'Anth_0', 'Anth_1', 
+#         'CAMELS', 'HLR', 'Nat_0', 'Nat_1', 'Nat_2',
+#         'Nat_3', 'Nat_4']
 
 # clust_meths = ['Nat_3']
 
@@ -55,6 +55,7 @@ df_ID = pd.read_csv(
 time_scale = ['monthly', 'annual', 'mean_annual']
 
 # partition in (train or valint (aka testing))
+# part_in = 'train'
 part_in = 'valnit'
 
 # use 'NSE' or 'KGE'? '|residuals| always used for mean_annual
@@ -230,7 +231,7 @@ for timescale in time_scale:
     df_expl, df_WY, df_ID = load_data_fun(
         dir_work = dir_work, 
         time_scale = timescale,
-        train_val = 'train',
+        train_val = part_in,
         clust_meth = 'AggEcoregion',
         region = 'MxWdShld',
         standardize = False # whether or not to standardize data
@@ -392,7 +393,7 @@ for timescale in time_scale:
             df_expl, df_WY, df_ID = load_data_fun(
                 dir_work = dir_work, 
                 time_scale = timescale,
-                train_val = 'train',
+                train_val = part_in,
                 clust_meth = method,
                 region = cluster,
                 standardize = np.array(stndz) # whether or not to standardize data

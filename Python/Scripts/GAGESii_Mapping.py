@@ -50,6 +50,10 @@ dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
 # prep data
 ##########
 
+# get df_ID with all catchments
+df_ID = pd.concat([df_IDtrain, df_IDvalnit], axis = 0).reset_index(drop=True)
+
+
 # make points from lat long in id files
 # training
 long_train = df_IDtrain['LNG_GAGE']
@@ -148,6 +152,9 @@ ax2.set(
     ylabel = 'Latitude',
     zorder = 5)
 
+# annotations 
+ax1.annotate("n=2,240", (-125, 25), fontsize=15)
+ax2.annotate("n=960", (-125, 25), fontsize=15)
 # legend position
 leg = ax1.get_legend()
 leg.set_bbox_to_anchor((0.37, -0.19))
@@ -160,12 +167,12 @@ ax2.legend(
 
 ax2.get_legend().get_frame().set_edgecolor('none')
 
-# # save fig
-plt.savefig(
-    f'{dir_figs}/RelativeContributions_WO_Climate.png', 
-    dpi = 300,
-    bbox_inches = 'tight'
-    )
+# save fig
+# plt.savefig(
+#     f'{dir_figs}/Map_AggEcoregion_RefOrNot.png', 
+#     dpi = 300,
+#     bbox_inches = 'tight'
+#     )
 
 
 
@@ -192,6 +199,14 @@ plt.savefig(
 # create map of NSE results
 ################
 
+# create list defining if working with ['train'], ['valint'], or both ['train', 'valnit']
+# part_wrk = ['train', 'valnit']
+# part_wrk = ['train']
+part_wrk = ['valnit']
+
+# create list defining which clustering approach to consider
+clust_meths = ['AggEcoregion', 'Class', 'None']
+
 # # read in shap results which hold best score
 # df_shaptrain = pd.read_csv(
 #     'D:/Projects/GAGESiiANNstuff/Data_Out/SHAP_OUT/MeanShap_mean_annual.csv'
@@ -206,6 +221,8 @@ df_indres = pd.read_pickle(
     'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/mean_annual/'
     'combined/All_IndResults_mean_annual.pkl'
 )
+# subset to clustering methods specified
+df_indres = df_indres.query("clust_method in @clust_meths")
 
 # drop pca columns
 df_indres = df_indres[
@@ -215,7 +232,7 @@ df_indres = df_indres[
 
 
 # valnit
-df_indresvalnit = df_indres[df_indres['train_val'] == 'valnit']
+df_indresvalnit = df_indres[df_indres['train_val'].isin(part_wrk)]
 
 # define empty lists to hold output
 
@@ -250,18 +267,18 @@ df_indres = pd.read_pickle(
     'combined/All_IndResults_annual.pkl'
 )
 
+# subset to clustering methods specified
+df_indres = df_indres.query("clust_method in @clust_meths")
+
 # drop pca columns
 df_indres = df_indres[
     ~df_indres['model'].str.contains('PCA')
 ]
- 
-
 
 # valnit
-df_indresvalnit = df_indres[df_indres['train_val'] == 'valnit']
+df_indresvalnit = df_indres[df_indres['train_val'].isin(part_wrk)]
 
 # define empty lists to hold output
-
 temp_sta = []
 temp_best = []
 temp_clust = []
@@ -284,6 +301,10 @@ df_bestvalnit_annual = pd.DataFrame({
     'temp_best': temp_best
 })
 
+# def get_max_score(group):
+#     # print(group)
+#     return group.loc[group['NSE'].idxmax()]
+# test = df_indresvalnit.groupby('STAID').apply(get_max_score)
 
 
 ########################
@@ -295,6 +316,9 @@ df_indres = pd.read_pickle(
     'combined/All_IndResults_monthly.pkl'
 )
 
+# subset to clustering methods specified
+df_indres = df_indres.query("clust_method in @clust_meths")
+
 # drop pca columns
 df_indres = df_indres[
     ~df_indres['model'].str.contains('PCA')
@@ -303,7 +327,7 @@ df_indres = df_indres[
 
 
 # valnit
-df_indresvalnit = df_indres[df_indres['train_val'] == 'valnit']
+df_indresvalnit = df_indres[df_indres['train_val'].isin(part_wrk)]
 
 # define empty lists to hold output
 
@@ -330,11 +354,11 @@ df_bestvalnit_monthly = pd.DataFrame({
 })
 
 # merge best scores nad models with id dataframe
-df_IDvalnit_mannual = pd.merge(df_IDvalnit, df_bestvalnit_mannual)
+df_ID_mannual = pd.merge(df_ID, df_bestvalnit_mannual)
 # calc inverse of residual to displays good performing better
-df_IDvalnit_mannual['temp_best'] = df_IDvalnit_mannual['temp_best']
-df_IDvalnit_annual = pd.merge(df_IDvalnit, df_bestvalnit_annual)
-df_IDvalnit_monthly = pd.merge(df_IDvalnit, df_bestvalnit_monthly)
+df_ID_mannual['temp_best'] = df_ID_mannual['temp_best']
+df_ID_annual = pd.merge(df_ID, df_bestvalnit_annual)
+df_ID_monthly = pd.merge(df_ID, df_bestvalnit_monthly)
 
 # %%
 # prep data
@@ -343,28 +367,28 @@ df_IDvalnit_monthly = pd.merge(df_IDvalnit, df_bestvalnit_monthly)
 # make points from lat long in id files
 # valnit
 # mean annul
-long_valnit = df_IDvalnit_mannual['LNG_GAGE']
-lat_valnit = df_IDvalnit_mannual['LAT_GAGE']
+long_valnit = df_ID_mannual['LNG_GAGE']
+lat_valnit = df_ID_mannual['LAT_GAGE']
 points_valnit = gpd.points_from_xy(long_valnit, lat_valnit, crs = states.crs)
 geo_df_valnit_mannual = gpd.GeoDataFrame(geometry = points_valnit)
-geo_df_valnit_mannual['STAID'] = df_IDvalnit['STAID']
-geo_df_valnit_mannual = geo_df_valnit_mannual.merge(df_IDvalnit_mannual, on = 'STAID')
+geo_df_valnit_mannual['STAID'] = df_ID_mannual['STAID']
+geo_df_valnit_mannual = geo_df_valnit_mannual.merge(df_ID_mannual, on = 'STAID')
 
 # annual
-long_valnit = df_IDvalnit_annual['LNG_GAGE']
-lat_valnit = df_IDvalnit_annual['LAT_GAGE']
+long_valnit = df_ID_annual['LNG_GAGE']
+lat_valnit = df_ID_annual['LAT_GAGE']
 points_valnit = gpd.points_from_xy(long_valnit, lat_valnit, crs = states.crs)
 geo_df_valnit_annual = gpd.GeoDataFrame(geometry = points_valnit)
-geo_df_valnit_annual['STAID'] = df_IDvalnit['STAID']
-geo_df_valnit_annual = geo_df_valnit_annual.merge(df_IDvalnit_annual, on = 'STAID')
+geo_df_valnit_annual['STAID'] = df_ID_annual['STAID']
+geo_df_valnit_annual = geo_df_valnit_annual.merge(df_ID_annual, on = 'STAID')
 
 # monthly
-long_valnit = df_IDvalnit_monthly['LNG_GAGE']
-lat_valnit = df_IDvalnit_monthly['LAT_GAGE']
+long_valnit = df_ID_monthly['LNG_GAGE']
+lat_valnit = df_ID_monthly['LAT_GAGE']
 points_valnit = gpd.points_from_xy(long_valnit, lat_valnit, crs = states.crs)
 geo_df_valnit_monthly = gpd.GeoDataFrame(geometry = points_valnit)
-geo_df_valnit_monthly['STAID'] = df_IDvalnit['STAID']
-geo_df_valnit_monthly = geo_df_valnit_monthly.merge(df_IDvalnit_monthly, on = 'STAID')
+geo_df_valnit_monthly['STAID'] = df_ID_monthly['STAID']
+geo_df_valnit_monthly = geo_df_valnit_monthly.merge(df_ID_monthly, on = 'STAID')
 
 # %%
 # Map
@@ -429,8 +453,8 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'AggEcoregion'].plot(
     marker = 'v',
     legend = True,
     cmap = 'Spectral',
-    vmin = -0.5,
-    vmax = 0.5,
+    vmin = -5,
+    vmax = 5,
     edgecolor = 'k',
     linewidth = 0.5,
     zorder = 5)# ,
@@ -445,8 +469,8 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'None'].plot(
     marker = 'o',
     # legend = True,
     cmap = 'Spectral',
-    vmin = -0.5,
-    vmax = 0.5,
+    vmin = -5,
+    vmax = 5,
     edgecolor = 'k',
     linewidth = 0.5,
     zorder = 5)# ,
@@ -459,8 +483,8 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'Class'].plot(
     marker = '^',
     # legend = True,
     cmap = 'Spectral',
-    vmin = -1,
-    vmax = 1,
+    vmin = -5,
+    vmax = 5,
     edgecolor = 'k',
     linewidth = 0.5,
     zorder = 5)# ,
@@ -560,7 +584,64 @@ geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'Class'].plot(
     linewidth = 0.5,
     zorder = 5)# ,
 
+###############################
+# barplots showing how many scores are from which regionalization approach
+mannual_count = geo_df_valnit_mannual.groupby('Region')['STAID'].count()
+annual_count = geo_df_valnit_annual.groupby('Region')['STAID'].count()
+monthly_count = geo_df_valnit_monthly.groupby('Region')['STAID'].count()
 
+axbar1 = ax1.inset_axes([0.08, 0.1, 0.36, 0.17])
+barp = axbar1.bar([1, 2, 3], mannual_count)
+# Add count to the top of each bar
+for bar in barp:
+    height = bar.get_height()
+    axbar1.text(bar.get_x() + bar.get_width() / 2, 
+                height, str(height),
+                size=8,
+                ha='center', va='bottom')
+# set attributes
+axbar1.set(xticks=[1, 2, 3], 
+           xticklabels=mannual_count.index,
+           facecolor='none',
+           frame_on=False)
+# adjust fontsize
+axbar1.tick_params(axis='both', which='major', labelsize=8) 
+######################
+
+axbar2 = ax2.inset_axes([0.08, 0.1, 0.36, 0.17])
+barp = axbar2.bar([1, 2, 3], annual_count)
+# Add count to the top of each bar
+for bar in barp:
+    height = bar.get_height()
+    axbar2.text(bar.get_x() + bar.get_width() / 2, 
+                height, str(height),
+                size=8,
+                ha='center', va='bottom')
+# set attributes
+axbar2.set(xticks=[1, 2, 3], 
+           xticklabels=annual_count.index,
+           facecolor='none',
+           frame_on=False)
+# adjust fontsize
+axbar2.tick_params(axis='both', which='major', labelsize=8) 
+
+################
+axbar3 = ax3.inset_axes([0.08, 0.1, 0.36, 0.17])
+barp = axbar3.bar([1, 2, 3], monthly_count)
+# Add count to the top of each bar
+for bar in barp:
+    height = bar.get_height()
+    axbar3.text(bar.get_x() + bar.get_width() / 2, 
+                height, str(height),
+                size=8,
+                ha='center', va='bottom')
+# set attributes
+axbar3.set(xticks=[1, 2, 3], 
+           xticklabels=monthly_count.index,
+           facecolor='none',
+           frame_on=False)
+# adjust fontsize
+axbar3.tick_params(axis='both', which='major', labelsize=8) 
 
 
 ##############
@@ -593,19 +674,23 @@ ax3.set(
 ax2.legend(
     handles = [uptri, downtri, circle],
     loc = 'upper right',
-    bbox_to_anchor = (0.3, 0.27))
-ax2.annotate('Grouping Method', xy = (-125.5, 30.4))
+    fontsize=9,
+    bbox_to_anchor = (1.0, 0.27),
+    frameon=False)
+ax2.annotate('Grouping Method', xy = (-79.5, 30.4)) # (-125.5, 30.4))
 ax2.annotate('NSE', xy = (-52, 36.5), rotation = 90, annotation_clip = False)
 ax3.annotate('NSE', xy = (-52, 36.5), rotation = 90, annotation_clip = False)
-ax1.annotate('Residuals', xy = (-52, 35.1), rotation = 90, annotation_clip = False)
+ax1.annotate('Residuals [cm]', xy = (-52, 35.1), rotation = 90, annotation_clip = False)
 
 # ax2.get_legend().set_label('Grouping Method')
 
 # ax2.get_legend().get_frame().set_edgecolor('none')
-
+name_in = 'And'.join(part_wrk)
 # save fig
 plt.savefig(
-    f'{dir_figs}/NSE_Map_valnit.png', 
+    # f'{dir_figs}/NSE_Map_valnit.png', 
+    # f'{dir_figs}/NSE_Map_trainAndValnit.png', 
+    f'{dir_figs}/NSE_Map_{name_in}.png',
     dpi = 300,
     bbox_inches = 'tight'
     )

@@ -29,7 +29,7 @@ from matplotlib.colors import ListedColormap
 dir_work = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results' 
 
 # save figs (True of False?)
-save_figs = False
+save_figs = True
 # directory where to write figs
 dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
 
@@ -396,7 +396,7 @@ sns.kdeplot(
 axsf[13].annotate('(n)', xy = (0.1, 0.355)) # (0.8, 0.02))
 axsf[13].grid()
 axsf[13].title.set_text('')
-axsf[13].set(xlabel = 'alpha', ylabel = '') #metric_in)
+axsf[13].set(xlabel = r'$\alpha=\sigma_p/\sigma_o$', ylabel = '') #metric_in)
 axsf[13].set_xlim(0, 2)
 # axsf[13].set_xticklabels([])
 
@@ -415,7 +415,7 @@ sns.kdeplot(
 axsf[14].annotate('(o)', xy = (0.1, 0.205)) # (0.8, 0.02))
 axsf[14].grid()
 axsf[14].title.set_text('')
-axsf[14].set(xlabel = 'beta', ylabel = '') # metric_in)
+axsf[14].set(xlabel = r'$\beta=\mu_p/\mu_o$', ylabel = '') # metric_in)
 axsf[14].set_xlim(0, 2)
 # axsf[14].set_xticklabels([])
 

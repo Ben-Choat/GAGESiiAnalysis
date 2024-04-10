@@ -51,7 +51,7 @@ clust_meth_in = ['None', 'Class', 'AggEcoregion']
 # which model to calc shaps for
 model_in = 'XGBoost'
 # which metric to use when plotting eCDFs (')
-metric_in = 'KGE'
+metric_in = 'NSE'
 # drop noise?
 drop_noise = False
 
