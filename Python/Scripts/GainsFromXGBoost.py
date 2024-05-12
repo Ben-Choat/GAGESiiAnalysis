@@ -326,9 +326,9 @@ axsf[5].set_yticks([0, 1, 2, 3, 4, 5])
 
 part_name = '_'.join(part_in)
 
-plt.savefig(
-    # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_{part_name}.png',
-    # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest.png',
-    f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest_AllScales.png',
-    dpi = 300, bbox_inches = 'tight'
-)
+# plt.savefig(
+#     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_{part_name}.png',
+#     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest.png',
+#     f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest_AllScales.png',
+#     dpi = 300, bbox_inches = 'tight'
+# )

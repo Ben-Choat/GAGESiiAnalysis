@@ -49,7 +49,9 @@ part_in = 'valnit'
 # clust_meth_in = ['AggEcoregion']
 clust_meth_in = ['None', 'Class', 'AggEcoregion']
 # which model to calc shaps for
-model_in = 'XGBoost'
+# model_in = ['XGBoost']
+# which models to include
+model_in = ['regr_precip', 'strd_mlr', 'XGBoost']
 # which metric to use when plotting eCDFs (')
 metric_in = 'NSE'
 # drop noise?
@@ -185,10 +187,12 @@ anland_feats = feat_cats.loc[
 
 
 
+
 # %% create a custom color map to associate specific colors with regions
 ############################
 from matplotlib.colors import ListedColormap
 color_dict = {
+    'Best': 'gold',
     'CntlPlains': 'blue',
     'EastHghlnds': 'cyan',
     'MxWdShld': 'darkgoldenrod',
@@ -268,17 +272,17 @@ data_in_month.sort_values(
 
 data_in_mannual = data_in_mannual[
     (data_in_mannual['clust_method'].isin(clust_meth_in)) &
-    (data_in_mannual['model'] == model_in)
+    (data_in_mannual['model'].isin(model_in))
 ]
 
 data_in_annual = data_in_annual[
     (data_in_annual['clust_method'].isin(clust_meth_in)) &
-    (data_in_annual['model'] == model_in)
+    (data_in_annual['model'].isin(model_in))
 ]
 
 data_in_month = data_in_month[
     (data_in_month['clust_method'].isin(clust_meth_in)) &
-    (data_in_month['model'] == model_in)
+    (data_in_month['model'].isin(model_in))
 ]
 
 if drop_noise:
@@ -291,6 +295,129 @@ if drop_noise:
     data_in_month = data_in_month[
         data_in_month['region'] != '-1'
     ]
+
+
+# %% get best results for eaach df
+
+## mean annual
+# define empty lists to hold output
+temp_sta = []
+temp_best = []
+train_val = []
+temp_clust = []
+temp_models = []
+temp_region = []
+
+for i in data_in_mannual['STAID'].unique():
+    temp_sta.append(i)
+    df_work = data_in_mannual[(data_in_mannual['STAID'] == i)]#  &
+        # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
+    best_res = np.min(np.abs(df_work['residuals']))
+    temp_clust.append(df_work.loc[
+        df_work['residuals'].abs() == best_res, 'clust_method'
+        ]) 
+    temp_models.append(df_work.loc[
+        df_work['residuals'].abs() == best_res, 'model'
+        ].unique()[0]) 
+    temp_region.append(df_work.loc[
+        df_work['residuals'].abs() == best_res, 'region'
+        ].unique()[0]) 
+    # for trouble shooting
+    if temp_models[-1] == 'Series([], )':
+        break
+    temp_best.append(df_work.loc[
+        df_work['residuals'].abs() == best_res, 'residuals'].values[0])
+    train_val.append(df_work['train_val'].unique()[0])
+
+df_best_mannual = pd.DataFrame({
+    'STAID': temp_sta,
+    'clut_meth': temp_clust,
+    'Region': temp_region,
+    'model': temp_models,
+    'train_val': train_val,
+    '|residuals|': temp_best
+})
+
+
+## annual 
+
+# define empty lists to hold output
+temp_sta = []
+temp_best = []
+train_val = []
+temp_clust = []
+temp_models = []
+temp_region = []
+
+
+for i in data_in_annual['STAID'].unique():
+    temp_sta.append(i)
+    df_work = data_in_annual[(data_in_annual['STAID'] == i)]#  &
+        # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
+    best_res = np.max(df_work[metric_in])
+    temp_clust.append(df_work.loc[
+        df_work[metric_in] == best_res, 'clust_method'
+        ].unique()[0])
+    temp_models.append(df_work.loc[
+        df_work[metric_in] == best_res, 'model'
+        ].unique()[0])
+    temp_region.append(df_work.loc[
+        df_work[metric_in] == best_res, 'region'
+        ].unique()[0])
+    temp_best.append(df_work.loc[
+        df_work[metric_in] == best_res, metric_in].values[0])
+    train_val.append(df_work['train_val'].unique()[0])
+    
+
+df_best_annual = pd.DataFrame({
+    'STAID': temp_sta,
+    'clut_meth': temp_clust,
+    'Region': temp_region,
+    'model': temp_models,
+    'train_val': train_val,
+    metric_in: temp_best
+})
+
+
+## monthly 
+
+# define empty lists to hold output
+temp_sta = []
+temp_best = []
+train_val = []
+temp_clust = []
+temp_models = []
+temp_region = []
+
+for i in data_in_month['STAID'].unique():
+    temp_sta.append(i)
+    df_work = data_in_month[(data_in_month['STAID'] == i)] #  &
+        # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
+    best_res = np.max(df_work[metric_in])
+    temp_clust.append(df_work.loc[
+        df_work[metric_in] == best_res, 'clust_method'
+        ].unique()[0])
+    temp_models.append(df_work.loc[
+        df_work[metric_in] == best_res, 'model'
+        ].unique()[0])
+    temp_region.append(df_work.loc[
+        df_work[metric_in] == best_res, 'region'
+        ].unique()[0])
+    temp_best.append(df_work.loc[
+        df_work[metric_in] == best_res, metric_in].unique()[0])
+    train_val.append(df_work['train_val'].unique()[0])
+
+df_best_monthly = pd.DataFrame({
+    'STAID': temp_sta,
+    'clut_meth': temp_clust,
+    'Region': temp_region,
+    'model': temp_models,
+    'train_val': train_val,
+    metric_in: temp_best
+})
+
+# %%
+
 ####
 
 fig, axs = plt.subplots(2, 3, figsize = (10, 8), sharey = True)#, sharex = True)
@@ -302,9 +429,9 @@ ax1.annotate('(a)', xy = (5, 0.2)) #(80, 0.02))
 ax1.grid()
 ax1.title.set_text('Mean Annual')
 sns.ecdfplot(
-    data = data_in_mannual.query('train_val == "train"'),
+    data = df_best_mannual.query('train_val == "train"'),
     x = '|residuals|',
-    hue = 'region',
+    hue = 'Region',
     linestyle = '--',
     palette = cmap_str,
     ax = ax1
@@ -320,9 +447,9 @@ ax2.annotate('(b)', xy = (-0.9, 0.2)) # (0.8, 0.02))
 ax2.grid()
 ax2.title.set_text('Annual')
 sns.ecdfplot(
-    data = data_in_annual.query('train_val == "train"'),
+    data = df_best_annual.query('train_val == "train"'),
     x = metric_in,
-    hue = 'region',
+    hue = 'Region',
     linestyle = '--',
     palette = cmap_str,
     ax = ax2,
@@ -336,9 +463,9 @@ ax3.annotate('(c)', xy = (-0.9, 0.2)) # (0.8, 0.02))
 ax3.grid()
 ax3.title.set_text('Monthly')
 sns.ecdfplot(
-    data = data_in_month.query('train_val == "train"'),
+    data = df_best_monthly.query('train_val == "train"'),
     x = metric_in,
-    hue = 'region',
+    hue = 'Region',
     linestyle = '--',
     palette = cmap_str,
     ax = ax3,

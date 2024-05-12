@@ -13,7 +13,7 @@ import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-# import seaborn as sns
+import seaborn as sns
 # from shapely.geometry import Point
 import numpy as np
 
@@ -207,10 +207,49 @@ part_wrk = ['valnit']
 # create list defining which clustering approach to consider
 clust_meths = ['AggEcoregion', 'Class', 'None']
 
+# which models to include
+models_in = ['regr_precip', 'strd_mlr', 'XGBoost']
+# models_in = ['regr_precip']
+# models_in = ['strd_mlr']
+# models_in = ['XGBoost']
 # # read in shap results which hold best score
 # df_shaptrain = pd.read_csv(
 #     'D:/Projects/GAGESiiANNstuff/Data_Out/SHAP_OUT/MeanShap_mean_annual.csv'
 # )
+
+
+save_fig = True
+
+# colormap
+# cmap_in = 'Spectral'
+# cmap_in = 'BrBG'
+# cmap_in = 'PuOr'
+# cmap_in = 'gnuplot'
+# cmap_in = 'cividis'
+# Define the colors for the colormap
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import ListedColormap
+import matplotlib as mpl
+colors = ['#ff7f0e', 'white', '#1f77b4']  # blue, white, orange
+n_bins = 100  # Use a large number of bins for smooth color transitions
+
+# Create a colormap object
+cmap_name = 'blue_white_orange'
+cmap_in = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
+# cmap_in = 'magma'
+
+# pallete for barplot inset
+# palette_in = 'tab20c_r'
+# palette_in = 'tab20b'
+palette_in = 'cividis'
+
+# temp_cmap = ListedColormap(['purple', 'cyan', 'gray'])
+# try: 
+#     pal_in_str = mpl.colormaps.register(cmap=temp_cmap)
+# except:
+#     print('cmap already registered')
+
+# palette_in = 'palette_in'
 
 # read in results from independent catchments
 
@@ -233,12 +272,14 @@ df_indres = df_indres[
 
 # valnit
 df_indresvalnit = df_indres[df_indres['train_val'].isin(part_wrk)]
+df_indresvalnit =df_indresvalnit[df_indresvalnit['model'].isin(models_in)]
 
 # define empty lists to hold output
 
 temp_sta = []
 temp_best = []
 temp_clust = []
+temp_models = []
 
 
 for i in df_indresvalnit['STAID'].unique():
@@ -249,12 +290,18 @@ for i in df_indresvalnit['STAID'].unique():
     temp_clust.append(df_work.loc[
         df_work['residuals'].abs() == best_res, 'clust_method'
         ].to_string(index = False))
+    temp_models.append(df_work.loc[
+        df_work['residuals'].abs() == best_res, 'model'
+        ].to_string(index = False))
+    if temp_models[-1] == 'Series([], )':
+        break
     temp_best.append(df_work.loc[
         df_work['residuals'].abs() == best_res, 'residuals'].values[0])
 
 df_bestvalnit_mannual = pd.DataFrame({
     'STAID': temp_sta,
     'Region': temp_clust,
+    'model': temp_models,
     'temp_best': temp_best
 })
 
@@ -277,11 +324,13 @@ df_indres = df_indres[
 
 # valnit
 df_indresvalnit = df_indres[df_indres['train_val'].isin(part_wrk)]
+df_indresvalnit = df_indresvalnit[df_indresvalnit['model'].isin(models_in)]
 
 # define empty lists to hold output
 temp_sta = []
 temp_best = []
 temp_clust = []
+temp_models = []
 
 
 for i in df_indresvalnit['STAID'].unique():
@@ -292,12 +341,17 @@ for i in df_indresvalnit['STAID'].unique():
     temp_clust.append(df_work.loc[
         df_work['NSE'] == best_res, 'clust_method'
         ].to_string(index = False))
+    temp_models.append(df_work.loc[
+        df_work['NSE'] == best_res, 'model'
+        ].to_string(index = False))
     temp_best.append(df_work.loc[
         df_work['NSE'] == best_res, 'NSE'].values[0])
+    
 
 df_bestvalnit_annual = pd.DataFrame({
     'STAID': temp_sta,
     'Region': temp_clust,
+    'model': temp_models,
     'temp_best': temp_best
 })
 
@@ -328,13 +382,14 @@ df_indres = df_indres[
 
 # valnit
 df_indresvalnit = df_indres[df_indres['train_val'].isin(part_wrk)]
+df_indresvalnit = df_indresvalnit[df_indresvalnit['model'].isin(models_in)]
 
 # define empty lists to hold output
 
 temp_sta = []
 temp_best = []
 temp_clust = []
-
+temp_models = []
 
 for i in df_indresvalnit['STAID'].unique():
     temp_sta.append(i)
@@ -344,12 +399,16 @@ for i in df_indresvalnit['STAID'].unique():
     temp_clust.append(df_work.loc[
         df_work['NSE'] == best_res, 'clust_method'
         ].to_string(index = False))
+    temp_models.append(df_work.loc[
+        df_work['NSE'] == best_res, 'model'
+        ].to_string(index = False))
     temp_best.append(df_work.loc[
         df_work['NSE'] == best_res, 'NSE'].values[0])
 
 df_bestvalnit_monthly = pd.DataFrame({
     'STAID': temp_sta,
     'Region': temp_clust,
+    'model': temp_models,
     'temp_best': temp_best
 })
 
@@ -360,7 +419,7 @@ df_ID_mannual['temp_best'] = df_ID_mannual['temp_best']
 df_ID_annual = pd.merge(df_ID, df_bestvalnit_annual)
 df_ID_monthly = pd.merge(df_ID, df_bestvalnit_monthly)
 
-# %%
+## %%
 # prep data
 ##########
 
@@ -390,7 +449,7 @@ geo_df_valnit_monthly = gpd.GeoDataFrame(geometry = points_valnit)
 geo_df_valnit_monthly['STAID'] = df_ID_monthly['STAID']
 geo_df_valnit_monthly = geo_df_valnit_monthly.merge(df_ID_monthly, on = 'STAID')
 
-# %%
+## %%
 # Map
 ##################
 
@@ -452,7 +511,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'AggEcoregion'].plot(
     markersize = 15, 
     marker = 'v',
     legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -5,
     vmax = 5,
     edgecolor = 'k',
@@ -468,7 +527,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'None'].plot(
     markersize = 15, 
     marker = 'o',
     # legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -5,
     vmax = 5,
     edgecolor = 'k',
@@ -482,7 +541,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'Class'].plot(
     markersize = 15, 
     marker = '^',
     # legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -5,
     vmax = 5,
     edgecolor = 'k',
@@ -500,7 +559,7 @@ geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'AggEcoregion'].plot(
     markersize = 15, 
     marker = 'v',
     legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -1,
     vmax = 1,
     edgecolor = 'k',
@@ -516,7 +575,7 @@ geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'None'].plot(
     markersize = 15, 
     marker = 'o',
     # legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -1,
     vmax = 1,
     edgecolor = 'k',
@@ -530,7 +589,7 @@ geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'Class'].plot(
     markersize = 15, 
     marker = '^',
     # legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -1,
     vmax = 1,
     edgecolor = 'k',
@@ -548,7 +607,7 @@ geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'AggEcoregion'].plot(
     markersize = 15, 
     marker = 'v',
     legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -1,
     vmax = 1,
     edgecolor = 'k',
@@ -563,7 +622,7 @@ geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'None'].plot(
     markersize = 15, 
     marker = 'o',
     # legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -1,
     vmax = 1,
     edgecolor = 'k',
@@ -577,7 +636,7 @@ geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'Class'].plot(
     markersize = 15, 
     marker = '^',
     # legend = True,
-    cmap = 'Spectral',
+    cmap = cmap_in,
     vmin = -1,
     vmax = 1,
     edgecolor = 'k',
@@ -590,58 +649,140 @@ mannual_count = geo_df_valnit_mannual.groupby('Region')['STAID'].count()
 annual_count = geo_df_valnit_annual.groupby('Region')['STAID'].count()
 monthly_count = geo_df_valnit_monthly.groupby('Region')['STAID'].count()
 
-axbar1 = ax1.inset_axes([0.08, 0.1, 0.36, 0.17])
-barp = axbar1.bar([1, 2, 3], mannual_count)
-# Add count to the top of each bar
-for bar in barp:
-    height = bar.get_height()
-    axbar1.text(bar.get_x() + bar.get_width() / 2, 
-                height, str(height),
-                size=8,
-                ha='center', va='bottom')
-# set attributes
-axbar1.set(xticks=[1, 2, 3], 
-           xticklabels=mannual_count.index,
+axbar1 = ax1.inset_axes([0.09, 0.1, 0.22, 0.17])
+order_in = ['AggEcoregion', 'Class', 'None']
+hue_order_in = ['regr_precip', 'strd_mlr', 'XGBoost']
+xticklabs_in = mannual_count.index.str.replace('AggEcoregion', 'Eco')
+
+axbar1.patch.set_alpha(0)
+# turn off frame
+# for spine in axbar1.spines.values():
+#     spine.set_visible(False)
+sns.countplot(
+    data = geo_df_valnit_mannual,
+    x = 'Region',
+    hue = 'model',
+    order = order_in,
+    hue_order = hue_order_in,
+    stat = 'percent',
+    palette = palette_in,
+    ax = axbar1
+)
+
+axbar1.legend(loc='center left', fontsize = 9,
+                labels = ['SLR', 'MLR', 'XGBoost'],
+                bbox_to_anchor=(2.95, 0.75), ncol = 1,
+                frameon = False,
+                title = 'Model')
+axbar1.tick_params(axis='x', labelsize=8)
+axbar1.set_ylabel('%   ', rotation = 0)
+axbar1.set_xlabel('')
+axbar1.set(xticks=[0, 1, 2], 
+           xticklabels=xticklabs_in,
            facecolor='none',
            frame_on=False)
-# adjust fontsize
-axbar1.tick_params(axis='both', which='major', labelsize=8) 
+# barp = axbar1.bar([1, 2, 3], mannual_count)
+# Add count to the top of each bar
+
+# for bar in barp:
+#     height = bar.get_height()
+#     axbar1.text(bar.get_x() + bar.get_width() / 2, 
+#                 height, str(height),
+#                 size=8,
+#                 ha='center', va='bottom')
+# # set attributes
+# axbar1.set(xticks=[1, 2, 3], 
+#            xticklabels=mannual_count.index,
+#            facecolor='none',
+#            frame_on=False)
+# # adjust fontsize
+# axbar1.tick_params(axis='both', which='major', labelsize=8) 
 ######################
 
-axbar2 = ax2.inset_axes([0.08, 0.1, 0.36, 0.17])
-barp = axbar2.bar([1, 2, 3], annual_count)
-# Add count to the top of each bar
-for bar in barp:
-    height = bar.get_height()
-    axbar2.text(bar.get_x() + bar.get_width() / 2, 
-                height, str(height),
-                size=8,
-                ha='center', va='bottom')
-# set attributes
-axbar2.set(xticks=[1, 2, 3], 
-           xticklabels=annual_count.index,
+axbar2 = ax2.inset_axes([0.09, 0.1, 0.22, 0.17])
+axbar2.patch.set_alpha(0)
+# turn off frame
+for spine in axbar2.spines.values():
+    spine.set_visible(False)
+sns.countplot(
+    data = geo_df_valnit_annual,
+    x = 'Region',
+    hue = 'model',
+    order = order_in,
+    hue_order = hue_order_in,
+    palette = palette_in,
+    stat = 'percent',
+    ax = axbar2
+)
+
+axbar2.legend(loc='center left', bbox_to_anchor=(2, 0.75), ncol = 1)
+axbar2.legend().remove()
+axbar2.tick_params(axis='x', labelsize=8)
+axbar2.set_ylabel('%   ', rotation = 0)
+axbar2.set_xlabel('')
+axbar2.set(xticks=[0, 1, 2], 
+           xticklabels=xticklabs_in,
            facecolor='none',
            frame_on=False)
-# adjust fontsize
-axbar2.tick_params(axis='both', which='major', labelsize=8) 
+
+# barp = axbar2.bar([1, 2, 3], annual_count)
+# # Add count to the top of each bar
+# for bar in barp:
+#     height = bar.get_height()
+#     axbar2.text(bar.get_x() + bar.get_width() / 2, 
+#                 height, str(height),
+#                 size=8,
+#                 ha='center', va='bottom')
+# # set attributes
+# axbar2.set(xticks=[1, 2, 3], 
+#            xticklabels=annual_count.index,
+#            facecolor='none',
+#            frame_on=False)
+# # adjust fontsize
+# axbar2.tick_params(axis='both', which='major', labelsize=8) 
 
 ################
-axbar3 = ax3.inset_axes([0.08, 0.1, 0.36, 0.17])
-barp = axbar3.bar([1, 2, 3], monthly_count)
-# Add count to the top of each bar
-for bar in barp:
-    height = bar.get_height()
-    axbar3.text(bar.get_x() + bar.get_width() / 2, 
-                height, str(height),
-                size=8,
-                ha='center', va='bottom')
-# set attributes
-axbar3.set(xticks=[1, 2, 3], 
-           xticklabels=monthly_count.index,
+axbar3 = ax3.inset_axes([0.09, 0.1, 0.22, 0.17])
+axbar3.patch.set_alpha(0)
+# turn off frame
+for spine in axbar3.spines.values():
+    spine.set_visible(False)
+sns.countplot(
+    data = geo_df_valnit_monthly,
+    x = 'Region',
+    hue = 'model',
+    order = order_in,
+    hue_order = hue_order_in,
+    stat = 'percent',
+    palette = palette_in,
+    ax = axbar3
+)
+
+axbar3.legend(loc='center left', bbox_to_anchor=(2, 0.75), ncol = 1)
+axbar3.legend().remove()
+axbar3.tick_params(axis='x', labelsize=8)
+axbar3.set_ylabel('%   ', rotation = 0)
+axbar3.set_xlabel('')
+axbar3.set(xticks=[0, 1, 2], 
+           xticklabels=xticklabs_in,
            facecolor='none',
            frame_on=False)
-# adjust fontsize
-axbar3.tick_params(axis='both', which='major', labelsize=8) 
+
+# barp = axbar3.bar([1, 2, 3], monthly_count)
+# # Add count to the top of each bar
+# for bar in barp:
+#     height = bar.get_height()
+#     axbar3.text(bar.get_x() + bar.get_width() / 2, 
+#                 height, str(height),
+#                 size=8,
+#                 ha='center', va='bottom')
+# # set attributes
+# axbar3.set(xticks=[1, 2, 3], 
+#            xticklabels=monthly_count.index,
+#            facecolor='none',
+#            frame_on=False)
+# # adjust fontsize
+# axbar3.tick_params(axis='both', which='major', labelsize=8) 
 
 
 ##############
@@ -672,10 +813,11 @@ ax3.set(
 # leg.get_frame().set_edgecolor('none')
 
 ax2.legend(
-    handles = [uptri, downtri, circle],
+    handles = [downtri, uptri, circle],
+    labels = ['Eco', 'Class', 'None'],
     loc = 'upper right',
     fontsize=9,
-    bbox_to_anchor = (1.0, 0.27),
+    bbox_to_anchor = (0.95, 0.27),
     frameon=False)
 ax2.annotate('Grouping Method', xy = (-79.5, 30.4)) # (-125.5, 30.4))
 ax2.annotate('NSE', xy = (-52, 36.5), rotation = 90, annotation_clip = False)
@@ -685,14 +827,16 @@ ax1.annotate('Residuals [cm]', xy = (-52, 35.1), rotation = 90, annotation_clip 
 # ax2.get_legend().set_label('Grouping Method')
 
 # ax2.get_legend().get_frame().set_edgecolor('none')
-name_in = 'And'.join(part_wrk)
+name_in = 'And'.join(part_wrk)+'_'+'And'.join(models_in)
+print(f'saving NSE_Map_{name_in}.png')
 # save fig
-plt.savefig(
-    # f'{dir_figs}/NSE_Map_valnit.png', 
-    # f'{dir_figs}/NSE_Map_trainAndValnit.png', 
-    f'{dir_figs}/NSE_Map_{name_in}.png',
-    dpi = 300,
-    bbox_inches = 'tight'
-    )
+if save_fig: 
+    plt.savefig(
+        # f'{dir_figs}/NSE_Map_valnit.png', 
+        # f'{dir_figs}/NSE_Map_trainAndValnit.png', 
+        f'{dir_figs}/NSE_Map_{name_in}.png',
+        dpi = 300,
+        bbox_inches = 'tight'
+        )
 
 # %%

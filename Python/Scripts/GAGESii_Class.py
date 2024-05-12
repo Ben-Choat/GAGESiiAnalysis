@@ -47,10 +47,10 @@ import hdbscan # for hdbscan clustering
 # from mpl_toolkits.mplot3d import Axes3D # plot 3d plot
 # import plotly as ply # interactive plots
 # import plotly.io as pio5 # easier interactive plots
-# import plotly.express as px # easier interactive plots
+import plotly.express as px # easier interactive plots
 # import matplotlib.pyplot as plt # plotting
 # from matplotlib import cm
-# import plotnine as p9
+import plotnine as p9
 # import seaborn as sns # easier interactive plots
 
 import numpy as np # matrix operations/data manipulation

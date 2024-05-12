@@ -44,7 +44,7 @@ cand_parms_all = pd.read_csv(
 cand_parms_nat = pd.read_csv(
     f'{dir_umaphd}/UMAP_HDBSCAN_NatVars_ParamSearch_Results.csv'
     )
-# and then from clustering based on Nat then Anth vars
+# and then from clustering based on Anth vars
 cand_parms_anth = pd.read_csv(
     f'{dir_umaphd}/UMAP_HDBSCAN_AnthroVars_ParamSearch_Results.csv'
     )
@@ -237,7 +237,7 @@ df_valnitexpl_Nat = df_valnitexpl[
 cnt = 0
 
 # keep only 5 parameter sets with best validity index scores
-cand_parms_nat = cand_parms_nat[0:5]
+cand_parms_nat = cand_parms_nat[0:1]
 
 for params in cand_parms_nat.itertuples(index = False):
     print(params)
