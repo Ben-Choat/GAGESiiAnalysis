@@ -34,15 +34,19 @@ def load_data_fun(
 
     # define sub-directories
     # water yield directory
-    dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+    # dir_WY = 'D:/DataWorking/USGS_discharge/train_val_test'
+    dir_WY = 'C:/Users/bench/OneDrive/Data/USGS_discharge/train_val_test'
     # dir_WY = f'{dir_work}/data_work/USGS_discharge'
 
     # explantory var (and other data) directory
-    dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+    # dir_expl = 'D:/Projects/GAGESii_ANNstuff/Data_Out/AllVars_Partitioned'
+    dir_expl = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff'\
+                '/Data_Out/AllVars_Partitioned'
     # dir_expl = f'{dir_work}/data_work/GAGESiiVariables'
 
     # DAYMET directory
-    dir_DMT = 'D:/DataWorking/Daymet/train_val_test'
+    # dir_DMT = 'D:/DataWorking/Daymet/train_val_test'
+    dir_DMT = 'C:/Users/bench/OneDrive/Data/Daymet/train_val_test'
     # dir_DMT = f'{dir_work}/data_work/Daymet'
     
     # Define features not to transform

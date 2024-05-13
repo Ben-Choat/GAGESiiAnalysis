@@ -326,28 +326,63 @@ for clust_var in clust_vars:
 # x, y, z = np.cos(t), np.sin(t), t
 
 
-def animate3dScatter(x, y, z, color_in, labs_in, title_id):
+def animate3dScatter(df_in, x, y, z, color_in, labs_in, title_id):
     '''
     parameters:
     ------------------------------
-    x, y, z (numpy arrays; float): arrays of x, y, and z values
-    color_in (numpy array or pandas series; str): values to be used for coloring points
-    labs_in (numpy array or pandas series; str): values to show in hover pop up
+    df_in (pandas dataframe): dataframe containing 3 columns, one for values in each 
+        of the three directions for the scatter
+    x, y, z (strings): names of columns in df_in to plot
+    color_in (str): name of column in df_in with values to be used for 
+        coloring points
+    labs_in (str): name of column in df_in with values to show in hover pop up
     title_id (str): used in title of plot (as part of title, not entire title)
     '''
     import plotly.graph_objects as go
     import numpy as np
 
-    fig= go.Figure()
+    # define colormap to be used (should match cluster plots)
+    cmap_in = ['black', 'orange', 'blue', 'purple', 'brown', 
+            'gray', 'dodgerblue',  'lightcoral', 'darkkhaki', 'lime', 'cyan', 
+            'red', 'slateblue', 'pink', 'indigo', 'maroon', 'chocolate', 'teal',
+            'yellowgreen', 'silver', 'yellow', 'darkgoldenrod', 'deeppink',
+            'lightgreen', 'peru', 'crimson', 'saddlebrown', 'green']
+
+
+    # sort values so clusters and colors align
+    df_in = df_in.sort_values(by = color_in)
+    # color_in = df_in[color_in].unique().values
     
-    fig.add_trace(go.Scatter3d(x=x, y=y, z=z, 
-                                mode='markers',
-                                marker=dict(
-                                    color=color_in,
-                                    colorscale='Viridis',
-                                    size=5
-                                ),
-                                customdata=np.stack([labs_in, color_in], axis=1)))
+
+    fig= go.Figure()
+
+    for j in range(len(df_in[color_in].unique())):
+        col_temp = df_in[color_in].unique()[j]
+        
+        print(f'col_temp: {col_temp}')
+        print(f'x: {x}')
+        df_temp = df_in[df_in[color_in] == col_temp]
+        # .query("@color_in == @col_temp")
+
+        # color_in = df_in[color_in].values
+        
+        color_in_temp = df_temp[color_in]
+        cmap_temp = cmap_in[j]
+        x_temp = df_temp[x]
+        y_temp = df_temp[y]
+        z_temp = df_temp[z]
+        labs_in_temp = df_temp[labs_in].values
+    
+        fig.add_trace(go.Scatter3d(x=x_temp, y=y_temp, z=z_temp, 
+                                    mode='markers',
+                                    marker=dict(
+                                        color=cmap_temp,# col_temp,
+                                        # colorscale='Viridis',
+                                        size=8,
+                                        # colorbar=dict(thickness=20)
+                                    ),
+                                    customdata=np.stack([labs_in_temp, color_in_temp], axis=1),
+                                    name=str(col_temp)))
     
     fig.update_traces(hovertemplate = "<br>".join([
                         "STAID: %{customdata[0]}"]) +
@@ -375,7 +410,7 @@ def animate3dScatter(x, y, z, color_in, labs_in, title_id):
                     x=0.8,
                     xanchor='left',
                     yanchor='bottom',
-                    pad=dict(t=45, r=10),
+                    pad=dict(t=25, r=10),
                     buttons=[dict(label='Play',
                                     method='animate',
                                     args=[None, dict(frame=dict(duration=5, redraw=True), 
@@ -403,10 +438,25 @@ def animate3dScatter(x, y, z, color_in, labs_in, title_id):
                     tickfont=dict(size=fontsize),  # Adjust the size of the z-axis tick labels
                     title = 'Embedding 3'
                     )
+                ),
+                legend=dict(
+                    x=0.8,
+                    y=0.5,
+                    traceorder='normal',
+                    bgcolor='rgba(255, 255, 255, 0.5)',
+                    # bordercolor='rgba(0, 0, 0, 0.5)',
+                    # borderwidth=2
                 )
-            
+                        
 
     ),
+
+    # fig.update_layout(coloraxis=dict(
+    #         colorbar=dict(
+    #             title='Color Scale')))  # Add colorbar
+    
+    
+    
 
 
     def rotate_z(x, y, z, theta):
@@ -424,12 +474,10 @@ def animate3dScatter(x, y, z, color_in, labs_in, title_id):
 
     # return (fig)
 
-# define x, y, and z for the plot (series, arrays, or lists ... I think)
-x = df_plot['Emb 0'].values
-y = df_plot['Emb 1'].values
-z = df_plot['Emb 2'].values
 
-animate3dScatter(x, y , z, 
-                 df_plot['Cluster'].values, 
-                 df_plot['STAID'].values, 
+# MAKE PLOT
+animate3dScatter(df_plot, 
+                'Emb 1', 'Emb 2', 'Emb 3',
+                 'Cluster', 
+                 'STAID', 
                  f'{clust_var} variables ({i})')
