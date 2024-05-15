@@ -1,4 +1,5 @@
 '''
+
 BChoat 2024/05/08
 
 Generate embeddings for uamp models that
@@ -175,7 +176,7 @@ for clust_var in clust_vars:
         print(params)
 
         if os.path.exists(f'{dir_umaphd}/UMAP_Embeddings_{clust_var}_{i}.csv') & \
-                        (not save_emb):
+                            (not save_emb):
             print('\n embedding file exists, reading it in.')
             allEmb_temp = pd.read_csv(
                 f'{dir_umaphd}/UMAP_Embeddings_{clust_var}_{i}.csv'
@@ -250,6 +251,12 @@ for clust_var in clust_vars:
         # change order so clusters appear in order
         df_plot = allEmb_temp[allEmb_temp['partition'] == 'valnit']
 
+        df_plot['Cluster'] = df_plot['Cluster'].astype(str)
+
+        x_eye = -1 # -1.25
+        y_eye = 2
+        z_eye = 1
+
         fig = px.scatter_3d(
             df_plot,
             x = 'Emb 0',
@@ -262,6 +269,8 @@ for clust_var in clust_vars:
                         hovertemplate = "<br>".join([
                         "STAID: %{customdata[0]}"
                             ]))
+                            
+        
         fontsize = 10
         fig.update_layout(template='presentation',
             #   legend_title_text='Operation<br>Mode',
@@ -270,17 +279,21 @@ for clust_var in clust_vars:
             margin=dict(t=50, r=0, b=50, l=0),
             scene=dict(
                 xaxis=dict(
-                    tickfont=dict(size=fontsize)  # Adjust the size of the x-axis tick labels
+                    tickfont=dict(size=fontsize),  # Adjust the size of the x-axis tick labels
+                    title='Embedding 1'
                     )
                 ,
                 yaxis=dict(
-                    tickfont=dict(size=fontsize)  # Adjust the size of the y-axis tick labels
+                    tickfont=dict(size=fontsize),  # Adjust the size of the y-axis tick labels
+                    title='Embedding 2'
                     )
                 ,
                 zaxis=dict(
-                    tickfont=dict(size=fontsize)  # Adjust the size of the z-axis tick labels
+                    tickfont=dict(size=fontsize),  # Adjust the size of the z-axis tick labels
+                    title='Embedding 3'
                     )
-                )
+                ),
+                scene_camera_eye=dict(x=x_eye, y=y_eye, z=z_eye),
             )
         
                 #   legend = dict(font = dict(size=35))
@@ -325,8 +338,10 @@ for clust_var in clust_vars:
 # t = np.linspace(0, 10, 50)
 # x, y, z = np.cos(t), np.sin(t), t
 
-
-def animate3dScatter(df_in, x, y, z, color_in, labs_in, title_id):
+# file_out='C:/Python/test.html'
+def animate3dScatter(df_in, x, y, z, 
+                     color_in, labs_in, 
+                     title_id, file_out='temp', save_plot=False):
     '''
     parameters:
     ------------------------------
@@ -337,6 +352,8 @@ def animate3dScatter(df_in, x, y, z, color_in, labs_in, title_id):
         coloring points
     labs_in (str): name of column in df_in with values to show in hover pop up
     title_id (str): used in title of plot (as part of title, not entire title)
+    save_plot (boolean): if True save plot with name file_out
+    file_out (str): filename if want to save file. file saves as html
     '''
     import plotly.graph_objects as go
     import numpy as np
@@ -470,7 +487,8 @@ def animate3dScatter(df_in, x, y, z, color_in, labs_in, title_id):
     fig.frames=frames
 
     fig.show()
-    fig.write_html('C:/Python/test.html')
+    if save_plot:
+        fig.write_html(file_out)
 
     # return (fig)
 
@@ -481,3 +499,138 @@ animate3dScatter(df_plot,
                  'Cluster', 
                  'STAID', 
                  f'{clust_var} variables ({i})')
+
+
+# %% Function to create static 3d scatter plot
+######################################
+
+
+def static3dScatter(df_in, x, y, z, 
+                     color_in, labs_in, 
+                     title_id, save_plot=False, file_out="temp"):
+    '''
+    parameters:
+    ------------------------------
+    df_in (pandas dataframe): dataframe containing 3 columns, one for values in each 
+        of the three directions for the scatter
+    x, y, z (strings): names of columns in df_in to plot
+    color_in (str): name of column in df_in with values to be used for 
+        coloring points
+    labs_in (str): name of column in df_in with values to show in hover pop up
+    title_id (str): used in title of plot (as part of title, not entire title)
+    save_plot (boolean): if True save plot with name file_out
+    file_out (str): filename if want to save file. file saves as html
+    '''
+
+    import plotly.io as pio
+    import plotly.express as px
+
+    # define colormap to be used (should match cluster plots)
+    cmap_in = ['black', 'orange', 'blue', 'purple', 'brown', 
+            'gray', 'dodgerblue',  'lightcoral', 'darkkhaki', 'lime', 'cyan', 
+            'red', 'slateblue', 'pink', 'indigo', 'maroon', 'chocolate', 'teal',
+            'yellowgreen', 'silver', 'yellow', 'darkgoldenrod', 'deeppink',
+            'lightgreen', 'peru', 'crimson', 'saddlebrown', 'green']
+
+    # sort values so clusters and colors align
+    df_in = df_in.sort_values(by = color_in)
+
+    # replace any '-1's with 'Noise'
+    df_in[color_in] = df_in[color_in].replace('-1', 'Noise')
+
+    # ensure cluster column is a string
+    df_in[color_in] = df_in[color_in].astype(str)
+    # color_in = df_in[color_in].unique().values
+    x_eye = -1# -1 # 3.14 # -1.25
+    y_eye = -1.8 # -2
+    z_eye = 0.9# 1
+
+    discrete_cmap = {df_in[color_in].unique()[i]: cmap_in[i] for \
+                        i in range(len(df_in[color_in].unique()))}
+
+    fig = px.scatter_3d(
+        df_in,
+        x = x,
+        y = y,
+        z = z,
+        color = color_in,
+        color_discrete_map=discrete_cmap,
+        title = f'{clust_var}_{i}',
+        custom_data=[labs_in, color_in])
+
+# np.stack([df_in[labs_in].values, 
+#         df_in[color_in].values], axis=1))    
+    fig.update_traces(marker_size = 15,
+                      marker_opacity = 0.6,
+                    hovertemplate = "<br>".join([
+                    "STAID: %{customdata[0]}" +
+                    '<br>' +
+                    '<br>'.join([
+                        'Cluster: %{customdata[1]}'
+                    ])
+                        ]))
+                        
+    
+    fontsize = 1 # axis label fontsize 
+    size_axis_titles = 30 # axis title fontsize
+    fig.update_layout(template='presentation',
+        #   legend_title_text='Operation<br>Mode',
+        #   title = dict(text = f'Wind Rose: {years_in[0]}-{years_in[1]}',
+                    #    font = dict(size=50)),
+        title = 'test',
+        margin=dict(t=0, r=0, b=00, l=0),
+        scene=dict(
+            xaxis=dict(
+                tickfont=dict(size=fontsize),  # Adjust the size of the x-axis tick labels
+                title=dict(text='Embedding 1', font=dict(size=size_axis_titles))
+                )
+            ,
+            yaxis=dict(
+                tickfont=dict(size=fontsize),  # Adjust the size of the y-axis tick labels
+                title=dict(text='Embedding 2', font=dict(size=size_axis_titles))
+                )
+            ,
+            zaxis=dict(
+                tickfont=dict(size=fontsize),  # Adjust the size of the z-axis tick labels
+                title=dict(text='Embedding 3', font=dict(size=size_axis_titles))
+                )
+            ),
+            scene_camera_eye=dict(x=x_eye, y=y_eye, z=z_eye),
+           
+           legend=dict(
+                    x=0.9,
+                    y=0.5,
+                    traceorder='normal',
+                    bgcolor='rgba(255, 255, 255, 0.5)',
+                    font=dict(size = 40)
+                    # bordercolor='rgba(0, 0, 0, 0.5)',
+                    # borderwidth=2
+                )
+
+
+        )
+    
+              
+            
+    fig.show()
+    if save_plot:
+        # save a figure of 300dpi, with 1.5 inches, and  height 0.75inches
+        dpi=300
+        width=7 # inches
+        height=4 # inches
+        # pio.write_image(fig, file_out, width=width*dpi,
+        #                 height=height*dpi, scale=1)
+        fig.write_image(file_out, engine = 'kaleido', width=width*dpi,
+                          height=height*dpi, scale=1)
+    # else:
+        
+
+
+static3dScatter(df_plot, 
+                'Emb 1', 'Emb 2', 'Emb 3',
+                 'Cluster', 
+                 'STAID', 
+                 f'{clust_var} variables ({i})',
+                 True,
+                 'C:/Python/test.png')
+
