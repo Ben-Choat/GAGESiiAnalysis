@@ -223,15 +223,17 @@ def static3dScatter(df_in, x, y, z,
     # sort values so clusters and colors align
     df_in = df_in.sort_values(by = color_in)
 
+    # ensure cluster column is a string
+    df_in[color_in] = df_in[color_in].astype(str)
+
     # replace any '-1's with 'Noise'
     df_in[color_in] = df_in[color_in].replace('-1', 'Noise')
 
-    # ensure cluster column is a string
-    df_in[color_in] = df_in[color_in].astype(str)
+    
     # color_in = df_in[color_in].unique().values
-    x_eye = -1# -1 # 3.14 # -1.25
+    x_eye = -1# -1 # 3.14 # -1.25 # ANTH 1.8
     y_eye = -1.8 # -2
-    z_eye = 0.9# 1
+    z_eye = 0.9 # # ANTH
 
     discrete_cmap = {df_in[color_in].unique()[i]: cmap_in[i] for \
                         i in range(len(df_in[color_in].unique()))}
@@ -368,11 +370,12 @@ def geoScatter(df_in, lon, lat,
     # sort values so clusters and colors align
     df_in = df_in.sort_values(by = color_in)
 
+    # ensure cluster column is a string
+    df_in[color_in] = df_in[color_in].astype(str)
+
     # replace any '-1's with 'Noise'
     df_in[color_in] = df_in[color_in].replace('-1', 'Noise')
 
-    # ensure cluster column is a string
-    df_in[color_in] = df_in[color_in].astype(str)
     # color_in = df_in[color_in].unique().values
     x_eye = -1# -1 # 3.14 # -1.25
     y_eye = -1.8 # -2
@@ -545,7 +548,7 @@ if __name__ == '__main__':
     save_emb = False
 
     # which vars were clusters based on?
-    clust_vars = ['All', 'Nat', 'Anth']#  ['All'] # ['Nat']
+    clust_vars = ['Anth'] # ['All', 'Nat', 'Anth']#  ['All'] # ['Nat']
 
 
     # %%
