@@ -24,7 +24,8 @@ import numpy as np
 
 # spatial file of us
 states = gpd.read_file(
-    'D:/DataWorking/cb_2018_us_state_20m/cb_2018_us_state_20m.shp'
+    # 'D:/DataWorking/ _20m/cb_2018_us_state_20m.shp'
+    'C:/Users/bench/OneDrive/Data/cb_2018_us_state_20m/cb_2018_us_state_20m.shp'
 )
 # filter out Alaska, Hawaii, and Puerto Rico
 states = states[~states['NAME'].isin(['Alaska', 'Puerto Rico', 'Hawaii'])]
@@ -32,19 +33,22 @@ states = states[~states['NAME'].isin(['Alaska', 'Puerto Rico', 'Hawaii'])]
 
 # read in id data with lat, long, aggecoregion, and reference vs non-reference
 df_IDtrain = pd.read_csv(
-    'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/GAGESiiVariables/'
-    'ID_train.csv',
+    # 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/GAGESiiVariables/'
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work'\
+        '/data_work/GAGESiiVariables/ID_train.csv',
     dtype = {'STAID': 'string'}
 )
 
 df_IDvalnit = pd.read_csv(
-    'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/GAGESiiVariables/'
-    'ID_valnit.csv',
+    # 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/GAGESiiVariables/'
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work'\
+        '/data_work/GAGESiiVariables/ID_valnit.csv',
     dtype = {'STAID': 'string'}
 )
 
 # directory where to write figs
-dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
+# dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
+dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures'
 
 # %%
 # prep data
@@ -93,6 +97,7 @@ cross = mlines.Line2D([], [], color = 'black', marker = 'x',
 circle = mlines.Line2D([], [], color = 'black', marker = 'o',
                         linestyle = 'None', markersize = 5,
                         label = 'Non-Reference')
+
 
 
 # define base axes as state boundaries
@@ -208,17 +213,17 @@ part_wrk = ['valnit']
 clust_meths = ['AggEcoregion', 'Class', 'None']
 
 # which models to include
-models_in = ['regr_precip', 'strd_mlr', 'XGBoost']
+# models_in = ['regr_precip', 'strd_mlr', 'XGBoost']
 # models_in = ['regr_precip']
 # models_in = ['strd_mlr']
-# models_in = ['XGBoost']
+models_in = ['XGBoost']
 # # read in shap results which hold best score
 # df_shaptrain = pd.read_csv(
 #     'D:/Projects/GAGESiiANNstuff/Data_Out/SHAP_OUT/MeanShap_mean_annual.csv'
 # )
 
 
-save_fig = True
+save_fig = False
 
 # colormap
 # cmap_in = 'Spectral'
@@ -237,6 +242,9 @@ n_bins = 100  # Use a large number of bins for smooth color transitions
 cmap_name = 'blue_white_orange'
 cmap_in = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
 # cmap_in = 'magma'
+
+norm1 = mpl.colors.Normalize(vmin=-5, vmax=5)
+norm2 = mpl.colors.Normalize(vmin=-1, vmax=1)
 
 # pallete for barplot inset
 # palette_in = 'tab20c_r'
@@ -257,8 +265,9 @@ palette_in = 'cividis'
 # mean annual
 # training
 df_indres = pd.read_pickle(
-    'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/mean_annual/'
-    'combined/All_IndResults_mean_annual.pkl'
+    # 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/mean_annual/'
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work'
+    '/data_out/mean_annual/combined/All_IndResults_mean_annual.pkl'
 )
 # subset to clustering methods specified
 df_indres = df_indres.query("clust_method in @clust_meths")
@@ -310,8 +319,10 @@ df_bestvalnit_mannual = pd.DataFrame({
 # annual
 # training
 df_indres = pd.read_pickle(
-    'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/annual/'
-    'combined/All_IndResults_annual.pkl'
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work'
+    '/data_out/annual/combined/All_IndResults_annual.pkl'
+    # 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/annual/'
+    # 'combined/All_IndResults_annual.pkl'
 )
 
 # subset to clustering methods specified
@@ -366,8 +377,10 @@ df_bestvalnit_annual = pd.DataFrame({
 # monthly
 # training
 df_indres = pd.read_pickle(
-    'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/monthly/'
-    'combined/All_IndResults_monthly.pkl'
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work'
+    '/data_out/monthly/combined/All_IndResults_monthly.pkl'
+    # 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/monthly/'
+    # 'combined/All_IndResults_monthly.pkl'
 )
 
 # subset to clustering methods specified
@@ -510,7 +523,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'AggEcoregion'].plot(
     column = 'temp_best', 
     markersize = 15, 
     marker = 'v',
-    legend = True,
+    legend = False,
     cmap = cmap_in,
     vmin = -5,
     vmax = 5,
@@ -526,7 +539,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'None'].plot(
     column = 'temp_best', 
     markersize = 15, 
     marker = 'o',
-    # legend = True,
+    legend = False,
     cmap = cmap_in,
     vmin = -5,
     vmax = 5,
@@ -540,7 +553,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'Class'].plot(
     column = 'temp_best', 
     markersize = 15, 
     marker = '^',
-    # legend = True,
+    legend = False,
     cmap = cmap_in,
     vmin = -5,
     vmax = 5,
@@ -558,7 +571,7 @@ geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'AggEcoregion'].plot(
     column = 'temp_best', 
     markersize = 15, 
     marker = 'v',
-    legend = True,
+    legend = False,
     cmap = cmap_in,
     vmin = -1,
     vmax = 1,
@@ -606,7 +619,7 @@ geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'AggEcoregion'].plot(
     column = 'temp_best', 
     markersize = 15, 
     marker = 'v',
-    legend = True,
+    legend = False,
     cmap = cmap_in,
     vmin = -1,
     vmax = 1,
@@ -649,7 +662,7 @@ mannual_count = geo_df_valnit_mannual.groupby('Region')['STAID'].count()
 annual_count = geo_df_valnit_annual.groupby('Region')['STAID'].count()
 monthly_count = geo_df_valnit_monthly.groupby('Region')['STAID'].count()
 
-axbar1 = ax1.inset_axes([0.09, 0.1, 0.22, 0.17])
+axbar1 = ax1.inset_axes([0.11, 0.14, 0.22, 0.17])
 order_in = ['AggEcoregion', 'Class', 'None']
 hue_order_in = ['regr_precip', 'strd_mlr', 'XGBoost']
 xticklabs_in = mannual_count.index.str.replace('AggEcoregion', 'Eco')
@@ -661,21 +674,22 @@ axbar1.patch.set_alpha(0)
 sns.countplot(
     data = geo_df_valnit_mannual,
     x = 'Region',
-    hue = 'model',
+    # hue = 'model',
     order = order_in,
-    hue_order = hue_order_in,
+    # hue_order = hue_order_in,
     stat = 'percent',
-    palette = palette_in,
+    # palette = palette_in,
+    color='gray',
     ax = axbar1
 )
 
-axbar1.legend(loc='center left', fontsize = 9,
-                labels = ['SLR', 'MLR', 'XGBoost'],
-                bbox_to_anchor=(2.95, 0.75), ncol = 1,
-                frameon = False,
-                title = 'Model')
+# axbar1.legend(loc='center left', fontsize = 9,
+#                 labels = ['SLR', 'MLR', 'XGBoost'],
+#                 bbox_to_anchor=(2.95, 0.75), ncol = 1,
+#                 frameon = False,
+#                 title = 'Model')
 axbar1.tick_params(axis='x', labelsize=8)
-axbar1.set_ylabel('%   ', rotation = 0)
+axbar1.set_ylabel('% Best Predicted', rotation = 90)
 axbar1.set_xlabel('')
 axbar1.set(xticks=[0, 1, 2], 
            xticklabels=xticklabs_in,
@@ -699,7 +713,7 @@ axbar1.set(xticks=[0, 1, 2],
 # axbar1.tick_params(axis='both', which='major', labelsize=8) 
 ######################
 
-axbar2 = ax2.inset_axes([0.09, 0.1, 0.22, 0.17])
+axbar2 = ax2.inset_axes([0.11, 0.14, 0.22, 0.17])
 axbar2.patch.set_alpha(0)
 # turn off frame
 for spine in axbar2.spines.values():
@@ -707,10 +721,11 @@ for spine in axbar2.spines.values():
 sns.countplot(
     data = geo_df_valnit_annual,
     x = 'Region',
-    hue = 'model',
+    # hue = 'model',
     order = order_in,
-    hue_order = hue_order_in,
-    palette = palette_in,
+    # hue_order = hue_order_in,
+    # palette = palette_in,
+    color='gray',
     stat = 'percent',
     ax = axbar2
 )
@@ -718,7 +733,7 @@ sns.countplot(
 axbar2.legend(loc='center left', bbox_to_anchor=(2, 0.75), ncol = 1)
 axbar2.legend().remove()
 axbar2.tick_params(axis='x', labelsize=8)
-axbar2.set_ylabel('%   ', rotation = 0)
+axbar2.set_ylabel('% Best Predicted', rotation = 90)
 axbar2.set_xlabel('')
 axbar2.set(xticks=[0, 1, 2], 
            xticklabels=xticklabs_in,
@@ -742,7 +757,7 @@ axbar2.set(xticks=[0, 1, 2],
 # axbar2.tick_params(axis='both', which='major', labelsize=8) 
 
 ################
-axbar3 = ax3.inset_axes([0.09, 0.1, 0.22, 0.17])
+axbar3 = ax3.inset_axes([0.11, 0.14, 0.22, 0.17])
 axbar3.patch.set_alpha(0)
 # turn off frame
 for spine in axbar3.spines.values():
@@ -750,18 +765,19 @@ for spine in axbar3.spines.values():
 sns.countplot(
     data = geo_df_valnit_monthly,
     x = 'Region',
-    hue = 'model',
+    # hue = 'model',
     order = order_in,
-    hue_order = hue_order_in,
+    # hue_order = hue_order_in,
     stat = 'percent',
-    palette = palette_in,
+    # palette = palette_in,
+    color='gray',
     ax = axbar3
 )
 
 axbar3.legend(loc='center left', bbox_to_anchor=(2, 0.75), ncol = 1)
 axbar3.legend().remove()
 axbar3.tick_params(axis='x', labelsize=8)
-axbar3.set_ylabel('%   ', rotation = 0)
+axbar3.set_ylabel('% Best Predicted', rotation = 90)
 axbar3.set_xlabel('')
 axbar3.set(xticks=[0, 1, 2], 
            xticklabels=xticklabs_in,
@@ -820,9 +836,29 @@ ax2.legend(
     bbox_to_anchor = (0.95, 0.27),
     frameon=False)
 ax2.annotate('Grouping Method', xy = (-79.5, 30.4)) # (-125.5, 30.4))
-ax2.annotate('NSE', xy = (-52, 36.5), rotation = 90, annotation_clip = False)
-ax3.annotate('NSE', xy = (-52, 36.5), rotation = 90, annotation_clip = False)
-ax1.annotate('Residuals [cm]', xy = (-52, 35.1), rotation = 90, annotation_clip = False)
+# ax2.annotate('NSE', xy = (-52, 36.5), rotation = 90, annotation_clip = False)
+# ax3.annotate('NSE', xy = (-52, 36.5), rotation = 90, annotation_clip = False)
+# ax1.annotate('Residuals [cm]', xy = (-52, 35.1), rotation = 90, annotation_clip = False)
+
+
+
+# modify the colorbars
+# Create a ScalarMappable object
+sm1 = plt.cm.ScalarMappable(cmap=cmap_in, norm=norm1)
+sm1._A = [] # ensure scalarmappable is properly initialized
+
+sm2 = plt.cm.ScalarMappable(cmap=cmap_in, norm=norm2)
+sm2._A = [] # ensure scalarmappable is properly initialized
+
+# Add colorbars with extended arrow tips to each subplot
+cbar1 = fig.colorbar(sm1, ax=ax1, extend='both')
+cbar1.set_label('Residuals (cm)')
+
+cbar2 = fig.colorbar(sm2, ax=ax2, extend='min')
+cbar2.set_label('NSE')
+
+cbar3 = fig.colorbar(sm2, ax=ax3, extend='min')
+cbar3.set_label('NSE')
 
 # ax2.get_legend().set_label('Grouping Method')
 
@@ -834,7 +870,7 @@ if save_fig:
     plt.savefig(
         # f'{dir_figs}/NSE_Map_valnit.png', 
         # f'{dir_figs}/NSE_Map_trainAndValnit.png', 
-        f'{dir_figs}/NSE_Map_{name_in}.png',
+        f'{dir_figs}/NSE_Map_BestOfGrouping{name_in}.png',
         dpi = 300,
         bbox_inches = 'tight'
         )

@@ -48,8 +48,9 @@ clust_meths = ['None', 'Class', 'AggEcoregion']
 
 # read in ID.csv file to get unique clusters under each method
 df_ID = pd.read_csv(
-    'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/' \
-        'GAGESiiVariables/ID_train.csv'
+    # 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/' \
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/'\
+        'GAGES_Work/data_work/GAGESiiVariables/ID_train.csv'
 )
 
 # time scales
@@ -60,7 +61,8 @@ time_scale = ['monthly', 'annual', 'mean_annual']
 clust_meth_in = ['None', 'Class', 'AggEcoregion']
 
 # models to consider in analysis
-models_in = ['regr_precip', 'strd_mlr', 'XGBoost']
+# models_in = ['regr_precip', 'strd_mlr', 'XGBoost']
+models_in = ['XGBoost']
 
 # partition in (train or valint (aka testing))
 # part_in = 'train'
@@ -75,10 +77,13 @@ dropNoise = False
 
 # Define directory variables
 # directory with data to work with
-dir_work = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results' 
+# dir_work = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results' 
+dir_work = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Results'
 
 # another main location with output from HPC runs.
-dir_workHPC = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/'
+# dir_workHPC = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/'
+dir_workHPC = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/'\
+                'HPC_Files/GAGES_Work/data_out/'
 # # read in any data needed
 # dir_in = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results'
 # # mean annual
@@ -105,7 +110,10 @@ dir_workHPC = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/'
 
 
 # directory where to place SHAP outputs
-dir_shapout = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
+# dir_shapout = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
+dir_shapout = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/'\
+                    'Data_Out/SHAP_OUT'\
+
 
 # name list of column names to drop when defining output dataframe of shap values
 names_drop = ['STAID', 'year', 'month', 'day', 'date']
@@ -126,7 +134,7 @@ for cl in clust_meths:
         df_regions[cl] = np.sort(df_ID[cl].unique())
 
 
-for timescale in time_scale:
+for timescale in time_scale[2:3]:
 
     # load results file to get best model
     # read in results for the time_scale being worked with
@@ -453,8 +461,10 @@ for timescale in time_scale:
 
             # reload model into object
             model.load_model(
-                f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{timescale}'
-                f'/Models/XGBoost_{temp_time}_'\
+                # f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{timescale}'
+                'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/'\
+                    f'HPC_Files/GAGES_Work/data_out/{timescale}/Models/'\
+                        f'XGBoost_{temp_time}_'\
                     f'{row["clust_method"]}_{row["region"]}_model.json'
                 )
             X_in = df_expl_in
@@ -468,44 +478,19 @@ for timescale in time_scale:
             df_shap_valout = pd.DataFrame(
                 shap_values.values,
                 columns = X_in.columns
-            )
-
-            # standardaize the explanatory vars for getting slope direction
-            # using linear regression
-            scaler = StandardScaler()
-            scaler.fit(X_in)
-
-            df_expl_instand = pd.DataFrame(
-                scaler.transform(X_in),
-                columns = X_in.columns
-                )
-            
-            # define empty list to hold multipliers for direction of
-            # shap relationship
-            shap_dirxn = []
-            # loop through all vars and get direction of relationship
-            for colname in X_in.columns:
-                x = np.array(df_expl_instand[colname]).reshape(-1,1)
-                y = df_shap_valout[colname]
-
-                lm = LinearRegression()
-                lm.fit(x, y)
-                if lm.coef_ < 0:
-                    dirxn_temp = -1
-                else:
-                    dirxn_temp = 1
-            
-                # append multiplier to shap_dir
-                shap_dirxn.append(dirxn_temp)
-
+            )           
 
             # take mean of shap values, and give direction by 
             # multiplying by shap_coef
-            df_shapmean = pd.DataFrame(
-                df_shap_valout.abs().mean() * np.array(shap_dirxn),
-            ).T
-
+            df_shapmean = pd.DataFrame(df_shap_valout)
+            #     df_shap_valout.abs() # .mean() * np.array(shap_dirxn),
+            # ).T
+            
             df_shapmean = df_shapmean/df_WY_in.mean()
+
+            # swe_1 instead of swe appeard in some mean annual models
+            # so correct column name to swe
+            df_shapmean.columns = df_shapmean.columns.str.replace('swe_1', 'swe')
 
 
 
@@ -527,8 +512,10 @@ for timescale in time_scale:
         # df_out = pd.concat([results_out, df_shap_out], axis = 1)
         df_out = pd.concat([results_out, df_shapmean], axis = 1)
 
+        print(df_out['prcp'])
+
         # write df_shap_out to csv
-        file_out = f'{dir_shapout}/MeanShap_BestModel_All_{timescale}_normQ.csv'
+        file_out = f'{dir_shapout}/MeanShap_BestGrouping_All_{timescale}_normQ.csv'
 
         if os.path.exists(file_out):
             header_in = False

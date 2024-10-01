@@ -20,6 +20,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from functools import reduce
+from Load_Data import load_data_fun
 # from statsmodels.distributions.empirical_distribution import ECDF
 
 
@@ -161,75 +162,198 @@ feat_cats = pd.read_csv(
     )
 # feat_cats['Features'] = feat_cats['Features'].str.replace('TS_', '')
 
+# dir holding outputs from HPC runs.
+dir_removed = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/'\
+                'HPC_Files/GAGES_Work/data_out/'
 
 
 #####
 # explanatory variables
 #####
 # load data to get colnames for output dataframe (all expl vars)
-df_expl, df_WY, df_ID = load_data_fun(
-    dir_work = dir_work, 
-    time_scale = timescale,
-    train_val = part_in[0],
-    clust_meth = 'AggEcoregion',
-    region = 'MxWdShld',
-    standardize = False # whether or not to standardize data
-    )
-df_expl, df_WY, df_ID = load_data_fun(
-    dir_work = dir_work, 
-    time_scale = timescale,
-    train_val = row['train_val'],
-    clust_meth = row['clust_method'],
-    region = row['region'],
-    standardize = np.array(stndz) # whether or not to standardize data
-    )
- # DRAIN_SQKM stored as DRAIN_SQKM_x in some output by accident,
-# so replace it
-if 'SQKM_x' in df_expl.columns.values:
-    df_expl.columns = df_expl.columns.str.replace('SQKM_x', 'SQKM')
+# df_expl, df_WY, df_ID = load_data_fun(
+#     dir_work = dir_work, 
+#     time_scale = timescale,
+#     train_val = part_in[0],
+#     clust_meth = 'AggEcoregion',
+#     region = 'MxWdShld',
+#     standardize = False # whether or not to standardize data
+#     )
 
-# define var holding all explanatory var columns names
-expl_names = df_expl.columns
-df_expl_in = df_expl[STAID['STAID'] == row['STAID']].reset_index(drop = True)
+# %% define function that gets explanatory variable and return an array for directional relationships
+# between them and shap values
 
-# remove id and time variables (e.g., STAID, year, month, etc.) from explanatory vars
-# subset WY to version desired (ft)
-# store staid's and date/year/month
-if(timescale == 'mean_annual'):
-    STAID = df_expl[['STAID']]  
-    df_expl.drop('STAID', axis = 1, inplace = True)
-if(timescale == 'annual'):
-    STAID = df_expl[['STAID', 'year']]  
-    df_expl.drop(['STAID', 'year'], axis = 1, inplace = True)
-if(timescale == 'monthly'):
-    STAID = df_expl[['STAID', 'year', 'month']]   
-    df_expl.drop(['STAID', 'year', 'month'], axis = 1, inplace =True)
 
-# read in columns that were previously removed due to high VIF
-file = glob.glob(
-    f'{dir_workHPC}{timescale}/VIF_Removed/*{row["clust_method"]}'\
-        f'_{row["region"]}.csv'
-    )[0]
-try:
-    vif_removed = pd.read_csv(
+def returnRel(dir_work, dir_removed, timescale, STAID_in,
+                part_in, clust_meth, region_in, shap_in, stdz):
+    '''
+    function reads in explantory variables for current site and timescale and returns
+    array indicating the directional relationship between explanatory variables and 
+    shap values
+
+    input
+    ------------------
+    dir_work (str): dir to be passed to load function where data is stored
+    dir_removed (str): dir holding tables indicating which variables were remove due to 
+        VIF>threshold
+    timescale (str): which time scale working with ('monthly', 'annual', 
+                        'mean_annual')
+    STAID_in (str): numeric value of station id, passed as a string
+    part_in (str): 'train' or 'valnit' (for test data)
+    clust_meth (str): what clusting method to use
+    region_in (str): name of region or group working with
+    shap_in (array): shap values for observations at site to be regressed against
+                        expl vars
+    stdz (bool): should data be standaredized?
+
+    output
+    -----------------
+    array indicating directional relationship between explanatory variables and 
+            shap values
+
+    '''
+
+    import numpy as np
+    import glob
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import StandardScaler
+
+    # between shap values and explantory variables
+    df_expl, df_WY, df_ID = load_data_fun(
+        dir_work = dir_work, 
+        time_scale = timescale,
+        train_val = part_in,
+        clust_meth = clust_meth,
+        region = region_in,
+        standardize = np.array(stdz) # whether or not to standardize data
+        )
+
+    # get shap values for staids in df_expl
+    shap_in = shap_in[shap_in['STAID'].isin(df_expl['STAID'])]
+    shap_in = shap_in.drop(['tmin_1', 'tmax_1', 'prcp_1', 'vp_1', 'swe_1'], axis=1)
+    shap_in = shap_in.dropna(axis=1, how='all')
+    shap_in.replace(np.nan, 0, inplace=True)
+
+    # del(df_WY, df_ID)
+    # DRAIN_SQKM stored as DRAIN_SQKM_x in some output by accident,
+    # so replace it
+    if 'SQKM_x' in df_expl.columns.values:
+        df_expl.columns = df_expl.columns.str.replace('SQKM_x', 'SQKM')
+
+    # define var holding all explanatory var columns names
+    # expl_names = df_expl.columns
+    # df_expl_in = df_expl[STAID['STAID'] == row['STAID']].reset_index(drop = True)
+
+    # remove id and time variables (e.g., STAID, year, month, etc.) from explanatory vars
+    # subset WY to version desired (ft)
+    # store staid's and date/year/month
+    if(timescale == 'mean_annual'):
+        STAID_work = df_expl[['STAID']]  
+        df_expl.drop('STAID', axis = 1, inplace = True)
+    if(timescale == 'annual'):
+        STAID_work = df_expl[['STAID', 'year']]  
+        df_expl.drop(['STAID', 'year'], axis = 1, inplace = True)
+    if(timescale == 'monthly'):
+        STAID_work = df_expl[['STAID', 'year', 'month']]   
+        df_expl.drop(['STAID', 'year', 'month'], axis = 1, inplace =True)
+
+    # read in columns that were previously removed due to high VIF
+    file = glob.glob(
+        f'{dir_removed}{timescale}/VIF_Removed/*{clust_meth}'\
+            f'_{region_in}.csv'
+        )[0]
+    try:
+        vif_removed = pd.read_csv(
+            file
+        )['columns_Removed']
+    except:
+        vif_removed = pd.read_csv(
         file
-    )['columns_Removed']
-except:
-    vif_removed = pd.read_csv(
-    file
-    )['Columns_Removed']
+        )['Columns_Removed']
 
-if 'DRAIN_SQKM_x' in vif_removed.values:
-    vif_removed = vif_removed.str.replace(
-        'DRAIN_SQKM_x', 'DRAIN_SQKM'
-    )
+    if 'DRAIN_SQKM_x' in vif_removed.values:
+        vif_removed = vif_removed.str.replace(
+            'DRAIN_SQKM_x', 'DRAIN_SQKM'
+        )
 
-# make sure only columns in current df_expl are removed
-# vif_removed = [x in vif_removed.values if x in df_expl.columns] # vif_removed.intersection(df_expl.columns)
+    # make sure only columns in current df_expl are removed
+    # vif_removed = [x in vif_removed.values if x in df_expl.columns] # vif_removed.intersection(df_expl.columns)
 
-# drop columns that were removed due to high VIF
-df_expl.drop(vif_removed, axis = 1, inplace = True)
+    # drop columns that were removed due to high VIF
+    df_expl.drop(vif_removed, axis = 1, inplace = True)
 
+    # df_expl_in = df_expl[STAID_work['STAID'] == STAID_in].reset_index(drop = True)
+                         # row['STAID']].reset_index(drop = True)
+    # df_WY_in = df_WY[STAID['STAID'] == row['STAID']].reset_index(drop = True)
+
+    X_in = df_expl.copy()
+
+    # standardaize the explanatory vars for getting slope direction
+                # using linear regression
+    scaler = StandardScaler()
+    scaler.fit(X_in)
+
+    df_expl_instand = pd.DataFrame(
+        scaler.transform(X_in),
+        columns = X_in.columns
+        )
+
+    # define empty list to hold multipliers for direction of
+    # shap relationship
+    shap_dirxn = []
+    # loop through all vars and get direction of relationship
+    for colname in df_expl_instand.columns:
+        x = np.array(df_expl_instand[colname]).reshape(-1,1)
+        y = shap_in[colname]
+
+        lm = LinearRegression()
+        lm.fit(x, y)
+        if lm.coef_ < 0:
+            dirxn_temp = -1
+        else:
+            dirxn_temp = 1
+
+        # append multiplier to shap_dir
+        shap_dirxn.append(dirxn_temp)
+
+
+    # return array with directional relationships to SHAP values
+    return(np.array(shap_dirxn), df_expl)
+
+    # # take mean of shap values, and give direction by 
+    # # multiplying by shap_coef
+    # df_shapmean = pd.DataFrame(
+    #     df_shap_valout.abs().mean() * np.array(shap_dirxn),
+    # ).T
+
+
+
+# def returnRel(dir_work, timescale, part_in, clust_meth, region_in, shap_in, stdz):
+# dir_work, dir_removed, timescale, STAID_in,
+#                 part_in, clust_meth, region_in, shap_in, stdz
+
+# test
+# read in data
+# df_shap_mannual = pd.read_csv(
+#     f'{dir_shap}/MeanShap_BestGrouping_All_mean_annual_normQ.csv',
+#     dtype = {'STAID': str}
+# ).drop_duplicates()
+
+# dir_work = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Results'
+# timescale = 'mean_annual'
+# STAID_in = '01059000'
+# clust_meth = 'AggEcoregion'
+# part_in = df_id.loc[(df_id['clust_method'] == clust_meth) & (df_id['STAID'] == STAID_in), 'train_val'].iloc[0]
+# region_in = df_id.loc[(df_id['clust_method'] == clust_meth) & (df_id['STAID'] == STAID_in), 'region'].iloc[0]
+# shap_in = df_shap_mannual.copy() # loc[
+#         # (df_shap_mannual['region'] == region_in) & \
+#         #     (df_shap_mannual['train_val'] == part_in)] # \
+#                 # (df_shap_mannual['STAID'] == STAID_in)] # , 'TS_NLCD_11']
+# stdz = True
+
+
+
+# df_test = returnRel(dir_work, dir_removed, timescale, STAID_in, part_in, clust_meth, region_in, shap_in, stdz)
 
 
 ###############
@@ -401,7 +525,7 @@ clust_temp = data_in_mannual.clust_method.unique()
 dfstemp = [
     data_in_mannual.query(
         'clust_method == @x'
-        )[['STAID', 'region']] for x in clust_temp
+        ) for x in clust_temp # 
         ]
 # df_id = reduce(lambda left, right: pd.merge(left, right, on = ['STAID']), 
 #                 dfstemp)
@@ -409,11 +533,7 @@ dfstemp = [
 # tempcols.extend(clust_temp)
 # df_id.columns = tempcols
 df_id = pd.concat(dfstemp)
-df_id.columns = ['STAID', 'Region']
-
-# get df_id with a column for each grouping approach
-df_best_mannual = pd.merge(df_best_mannual, df_id, on = 'STAID', how = 'right')
-
+# df_id.columns = ['STAID', 'clust_method', 'Region', 'model', 'time_scale']
 
 
 ## annual 
@@ -584,7 +704,13 @@ else:
 
 
 
-
+# %%
+# get df_id with a column for each grouping approach
+df_best_mannual = pd.merge(df_best_mannual, 
+                            df_id[['STAID', 'region']], 
+                            on = 'STAID', 
+                            how = 'right')
+df_best_mannual.columns = df_best_mannual.columns.str.replace('region_x', 'region')
 
 
 
