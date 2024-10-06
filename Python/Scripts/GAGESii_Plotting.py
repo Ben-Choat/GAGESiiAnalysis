@@ -427,7 +427,10 @@ else:
 # %%
 
 ####
-
+# define a list of linestyles to be used
+# linestyles = ['-', '--', '-.', ':', '-', '--']
+linestyles = [':' for x in range(0,6)]
+# markers = ['o', 's', '^', 'D', '^', 'D']
 fig, axs = plt.subplots(2, 3, figsize = (10, 8), sharey = True)#, sharex = True)
 ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
 
@@ -440,7 +443,8 @@ sns.ecdfplot(
     data = df_best_mannual.query('train_val == "train"'),
     x = '|residuals|',
     hue = 'Region',
-    linestyle = '--',
+    linestyle = linestyles[5],
+    # linewidth=2,
     palette = cmap_str,
     ax = ax1
 )
@@ -458,7 +462,8 @@ sns.ecdfplot(
     data = df_best_annual.query('train_val == "train"'),
     x = metric_in,
     hue = 'Region',
-    linestyle = '--',
+    linestyle = linestyles[1],
+    # linewidth=2,
     palette = cmap_str,
     ax = ax2,
     legend = False
@@ -474,7 +479,7 @@ sns.ecdfplot(
     data = df_best_monthly.query('train_val == "train"'),
     x = metric_in,
     hue = 'Region',
-    linestyle = '--',
+    linestyle = linestyles[2],
     palette = cmap_str,
     ax = ax3,
     legend = False
@@ -492,7 +497,7 @@ sns.ecdfplot(
     data = data_in_mannual.query('train_val == "valnit"'),
     x = '|residuals|',
     hue = 'region',
-    linestyle = '--',
+    linestyle = linestyles[3],
     palette = cmap_str,
     ax = ax4,
     legend = False
@@ -510,7 +515,7 @@ sns.ecdfplot(
     data = data_in_annual.query('train_val == "valnit"'),
     x = metric_in,
     hue = 'region',
-    linestyle = '--',
+    linestyle = linestyles[4],
     palette = cmap_str,
     ax = ax5,
     legend = False
@@ -526,7 +531,7 @@ sns.ecdfplot(
     data = data_in_month.query('train_val == "valnit"'),
     x = metric_in,
     hue = 'region',
-    linestyle = '--',
+    linestyle = linestyles[5],
     palette = cmap_str,
     ax = ax6,
     legend = False
