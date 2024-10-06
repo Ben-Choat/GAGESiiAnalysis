@@ -18,7 +18,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 # from statsmodels.distributions.empirical_distribution import ECDF
-
+import os
 
 # %%
 # define directory variables and specify scenario to work with
@@ -33,12 +33,16 @@ dir_work = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Res
 dir_shap = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
 
 # save figs (True of False?)
-save_figs = False
+save_figs = True
 # directory where to write figs
-dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures/SHAP'
+dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/Figures/Manuscript'
+if not os.path.exists(dir_figs): os.mkdir(dir_figs)
 
 # directory where to place outputs
 # dir_umaphd = 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN'
+
+# should the best performing model be used?
+use_best = False # if True, then attempts to use shapley values from the best performing model
 
 # which partition to use "train" or  "valnit"
 part_in = 'valnit'
@@ -299,126 +303,127 @@ if drop_noise:
 
 # %% get best results for eaach df
 
-# ## mean annual
-# # define empty lists to hold output
-# temp_sta = []
-# temp_best = []
-# train_val = []
-# temp_clust = []
-# temp_models = []
-# temp_region = []
+if use_best:
+    ## mean annual
+    # define empty lists to hold output
+    temp_sta = []
+    temp_best = []
+    train_val = []
+    temp_clust = []
+    temp_models = []
+    temp_region = []
 
-# for i in data_in_mannual['STAID'].unique():
-#     temp_sta.append(i)
-#     df_work = data_in_mannual[(data_in_mannual['STAID'] == i)]#  &
-#         # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
-#     best_res = np.min(np.abs(df_work['residuals']))
-#     temp_clust.append(df_work.loc[
-#         df_work['residuals'].abs() == best_res, 'clust_method'
-#         ]) 
-#     temp_models.append(df_work.loc[
-#         df_work['residuals'].abs() == best_res, 'model'
-#         ].unique()[0]) 
-#     temp_region.append(df_work.loc[
-#         df_work['residuals'].abs() == best_res, 'region'
-#         ].unique()[0]) 
-#     # for trouble shooting
-#     if temp_models[-1] == 'Series([], )':
-#         break
-#     temp_best.append(df_work.loc[
-#         df_work['residuals'].abs() == best_res, 'residuals'].values[0])
-#     train_val.append(df_work['train_val'].unique()[0])
+    for i in data_in_mannual['STAID'].unique():
+        temp_sta.append(i)
+        df_work = data_in_mannual[(data_in_mannual['STAID'] == i)]#  &
+            # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
+        best_res = np.min(np.abs(df_work['residuals']))
+        temp_clust.append(df_work.loc[
+            df_work['residuals'].abs() == best_res, 'clust_method'
+            ]) 
+        temp_models.append(df_work.loc[
+            df_work['residuals'].abs() == best_res, 'model'
+            ].unique()[0]) 
+        temp_region.append(df_work.loc[
+            df_work['residuals'].abs() == best_res, 'region'
+            ].unique()[0]) 
+        # for trouble shooting
+        if temp_models[-1] == 'Series([], )':
+            break
+        temp_best.append(df_work.loc[
+            df_work['residuals'].abs() == best_res, 'residuals'].values[0])
+        train_val.append(df_work['train_val'].unique()[0])
 
-# df_best_mannual = pd.DataFrame({
-#     'STAID': temp_sta,
-#     'clut_meth': temp_clust,
-#     'Region': temp_region,
-#     'model': temp_models,
-#     'train_val': train_val,
-#     '|residuals|': temp_best
-# })
-
-
-# ## annual 
-
-# # define empty lists to hold output
-# temp_sta = []
-# temp_best = []
-# train_val = []
-# temp_clust = []
-# temp_models = []
-# temp_region = []
+    df_best_mannual = pd.DataFrame({
+        'STAID': temp_sta,
+        'clut_meth': temp_clust,
+        'Region': temp_region,
+        'model': temp_models,
+        'train_val': train_val,
+        '|residuals|': temp_best
+    })
 
 
-# for i in data_in_annual['STAID'].unique():
-#     temp_sta.append(i)
-#     df_work = data_in_annual[(data_in_annual['STAID'] == i)]#  &
-#         # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
-#     best_res = np.max(df_work[metric_in])
-#     temp_clust.append(df_work.loc[
-#         df_work[metric_in] == best_res, 'clust_method'
-#         ].unique()[0])
-#     temp_models.append(df_work.loc[
-#         df_work[metric_in] == best_res, 'model'
-#         ].unique()[0])
-#     temp_region.append(df_work.loc[
-#         df_work[metric_in] == best_res, 'region'
-#         ].unique()[0])
-#     temp_best.append(df_work.loc[
-#         df_work[metric_in] == best_res, metric_in].values[0])
-#     train_val.append(df_work['train_val'].unique()[0])
-    
+    ## annual 
 
-# df_best_annual = pd.DataFrame({
-#     'STAID': temp_sta,
-#     'clut_meth': temp_clust,
-#     'Region': temp_region,
-#     'model': temp_models,
-#     'train_val': train_val,
-#     metric_in: temp_best
-# })
+    # define empty lists to hold output
+    temp_sta = []
+    temp_best = []
+    train_val = []
+    temp_clust = []
+    temp_models = []
+    temp_region = []
 
 
-## monthly 
-# define empty lists to hold output
-# temp_sta = []
-# temp_best = []
-# train_val = []
-# temp_clust = []
-# temp_models = []
-# temp_region = []
+    for i in data_in_annual['STAID'].unique():
+        temp_sta.append(i)
+        df_work = data_in_annual[(data_in_annual['STAID'] == i)]#  &
+            # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
+        best_res = np.max(df_work[metric_in])
+        temp_clust.append(df_work.loc[
+            df_work[metric_in] == best_res, 'clust_method'
+            ].unique()[0])
+        temp_models.append(df_work.loc[
+            df_work[metric_in] == best_res, 'model'
+            ].unique()[0])
+        temp_region.append(df_work.loc[
+            df_work[metric_in] == best_res, 'region'
+            ].unique()[0])
+        temp_best.append(df_work.loc[
+            df_work[metric_in] == best_res, metric_in].values[0])
+        train_val.append(df_work['train_val'].unique()[0])
+        
 
-# for i in data_in_month['STAID'].unique():
-#     temp_sta.append(i)
-#     df_work = data_in_month[(data_in_month['STAID'] == i)] #  &
-#         # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
-#     best_res = np.max(df_work[metric_in])
-#     temp_clust.append(df_work.loc[
-#         df_work[metric_in] == best_res, 'clust_method'
-#         ].unique()[0])
-#     temp_models.append(df_work.loc[
-#         df_work[metric_in] == best_res, 'model'
-#         ].unique()[0])
-#     temp_region.append(df_work.loc[
-#         df_work[metric_in] == best_res, 'region'
-#         ].unique()[0])
-#     temp_best.append(df_work.loc[
-#         df_work[metric_in] == best_res, metric_in].unique()[0])
-#     train_val.append(df_work['train_val'].unique()[0])
+    df_best_annual = pd.DataFrame({
+        'STAID': temp_sta,
+        'clut_meth': temp_clust,
+        'Region': temp_region,
+        'model': temp_models,
+        'train_val': train_val,
+        metric_in: temp_best
+    })
 
-# df_best_monthly = pd.DataFrame({
-#     'STAID': temp_sta,
-#     'clut_meth': temp_clust,
-#     'Region': temp_region,
-#     'model': temp_models,
-#     'train_val': train_val,
-#     metric_in: temp_best
-# })
 
-# use this if not using best
-df_best_mannual = data_in_mannual.copy().rename(columns={'region': 'Region'})
-df_best_annual = data_in_annual.copy().rename(columns={'region': 'Region'})
-df_best_monthly = data_in_month.copy().rename(columns={'region': 'Region'})
+    # monthly 
+    # define empty lists to hold output
+    temp_sta = []
+    temp_best = []
+    train_val = []
+    temp_clust = []
+    temp_models = []
+    temp_region = []
+
+    for i in data_in_month['STAID'].unique():
+        temp_sta.append(i)
+        df_work = data_in_month[(data_in_month['STAID'] == i)] #  &
+            # df_indresvalnit['residual'].abs() == np.min(np.abs(df_bestvalnit))]
+        best_res = np.max(df_work[metric_in])
+        temp_clust.append(df_work.loc[
+            df_work[metric_in] == best_res, 'clust_method'
+            ].unique()[0])
+        temp_models.append(df_work.loc[
+            df_work[metric_in] == best_res, 'model'
+            ].unique()[0])
+        temp_region.append(df_work.loc[
+            df_work[metric_in] == best_res, 'region'
+            ].unique()[0])
+        temp_best.append(df_work.loc[
+            df_work[metric_in] == best_res, metric_in].unique()[0])
+        train_val.append(df_work['train_val'].unique()[0])
+
+    df_best_monthly = pd.DataFrame({
+        'STAID': temp_sta,
+        'clut_meth': temp_clust,
+        'Region': temp_region,
+        'model': temp_models,
+        'train_val': train_val,
+        metric_in: temp_best
+    })
+else:
+    # use this if not using best
+    df_best_mannual = data_in_mannual.copy().rename(columns={'region': 'Region'})
+    df_best_annual = data_in_annual.copy().rename(columns={'region': 'Region'})
+    df_best_monthly = data_in_month.copy().rename(columns={'region': 'Region'})
 # %%
 
 ####
@@ -531,8 +536,8 @@ sns.ecdfplot(
 # save fig
 if save_figs:
     plt.savefig(
-        # f'{dir_figs}/ecdfs_{part_in}_{clust_meth_in}_{model_in}.png', 
-        f'{dir_figs}/ecdfs_TrainTest_{metric_in}_{clust_meth_in}_{model_in}.png', 
+        f'{dir_figs}/ecdfs_{part_in}_{clust_meth_in}_{model_in}.png', 
+        # f'{dir_figs}/ecdfs_TrainTest_{metric_in}_{clust_meth_in}_{model_in}.png', 
         dpi = 300,
         bbox_inches = 'tight'
         )
@@ -709,73 +714,15 @@ monthly_data_plot = data_monthlyin.iloc[:, 0:30].T
 
 from matplotlib.gridspec import GridSpec
 
-# def plot_heatmap(df, ax, title_in, min_max, plot_cbar=False, 
-#                  xlab_in='Region', ylab_in='Explanatory Variables'):
-#     cmap_in = sns.color_palette('coolwarm_r', 100) # cust_color, # 'RdYlBu', # 'jet'
-#     center_in = 0
-#     vmin_in = min_max[0] # np.min(np.min(data_annualin.iloc[:, 0:30])),
-#     vmax_in = min_max[1]
-#     if plot_cbar:
-#         cbar_in = True
-#         cbar_kws_in = {'label': cmap_title,
-#                 'extend': 'both',
-#                 'ticks': [vmin_in, 0, vmax_in],
-#                 'shrink': 1.5,
-#                 'pad': 0.01,
-#                 # 'use_gridspec': False,
-#                 # 'anchor': (0.9, -2), # 'SW',
-#                 'anchor': (0.1, -300),
-#                 'location': 'bottom'} # ,
-#     else:
-#         cbar_in = False
-#         cbar_kws_in = None
-#     ax.title.set_text(title_in)
-#     sns.heatmap(
-#         df, # mannual_notinc[0:30].index],
-#         linewidth = 0.03,
-#         linecolor = 'black',
-#         ax = ax, 
-#         cmap = cmap_in, #$ sns.color_palette('coolwarm_r', 100), # cust_color, # 'RdYlBu', # 'jet'
-#         center = center_in,
-#         vmin = vmin_in,
-#         vmax = vmax_in,
-#         cbar = cbar_in,
-#         cbar_kws = cbar_kws_in,
-#         yticklabels=True
-#         )
-#     ax.set(xlabel = xlab_in, ylabel = ylab_in) # xlabel = 'Explanatory Varaibles',
-#     # ax.set_xticklabels(df.columns[0:40], ha = 'center')
-#     ax.tick_params(axis = 'x',
-#                     rotation = 90)
-#     # color climate variables
-#     for x in np.where(df.index.isin(clim_feats))[0]: # np.arange(5, 20, 1): 
-#         ax.get_yticklabels()[x].set_color('blue')
-#     # color physiography variables
-#     for x in np.where(df.index.isin(phys_feats))[0]: # np.arange(5, 20, 1): 
-#         ax.get_yticklabels()[x].set_color('saddlebrown')
-#     # color anthropogenic hydrologic alteration variables
-#     for x in np.where(df.index.isin(anhyd_feats))[0]: # np.arange(5, 20, 1): 
-#         ax.get_yticklabels()[x].set_color('red')
-
-#     # make sure ytick labels are horizontal
-#     ax.tick_params(axis='y', labelrotation=0)
-
-#     # Manually create colorbar outside axes
-#     if cbar_in:
-#         # Add colorbars manually for each plot
-#         cbar_ax = fig.add_axes([0.1, 0.5, 0.02, 0.15])  # Adjust position for colorbar 1
-#         plt.colorbar(ax.collections[0], cax=cbar_ax,
-#                      extend='both', ticks=[vmin_mannual,
-#                                            vmax_mannual_prec])
-
-        # cbar_ax2 = fig.add_axes([0.91, 0.55, 0.02, 0.15])  # Adjust position for colorbar 2
-        # plt.colorbar(ax2.collections[0], cax=cbar_ax2, orientation='horizontal')  # Horizontal colorbar for ax2
-
-def plot_heatmap(df, ax, title_in, min_max, plot_cbar=False, 
+def plot_heatmap(df, ax, title_in, min_max,
+                 plot_nonprecip_cbar=False, plot_precip_cbar=False,
+                 cmap_in='coolwarm_r', # 'coolwarm_r, 'cool'
                  xlab_in='Region', ylab_in='Explanatory Variables',
                  cmap_title=''):
-    cmap_in = sns.color_palette('coolwarm_r', 100)
-    center_in = 0
+    
+    # cmap_in = sns.color_palette('coolwarm_r', 100)
+    cmap_in = sns.color_palette(cmap_in, 100)
+    center_in = (min_max[0] + min_max[1])/2
     vmin_in = min_max[0]
     vmax_in = min_max[1]
     
@@ -808,90 +755,42 @@ def plot_heatmap(df, ax, title_in, min_max, plot_cbar=False,
     # make sure ytick labels are horizontal
     ax.tick_params(axis='y', labelrotation=0)
 
+    # define lower left x-anchor for the colobars and related text
+    ll_anchor = 0.04
+    # define y position for same items
+    y_pos = -0.075
+
     # Add colorbar if cbar_ax is provided
-    if plot_cbar:
-        cbar_ax = fig.add_axes([0.4, -0.06, 0.4, 0.025])  # [left, bottom, width, height]
+    if plot_precip_cbar:
+        cbar_ax = fig.add_axes([(ll_anchor+0.18), y_pos, 0.3, 0.02])  # [left, bottom, width, height]
+        # cbar = plt.colorbar(heatmap.collections[0], cax=cbar_ax,
+        # cbar_ax = fig.add_axes([-0.1, 0.55, 0.015, 0.3])  # [left, bottom, width, height]
         cbar = plt.colorbar(heatmap.collections[0], cax=cbar_ax,
-                            orientation='horizontal', 
-                            extend='both', 
-                            ticks=[vmin_in, 0, vmax_in])
-        cbar.set_label(cmap_title)
-
+                            orientation='horizontal', # 'vertical', 
+                            extend='max', label=cmap_title,
+                            ticks=[vmin_in, center_in, vmax_in])
+        label_ax = fig.add_axes([0.05, y_pos, 0.05, 0.02])
+        label_ax.axis('off')
+        label_ax.text(1, 0.5, 'Impact on WY prediction;\nmean(SHAP)/mean(Q) [cm/cm]',
+                      rotation=0,
+                      ha='center', va='center',
+                      transform=label_ax.transAxes)
+    if plot_nonprecip_cbar:
+        cbar_ax = fig.add_axes([(ll_anchor+0.53), y_pos, 0.3, 0.02])  # [left, bottom, width, height]
+        # label_ax = fig.add_axes([0.28, -0.07, 0.05, 0.02])
+        # cbar = plt.colorbar(heatmap.collections[0], cax=cbar_ax,
+        # cbar_ax = fig.add_axes([-0.1,0.15, 0.015, 0.3])  # [left, bottom, width, height]
+        cbar = plt.colorbar(heatmap.collections[0], cax=cbar_ax,
+                            orientation='horizontal', # 'vertical', 
+                            extend='both', label=cmap_title,
+                            ticks=[vmin_in, center_in, vmax_in])
+        # label_ax.axis('off')
+        # label_ax.text(1, 0.5, cmap_title,
+        #               rotation=0,
+        #               ha='right', va='center',
+        #               transform=label_ax.transAxes)
+## TODO: add overall title for cmaps
     return heatmap
-# # some variables for plots
-# height_short1 = 1/mannual_data_plot.shape[0]
-# height_short2 = 2/mannual_data_plot.shape[0]
-# height_tall1 = (mannual_data_plot.shape[0]-1)/mannual_data_plot.shape[0]
-# height_tall2 = (mannual_data_plot.shape[0]-2)/mannual_data_plot.shape[0]
-# vars_short = ['Precip', 'Ant Precip']
-# # make plot
-# # fig, axs = plt.subplots(nrows = 2, ncols = 3, 
-# #                         layout = 'constrained',
-# #                         figsize = (11, 8),
-# #                         gridspec_kw={'height_ratios': [height_short, height_tall],
-# #                                      'width_ratios': [1, 1, 1]})
-# # ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
-# # Create figure
-# fig = plt.figure(figsize=(11, 8), layout='constrained')
-
-# # Create GridSpec
-# gs = GridSpec(30, 3, figure=fig, height_ratios=np.repeat(1, 30))
-
-# # Create subplots
-# ax1 = fig.add_subplot(gs[0:1, 0])  # Shortest plot in first row
-# ax2 = fig.add_subplot(gs[0:2, 1])  # Taller plot in first row
-# ax3 = fig.add_subplot(gs[0:2, 2])  # Tallest plot in first row
-# ax4 = fig.add_subplot(gs[1:31, 0])  # Plot in second row
-# ax5 = fig.add_subplot(gs[2:31, 1])  # Plot in second row
-# ax6 = fig.add_subplot(gs[2:31, 2])  # Plot in second row
-
-
-# print('here-0')
-# plot_heatmap(mannual_data_plot.query("index in @vars_short"), ax1, 'Mean Annual', 
-#              min_max=[vmin_mannual, vmax_mannual_prec], plot_cbar=False,
-#              xlab_in=None, ylab_in=None)
-# print('here-1')
-# plot_heatmap(annual_data_plot.query("index in @vars_short"), ax2, 'Annual',
-#              min_max=[vmin_annual, vmax_annual_prec], plot_cbar=False,
-#              xlab_in=None, ylab_in=None)
-# print('here-2')
-# plot_heatmap(monthly_data_plot.query("index in @vars_short"), ax3, 'Monthly',
-#              min_max=[vmin_month, vmax_month_prec], plot_cbar=False,
-#              xlab_in=None, ylab_in=None)
-# print('here-3')
-# plot_heatmap(mannual_data_plot.query("index not in @vars_short"), ax4, None, 
-#              min_max=[vmin_mannual, vmax_mannual], plot_cbar=False)
-# print('here-4')
-# plot_heatmap(annual_data_plot.query("index not in @vars_short"), ax5, None,
-#              min_max=[vmin_annual, vmax_annual], plot_cbar=True,
-#              ylab_in=None)
-# print('here-5')
-# plot_heatmap(monthly_data_plot.query("index not in @vars_short"), ax6, None,
-#              min_max=[vmin_month, vmax_month], plot_cbar=False,
-#              ylab_in=None)
-
-# # remove x-axis of top row
-# ax1.set_xticklabels([])
-# ax2.set_xticklabels([])
-# ax3.set_xticklabels([])
-
-# # annotate 
-# # ax1.annotate('(a)', xy = (-1.5, 30.5), annotation_clip = False)
-# # ax2.annotate('(b)', xy = (-1.5, 30.5), annotation_clip = False)
-# # ax3.annotate('(c)', xy = (-1.5, 30.5), annotation_clip = False)
-
-# # plt.tight_layout()
-
-# # save fig
-# if save_figs:
-#     plt.savefig(
-#         f'{dir_figs}/TEST_Heat_AllVars_AllTimescales_{part_in}_{clust_meth_in}_{model_in}.png', # Heat_AllVars_monthly_Horz.png
-#         dpi = 300,
-#         bbox_inches = 'tight'
-#         )
-# else:
-#     plt.show()
-
 
 
 # %%
@@ -929,29 +828,43 @@ ax4 = fig.add_subplot(gs[int(height_short1*N_in):N_in, 0])  # Bottom plot in fir
 ax5 = fig.add_subplot(gs[int(height_short2*N_in):N_in, 1])  # Bottom plot in second column
 ax6 = fig.add_subplot(gs[int(height_short2*N_in):N_in, 2])   # Bottom plot in third column
 
+# Precip mean(abs(Shap))/mean(Q)
 # Heatmap plotting using your function
 print('here-0')
 plot_heatmap(mannual_data_plot.query("index in @vars_short"), ax1, 'Mean Annual', 
-             min_max=[vmin_mannual_prec, vmax_mannual_prec], plot_cbar=True,
-             cmap_title='Precip mean(abs(Shap))/mean(Q)', xlab_in=None, ylab_in=None)
+             min_max=[vmin_mannual_prec, vmax_mannual_prec], 
+             plot_nonprecip_cbar=False, plot_precip_cbar=True,
+             cmap_in='BuPu', # 'coolwarm_r, 'cool_r'
+             cmap_title='Precip and Ant Precip', xlab_in=None, ylab_in=None)
 print('here-1')
 plot_heatmap(annual_data_plot.query("index in @vars_short"), ax2, 'Annual',
-             min_max=[vmin_annual_prec, vmax_annual_prec], plot_cbar=False,
+             min_max=[vmin_annual_prec, vmax_annual_prec], 
+             plot_nonprecip_cbar=False, plot_precip_cbar=False,
+             cmap_in='BuPu', # 'coolwarm_r, 'cool_r'
              xlab_in=None, ylab_in=None)
 print('here-2')
 plot_heatmap(monthly_data_plot.query("index in @vars_short"), ax3, 'Monthly',
-             min_max=[vmin_month_prec, vmax_month_prec], plot_cbar=False,
+             min_max=[vmin_month_prec, vmax_month_prec],
+             plot_nonprecip_cbar=False, plot_precip_cbar=False,
+             cmap_in='BuPu', # 'coolwarm_r, 'cool_r'
              xlab_in=None, ylab_in=None)
 print('here-3')
 plot_heatmap(mannual_data_plot.query("index not in @vars_short"), ax4, None, 
-             min_max=[vmin_mannual, vmax_mannual], plot_cbar=False)
+             min_max=[vmin_mannual, vmax_mannual],
+             plot_nonprecip_cbar=True, plot_precip_cbar=False,
+             cmap_in='coolwarm_r',
+             cmap_title='Other Variables')
 print('here-4')
 plot_heatmap(annual_data_plot.query("index not in @vars_short"), ax5, None,
-             min_max=[vmin_annual, vmax_annual], plot_cbar=False,
+             min_max=[vmin_annual, vmax_annual],
+             plot_nonprecip_cbar=False, plot_precip_cbar=False,
+             cmap_in='coolwarm_r', # 'coolwarm_r, 'cool_r'
              ylab_in=None)
 print('here-5')
 plot_heatmap(monthly_data_plot.query("index not in @vars_short"), ax6, None,
-             min_max=[vmin_month, vmax_month], plot_cbar=False,
+             min_max=[vmin_month, vmax_month],
+             plot_nonprecip_cbar=False, plot_precip_cbar=False,
+             cmap_in='coolwarm_r', # 'coolwarm_r, 'cool_r'
              ylab_in=None)
 
 # Remove x-axis of top row
@@ -962,7 +875,16 @@ ax3.set_xticklabels([])
 # Adjust spacing between subplots to prevent overlapping labels
 plt.subplots_adjust(hspace=0.09, wspace=1.2)
 
-plt.show()
+# save fig
+if save_figs:
+    plt.savefig(
+        f'{dir_figs}/Heat_AllVars_AllTimescales_{part_in}_{clust_meth_in}_{model_in}.png', # Heat_AllVars_monthly_Horz.png
+        dpi = 300,
+        bbox_inches = 'tight'
+        )
+else:
+    plt.show()
+
 
 
 
