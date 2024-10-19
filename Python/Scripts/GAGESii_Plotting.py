@@ -27,10 +27,12 @@ import os
 # Define directory variables
 # directory with data to work with
 # dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out' 
-dir_work = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Results' 
+dir_work = ('C:/Users/bench/OneDrive/ML_DriversOfWY/'
+            'GAGESii_ANNstuff/Data_Out/Results')
 
 # directory where SHAP values are located
-dir_shap = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
+dir_shap = ('C:/Users/bench/OneDrive/ML_DriversOfWY/'
+            'GAGESii_ANNstuff/Data_Out/SHAP_OUT')
 
 # save figs (True of False?)
 save_figs = True
@@ -42,7 +44,8 @@ if not os.path.exists(dir_figs): os.mkdir(dir_figs)
 # dir_umaphd = 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN'
 
 # should the best performing model be used?
-use_best = False # if True, then attempts to use shapley values from the best performing model
+# if True, then attempts to use shapley values from the best performing model
+use_best = False
 
 # which partition to use "train" or  "valnit"
 part_in = 'valnit'
@@ -85,21 +88,20 @@ cmap_title = 'Impact on model output; mean(SHAP)/mean(Q) [cm/cm]'
 # mean annual
 df_resind_mannual = pd.read_csv(
         f'{dir_work}/PerfMetrics_MeanAnnual.csv',
-        dtype = {'STAID': 'string',
-                    'region': 'string'}
+        dtype={'STAID': 'string', 'region': 'string'}
     )
 
 df_resind_mannual['|residuals|'] = df_resind_mannual.residuals.abs()
 
 df_resind_mannual = df_resind_mannual[[
-        'STAID', 'residuals', '|residuals|', 'clust_method', 'region',\
-                    'model', 'time_scale', 'train_val'
+        'STAID', 'residuals', '|residuals|', 'clust_method', 'region',
+        'model', 'time_scale', 'train_val'
     ]]
 
 # annual and monthy 
 df_resind_All = pd.read_csv(
         f'{dir_work}/NSEComponents_KGE.csv',
-        dtype = {'STAID': 'string',
+        dtype={'STAID': 'string',
                 'region': 'string'}
     )
 

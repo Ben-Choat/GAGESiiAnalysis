@@ -866,7 +866,7 @@ cbar3.set_label('NSE')
 name_in = 'And'.join(part_wrk)+'_'+'And'.join(models_in)
 print(f'saving NSE_Map_{name_in}.png')
 # save fig
-if save_fig: 
+if save_fig:
     plt.savefig(
         # f'{dir_figs}/NSE_Map_valnit.png', 
         # f'{dir_figs}/NSE_Map_trainAndValnit.png', 
