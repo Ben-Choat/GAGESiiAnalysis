@@ -15,6 +15,7 @@ import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 # from shapely.geometry import Point
 import numpy as np
@@ -50,7 +51,8 @@ df_IDvalnit = pd.read_csv(
 
 # directory where to write figs
 # dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
-dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures'
+# dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures'
+dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/Figures/Manuscript'
 
 # %%
 # prep data
@@ -83,7 +85,7 @@ models_in = ['XGBoost']
 # )
 
 
-save_fig = False
+save_fig = True
 
 # colormap
 # cmap_in = 'Spectral'
@@ -227,141 +229,76 @@ geo_df_valnit_monthly = gpd.GeoDataFrame(geometry = points_valnit)
 geo_df_valnit_monthly['STAID'] = df_ID_monthly['STAID']
 geo_df_valnit_monthly = geo_df_valnit_monthly.merge(df_ID_monthly, on = 'STAID')
 
+# Map settings
+fig, axs = plt.subplots(3, 3, figsize=(15, 10), sharex=True, sharey=True)
+fig.subplots_adjust(hspace=0.2, wspace=0.1)  # Control spacing between subplots
 
-# define function for plotting a map to be used in each axis
-def plot_map(geo_df, region, ax, vrange, marker, zorder, show_legend):
-    # print(f'region: {region}')
-    # print(f'geo_df: {geo_df.head()}')
-    geo_df[geo_df['clust_method'] == region].plot(
-        ax=ax,
-        column='temp_best',
-        markersize=15,
-        marker=marker,
-        legend=show_legend,
-        cmap=cmap_in,
-        vmin=vrange[0],
-        vmax=vrange[1],
-        edgecolor='k',
-        linewidth=0.5,
-        zorder=zorder
-    )
-
-
-def plot_states(df, ax):
-    df.boundary.plot(
-        ax=ax,
-        color='Gray',
-        linewidth=1,
-        zorder=0
-    )
-
-
-# Map
-##################
-
-# %%
-# make markers legend
-downtri = mlines.Line2D([], [], color = 'black', marker = 'v',
-                        linestyle = 'None', markersize = 5,
-                        label = 'AggEcoregion')
-
-uptri = mlines.Line2D([], [], color = 'black', marker = '^',
-                        linestyle = 'None', markersize = 5,
-                        label = 'Class')
-
-circle = mlines.Line2D([], [], color='black', marker='o',
-                        linestyle='None', markersize=5,
-                        label = 'None')
-
-
-# define base axes as state boundaries
-fig, axs = plt.subplots(3, 3,
-                        figsize=(12, 12),
-                        sharex=True,
-                        sharey=True)
-
-fig.subplots_adjust(hspace=0.01, wspace=0.01)
-
+# Flatten axis array for easier indexing
 axs = axs.flatten()
 
+# Define markers for legend
+downtri = mlines.Line2D([], [], color='black', marker='v', linestyle='None', markersize=5, label='AggEcoregion')
+uptri = mlines.Line2D([], [], color='black', marker='^', linestyle='None', markersize=5, label='Class')
+circle = mlines.Line2D([], [], color='black', marker='o', linestyle='None', markersize=5, label='None')
+
+# Loop over axes to plot maps
 for i, ax in enumerate(axs):
+    # Define dataset and visualization ranges based on index
     if i in [0, 1, 2]:
         geo_df_in = geo_df_valnit_mannual
         vrange_in = [-5, 5]
-    if i in [3, 4, 5]:
+    elif i in [3, 4, 5]:
         geo_df_in = geo_df_valnit_annual
         vrange_in = [-1, 1]
-    if i in [6, 7, 8]:
+    else:
         geo_df_in = geo_df_valnit_monthly
         vrange_in = [-1, 1]
+
+    # Define region and marker based on subplot index
     if i in [0, 3, 6]:
         region_in = 'AggEcoregion'
-        marker_in = 'v'
-    if i in [1, 4, 7]:
+        marker_in = 'o'
+    elif i in [1, 4, 7]:
         region_in = 'Class'
-        marker_in = '^'
-    if i in [2, 5, 8]:
+        marker_in = 'o'
+    else:
         region_in = 'None'
         marker_in = 'o'
 
-    # print(f'i: {i}')
-    # print(f'geo_df_in: {geo_df_in}')
-
+    # Plot state boundaries and map data
     plot_states(states, ax)
-    plot_map(geo_df_in, region_in, ax, vrange_in, marker_in, zorder=5, show_legend=False)
+    scatter_plot = plot_map(geo_df_in, region_in, ax, vrange_in, 
+                            marker_in, zorder=5)
+    
+    # Create colorbars only for certain subplots
+    if i in [1, 4, 7]:
+        # Customize colorbar placement using add_axes()
+        cbar_ax = fig.add_axes([0.91, 0.75 - i*0.1, 0.02, 0.2])  # Custom position [left, bottom, width, height]
+        cbar = plt.colorbar(scatter_plot, cax=cbar_ax, extend='both', 
+                            orientation='vertical', shrink=0.8, aspect=20)
+        cbar.set_label('Residuals (cm)' if i == 1 else 'NSE')
 
-axs[0].set(
-    title = 'AggEcoregion', 
-    # xlabel = 'Longitude',
-    ylabel = 'Mean Annual\nLatitude')
+# Label the subplots
+axs[0].set(title='AggEcoregion', ylabel='Mean Annual\nLatitude')
 axs[1].set(title='Class')
 axs[2].set(title='None')
-axs[3].set(ylabel = 'Annual\nLatitude')
-axs[6].set(ylabel = 'Monthly\nLatitude')
+axs[3].set(ylabel='Annual\nLatitude')
+axs[6].set(ylabel='Monthly\nLatitude')
 for i in [6, 7, 8]:
-    axs[i].set(
-        # title = 'Monthly', 
-        xlabel = 'Longitude'
-    ) # ,
-        # ylabel = 'Monthly\nLatitude')
+    axs[i].set(xlabel='Longitude')
 
-# axs[2].legend(
-#     handles = [downtri, uptri, circle],
-#     labels = ['Eco', 'Class', 'None'],
-#     loc = 'upper right',
-#     fontsize=9,
-#     bbox_to_anchor = (0.95, 0.27),
-#     frameon=False)
-# axs[2].annotate('Grouping Method', xy = (-79.5, 30.4))
-
-# modify the colorbars
-# Create a ScalarMappable object
-sm1 = plt.cm.ScalarMappable(cmap=cmap_in, norm=norm1)
-sm1._A = [] # ensure scalarmappable is properly initialized
-
-sm2 = plt.cm.ScalarMappable(cmap=cmap_in, norm=norm2)
-sm2._A = [] # ensure scalarmappable is properly initialized
-
-# Add colorbars with extended arrow tips to each subplot
-cbar1 = fig.colorbar(sm1, ax=axs[2], extend='both')
-cbar1.set_label('Residuals (cm)')
-
-cbar2 = fig.colorbar(sm2, ax=axs[5], extend='min')
-cbar2.set_label('NSE')
-
-cbar3 = fig.colorbar(sm2, ax=axs[8], extend='min')
-cbar3.set_label('NSE')
-
-# name_in = 'And'.join(part_wrk)+'_'+'And'.join(models_in)
-# print(f'saving NSE_Map_{name_in}.png')
-# # save fig
-# if save_fig:
-#     plt.savefig(
-#         # f'{dir_figs}/NSE_Map_valnit.png', 
-#         # f'{dir_figs}/NSE_Map_trainAndValnit.png', 
-#         f'{dir_figs}/NSE_Map_BestOfGrouping{name_in}.png',
-#         dpi = 300,
-#         bbox_inches = 'tight'
-#         )
+name_in = 'And'.join(part_wrk)+'_'+'And'.join(models_in)
+# save fig
+if save_fig:
+    plt.savefig(
+        # f'{dir_figs}/NSE_Map_valnit.png', 
+        # f'{dir_figs}/NSE_Map_trainAndValnit.png', 
+        f'{dir_figs}/NSE_Map_SepGrouping_{name_in}.png',
+        dpi=300,
+        bbox_inches='tight'
+        )
+else:
+    plt.tight_layout()
+    plt.show()
 
 # %%
