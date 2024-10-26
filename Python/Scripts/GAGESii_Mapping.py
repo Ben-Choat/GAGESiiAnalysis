@@ -48,7 +48,8 @@ df_IDvalnit = pd.read_csv(
 
 # directory where to write figs
 # dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures'
-dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures'
+# dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures'
+dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/Figures/Manuscript'
 
 # %%
 # prep data
@@ -223,7 +224,7 @@ models_in = ['XGBoost']
 # )
 
 
-save_fig = False
+save_fig = True
 
 # colormap
 # cmap_in = 'Spectral'
@@ -466,18 +467,20 @@ geo_df_valnit_monthly = geo_df_valnit_monthly.merge(df_ID_monthly, on = 'STAID')
 # Map
 ##################
 
-
+# markersize
+ms = 50
+ms2 = 8  # legend marker size
 # make markers legend
 downtri = mlines.Line2D([], [], color = 'black', marker = 'v',
-                        linestyle = 'None', markersize = 5,
+                        linestyle = 'None', markersize = ms2,
                         label = 'AggEcoregion')
 
 uptri = mlines.Line2D([], [], color = 'black', marker = '^',
-                        linestyle = 'None', markersize = 5,
+                        linestyle = 'None', markersize = ms2,
                         label = 'Class')
 
 circle = mlines.Line2D([], [], color = 'black', marker = 'o',
-                        linestyle = 'None', markersize = 5,
+                        linestyle = 'None', markersize = ms2,
                         label = 'None')
 
 
@@ -521,7 +524,7 @@ states.boundary.plot(
 geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'AggEcoregion'].plot(
     ax = ax1,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = 'v',
     legend = False,
     cmap = cmap_in,
@@ -537,7 +540,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'AggEcoregion'].plot(
 geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'None'].plot(
     ax = ax1,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = 'o',
     legend = False,
     cmap = cmap_in,
@@ -551,7 +554,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'None'].plot(
 geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'Class'].plot(
     ax = ax1,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = '^',
     legend = False,
     cmap = cmap_in,
@@ -569,7 +572,7 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'Class'].plot(
 geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'AggEcoregion'].plot(
     ax = ax2,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = 'v',
     legend = False,
     cmap = cmap_in,
@@ -585,7 +588,7 @@ geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'AggEcoregion'].plot(
 geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'None'].plot(
     ax = ax2,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = 'o',
     # legend = True,
     cmap = cmap_in,
@@ -599,7 +602,7 @@ geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'None'].plot(
 geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'Class'].plot(
     ax = ax2,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = '^',
     # legend = True,
     cmap = cmap_in,
@@ -617,7 +620,7 @@ geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'Class'].plot(
 geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'AggEcoregion'].plot(
     ax = ax3,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = 'v',
     legend = False,
     cmap = cmap_in,
@@ -632,7 +635,7 @@ geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'AggEcoregion'].plot(
 geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'None'].plot(
     ax = ax3,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = 'o',
     # legend = True,
     cmap = cmap_in,
@@ -646,7 +649,7 @@ geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'None'].plot(
 geo_df_valnit_monthly[geo_df_valnit_monthly['Region'] == 'Class'].plot(
     ax = ax3,
     column = 'temp_best', 
-    markersize = 15, 
+    markersize = ms, 
     marker = '^',
     # legend = True,
     cmap = cmap_in,

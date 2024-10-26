@@ -104,6 +104,7 @@ n_bins = 100  # Use a large number of bins for smooth color transitions
 cmap_name = 'blue_white_orange'
 cmap_in = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
 # cmap_in = 'magma'
+# cmap_in = 'rainbow'
 
 norm1 = mpl.colors.Normalize(vmin=-5, vmax=5)
 norm2 = mpl.colors.Normalize(vmin=-1, vmax=1)
@@ -199,6 +200,7 @@ df_ID_annual['temp_best'] = df_ID_annual['NSE']
 df_ID_monthly = pd.merge(df_ID, df_bestvalnit_monthly)
 df_ID_monthly['temp_best'] = df_ID_monthly['NSE']
 
+
 # %%
 # prep data
 ##########
@@ -229,9 +231,50 @@ geo_df_valnit_monthly = gpd.GeoDataFrame(geometry = points_valnit)
 geo_df_valnit_monthly['STAID'] = df_ID_monthly['STAID']
 geo_df_valnit_monthly = geo_df_valnit_monthly.merge(df_ID_monthly, on = 'STAID')
 
+
+# %% define plotting functions
+#################################
+
+# define function for plotting a map to be used in each axis
+def plot_map(geo_df, region, ax, vrange, marker, zorder, show_legend):
+    '''plot scatter of performance metrics'''
+    # print(f'region: {region}')
+    # print(f'geo_df: {geo_df.head()}')
+    plot = geo_df[geo_df['clust_method'] == region].plot(
+        ax=ax,
+        column='temp_best',
+        markersize=25,
+        marker=marker,
+        legend=show_legend,
+        cmap=cmap_in,
+        vmin=vrange[0],
+        vmax=vrange[1],
+        edgecolor='k',
+        linewidth=0.5,
+        zorder=zorder
+    )
+
+    # Return the last collection, which will be used for the colorbar
+    mappable = ax.collections[-1]
+    
+    return mappable
+
+
+def plot_states(df, ax):
+    '''plot states'''
+    df.boundary.plot(
+        ax=ax,
+        color='Gray',
+        linewidth=1,
+        zorder=0
+    )
+
+# %% map
+######################
+
 # Map settings
 fig, axs = plt.subplots(3, 3, figsize=(15, 10), sharex=True, sharey=True)
-fig.subplots_adjust(hspace=0.2, wspace=0.1)  # Control spacing between subplots
+fig.subplots_adjust(hspace=0.2, wspace=0.05)  # Control spacing between subplots
 
 # Flatten axis array for easier indexing
 axs = axs.flatten()
@@ -267,28 +310,37 @@ for i, ax in enumerate(axs):
 
     # Plot state boundaries and map data
     plot_states(states, ax)
-    scatter_plot = plot_map(geo_df_in, region_in, ax, vrange_in, 
-                            marker_in, zorder=5)
+    mappable = plot_map(geo_df_in, region_in, ax, vrange_in, 
+                        marker_in, zorder=5, show_legend=False)
     
     # Create colorbars only for certain subplots
     if i in [1, 4, 7]:
+        if i == 1:
+            y_in = 0.645
+        elif i == 4:
+            y_in = 0.375
+        elif i == 7:
+            y_in = 0.05
         # Customize colorbar placement using add_axes()
-        cbar_ax = fig.add_axes([0.91, 0.75 - i*0.1, 0.02, 0.2])  # Custom position [left, bottom, width, height]
-        cbar = plt.colorbar(scatter_plot, cax=cbar_ax, extend='both', 
-                            orientation='vertical', shrink=0.8, aspect=20)
-        cbar.set_label('Residuals (cm)' if i == 1 else 'NSE')
+        cbar_ax = fig.add_axes([0.415, y_in, 0.2, 0.01])  # Custom position [left, bottom, width, height]
+        cbar = plt.colorbar(mappable, cax=cbar_ax, extend='both',
+                            orientation='horizontal', shrink=0.8, aspect=20)
+        fs = 15 # fontsize
+        cbar.set_label('Residuals (cm)' if i == 1 else 'NSE', fontsize=fs)
 
 # Label the subplots
-axs[0].set(title='AggEcoregion', ylabel='Mean Annual\nLatitude')
-axs[1].set(title='Class')
-axs[2].set(title='None')
-axs[3].set(ylabel='Annual\nLatitude')
-axs[6].set(ylabel='Monthly\nLatitude')
+axs[0].set_title('AggEcoregion', fontsize=fs)
+axs[0].set_ylabel('Mean Annual\nLatitude', fontsize=fs)
+axs[1].set_title('Class', fontsize=fs)
+axs[2].set_title('None', fontsize=fs)
+axs[3].set_ylabel('Annual\nLatitude', fontsize=fs)
+axs[6].set_ylabel('Monthly\nLatitude', fontsize=fs)
 for i in [6, 7, 8]:
-    axs[i].set(xlabel='Longitude')
+    axs[i].set_xlabel('Longitude', fontsize=15)
 
 name_in = 'And'.join(part_wrk)+'_'+'And'.join(models_in)
 # save fig
+# plt.tight_layout()
 if save_fig:
     plt.savefig(
         # f'{dir_figs}/NSE_Map_valnit.png', 
@@ -298,7 +350,6 @@ if save_fig:
         bbox_inches='tight'
         )
 else:
-    plt.tight_layout()
     plt.show()
 
 # %%
