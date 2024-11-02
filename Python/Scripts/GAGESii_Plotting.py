@@ -26,7 +26,7 @@ import os
 
 # Define directory variables
 # directory with data to work with
-# dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out' 
+# dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out'
 dir_work = ('C:/Users/bench/OneDrive/ML_DriversOfWY/'
             'GAGESii_ANNstuff/Data_Out/Results')
 
@@ -198,7 +198,7 @@ anland_feats = feat_cats.loc[
 ############################
 from matplotlib.colors import ListedColormap
 color_dict = {
-    'Best': 'gold',
+    # 'Best': 'gold',
     'CntlPlains': 'blue',
     'EastHghlnds': 'cyan',
     'MxWdShld': 'darkgoldenrod',
@@ -431,7 +431,7 @@ else:
 ####
 # define a list of linestyles to be used
 # linestyles = ['-', '--', '-.', ':', '-', '--']
-linestyles = [':' for x in range(0,6)]
+linestyles = ['--' for x in range(0,6)]
 # markers = ['o', 's', '^', 'D', '^', 'D']
 fig, axs = plt.subplots(2, 3, figsize = (10, 8), sharey = True)#, sharex = True)
 ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()

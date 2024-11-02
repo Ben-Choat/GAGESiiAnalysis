@@ -34,7 +34,7 @@ df_inma = df_inma.query("clust_method in @rgns_schemes & model in @model_in")
 
 
 # monthly and annual
-dfs_out = {"AggEcoregion": [], "Class": [], "None": []}
+dfs_out = {"Ecoregion": [], "Class": [], "None": []}
     
 for scheme in ['Class', 'None']:
     df_temp1 = df_in.query("clust_method == @scheme").sort_values(
@@ -52,12 +52,12 @@ for scheme in ['Class', 'None']:
 
     dfs_out[scheme] = df_temp3
 
-dfs_out['AggEcoregion'] = df_temp2
+dfs_out['Ecoregion'] = df_temp2
 df_moan = pd.concat(dfs_out, axis=0).reset_index(drop=True)
 # df_moan.columns = df_moan.columns.str.replace('level_0', 'Region')
 
 # mean annual
-dfs_out = {"AggEcoregion": [], "Class": [], "None": []}
+dfs_out = {"Ecoregion": [], "Class": [], "None": []}
     
 for scheme in ['Class', 'None']:
     df_temp1 = df_inma.query("clust_method == @scheme").sort_values(
@@ -75,7 +75,7 @@ for scheme in ['Class', 'None']:
 
     dfs_out[scheme] = df_temp3
 
-dfs_out['AggEcoregion'] = df_temp2
+dfs_out['Ecoregion'] = df_temp2
 df_ma = pd.concat(dfs_out, axis=0).reset_index(drop=True)
 df_ma['res_abs'] = df_ma.residuals.abs()
 # df_ma.columns = df_ma.columns.str.replace('level_0', 'Region')
@@ -278,7 +278,7 @@ df_inma = df_inma.query("clust_method in @rgns_schemes & model in @model_in")
 
 
 # monthly and annual
-dfs_out = {"AggEcoregion": [], "Class": [], "None": []}
+dfs_out = {"Ecoregion": [], "Class": [], "None": []}
     
 for scheme in ['Class', 'None']:
     df_temp1 = df_in.query("clust_method == @scheme").sort_values(
@@ -296,12 +296,12 @@ for scheme in ['Class', 'None']:
 
     dfs_out[scheme] = df_temp3
 
-dfs_out['AggEcoregion'] = df_temp2
+dfs_out['Ecoregion'] = df_temp2
 df_moan = pd.concat(dfs_out, axis=0).reset_index(drop=True)
 # df_moan.columns = df_moan.columns.str.replace('level_0', 'Region')
 
 # mean annual
-dfs_out = {"AggEcoregion": [], "Class": [], "None": []}
+dfs_out = {"Ecoregion": [], "Class": [], "None": []}
     
 for scheme in ['Class', 'None']:
     df_temp1 = df_inma.query("clust_method == @scheme").sort_values(
@@ -319,7 +319,7 @@ for scheme in ['Class', 'None']:
 
     dfs_out[scheme] = df_temp3
 
-dfs_out['AggEcoregion'] = df_temp2
+dfs_out['Ecoregion'] = df_temp2
 df_ma = pd.concat(dfs_out, axis=0).reset_index(drop=True)
 df_ma['res_abs'] = df_ma.residuals.abs()
 # df_ma.columns = df_ma.columns.str.replace('level_0', 'Region')
@@ -331,6 +331,18 @@ df_moan = df_moan.replace('strd_mlr', 'MLR')
 
 df_ma = df_ma.replace('regr_precip', 'SLR')
 df_ma = df_ma.replace('strd_mlr', 'MLR')
+
+# replace AggEcoregion with Ecoregion
+df_moan['clust_method'] = (
+    df_moan.
+    clust_method.
+    str.
+    replace('AggEcoregion', 'Ecoregion'))
+df_ma['clust_method'] = (
+    df_ma.
+    clust_method.
+    str.
+    replace('AggEcoregion', 'Ecoregion'))
 
 
 
@@ -489,11 +501,12 @@ for i, ax in enumerate(axs.flatten()):
 
 fig.subplots_adjust(hspace=0.09, wspace=0.1) 
 
-# plt.savefig(
-# # #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_{part_name}.png',
-# # #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest.png',
-# #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_Boxplot_trainAndtest_AllScales.png',
-#     'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures/GainsFromModelsAndRegionalizationVsModelClumped_Boxplot_trainAndtest_AllScales.png',
-#     dpi = 300, bbox_inches = 'tight'
-# )
+plt.savefig(
+# #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_{part_name}.png',
+# #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest.png',
+#     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_Boxplot_trainAndtest_AllScales.png',
+    # 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures/GainsFromModelsAndRegionalizationVsModelClumped_Boxplot_trainAndtest_AllScales.png',
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/Figures/Manuscript/PerformanceMetricsByGroupingMeth.png',
+    dpi = 300, bbox_inches = 'tight'
+)
 

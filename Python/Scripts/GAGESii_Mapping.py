@@ -173,12 +173,15 @@ ax2.legend(
 
 ax2.get_legend().get_frame().set_edgecolor('none')
 
-# save fig
-# plt.savefig(
-#     f'{dir_figs}/Map_AggEcoregion_RefOrNot.png', 
-#     dpi = 300,
-#     bbox_inches = 'tight'
-#     )
+# if save_fig:
+#     # save fig
+#     plt.savefig(
+#         f'{dir_figs}/Map_AggEcoregion_RefOrNot.png', 
+#         dpi = 300,
+#         bbox_inches = 'tight'
+#         )
+# else:
+plt.show()
 
 
 
@@ -207,8 +210,8 @@ ax2.get_legend().get_frame().set_edgecolor('none')
 
 # create list defining if working with ['train'], ['valint'], or both ['train', 'valnit']
 # part_wrk = ['train', 'valnit']
-# part_wrk = ['train']
-part_wrk = ['valnit']
+part_wrk = ['train']
+# part_wrk = ['valnit']
 
 # create list defining which clustering approach to consider
 clust_meths = ['AggEcoregion', 'Class', 'None']
