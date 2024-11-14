@@ -40,15 +40,34 @@ save_figs = True
 dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/Figures/Manuscript'
 if not os.path.exists(dir_figs): os.mkdir(dir_figs)
 
-# directory where to place outputs
-# dir_umaphd = 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN'
-
 # should the best performing model be used?
 # if True, then attempts to use shapley values from the best performing model
 use_best = False
 
 # which partition to use "train" or  "valnit"
 part_in = 'valnit'
+
+# read in mean discharge for mean_annual, so can normlize residuals
+df_maQ_train = pd.read_csv(
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work/'
+    f'data_work/USGS_discharge/annual/WY_Ann_train.csv',
+    dtype={'site_no': str}
+)
+df_maQ_test = pd.read_csv(
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work/'
+    f'data_work/USGS_discharge/annual/WY_Ann_valnit.csv',
+    dtype={'site_no': str}
+)
+df_maQ = pd.concat([df_maQ_train, df_maQ_test], axis=0)
+
+df_maQ = df_maQ.rename({'site_no': 'STAID'}, axis=1)
+# get mean by STAID
+df_maQ = df_maQ.groupby('STAID')['Ann_WY_cm'].mean().reset_index()
+
+
+# directory where to place outputs
+# dir_umaphd = 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN'
+
 
 # cluster method to use
 # ['None', 'Class', 'AggEcoregion', 'All_0', 'All_1', 'All_2', 'Anth_0', 'Anth_1', 
@@ -92,6 +111,12 @@ df_resind_mannual = pd.read_csv(
     )
 
 df_resind_mannual['|residuals|'] = df_resind_mannual.residuals.abs()
+
+# join with wy df to normalize residuals
+df_resind_mannual = pd.merge(df_resind_mannual, df_maQ, on='STAID')
+# normalize abs(residuals) by mean wy
+df_resind_mannual['|residuals|'] = (df_resind_mannual['|residuals|']/
+                                    df_resind_mannual['Ann_WY_cm'])
 
 df_resind_mannual = df_resind_mannual[[
         'STAID', 'residuals', '|residuals|', 'clust_method', 'region',
@@ -233,7 +258,7 @@ data_in_mannual = df_resind_mannual.copy() #[
 #     right_on = ['region', 'clust_meth', 'best_model']
 # )[df_resind_mannual.columns]
 
-data_in_mannual['|residuals|'] = np.abs(data_in_mannual['residuals'])
+# data_in_mannual['|residuals|'] = np.abs(data_in_mannual['residuals'])
 
 data_in_mannual.sort_values(
     by = ['clust_method', 'region'], inplace = True
@@ -437,7 +462,7 @@ fig, axs = plt.subplots(2, 3, figsize = (10, 8), sharey = True)#, sharex = True)
 ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
 
 # training
-ax1.set_xlim(0, 90)
+ax1.set_xlim(0, 3)
 ax1.annotate('(a)', xy = (5, 0.2)) #(80, 0.02))
 ax1.grid()
 ax1.title.set_text('Mean Annual')
@@ -489,9 +514,9 @@ sns.ecdfplot(
 ax3.set(xlabel = '') # metric_in)
 
 # testing
-ax4.set(xlabel = '|residuals| [cm]', 
+ax4.set(xlabel = '|Relative Error| [cm/cm]', 
         ylabel = 'Non-Exceedence Probability (Testing Data)')
-ax4.set_xlim(0, 90)
+ax4.set_xlim(0, 3)
 ax4.annotate('(d)', xy = (5, 0.2)) #(80, 0.02))
 ax4.grid()
 ax4.title.set_text('') # Mean Annual')

@@ -210,8 +210,8 @@ plt.show()
 
 # create list defining if working with ['train'], ['valint'], or both ['train', 'valnit']
 # part_wrk = ['train', 'valnit']
-part_wrk = ['train']
-# part_wrk = ['valnit']
+# part_wrk = ['train']
+part_wrk = ['valnit']
 
 # create list defining which clustering approach to consider
 clust_meths = ['AggEcoregion', 'Class', 'None']
@@ -227,44 +227,7 @@ models_in = ['XGBoost']
 # )
 
 
-save_fig = True
-
-# colormap
-# cmap_in = 'Spectral'
-# cmap_in = 'BrBG'
-# cmap_in = 'PuOr'
-# cmap_in = 'gnuplot'
-# cmap_in = 'cividis'
-# Define the colors for the colormap
-from matplotlib.colors import LinearSegmentedColormap
-from matplotlib.colors import ListedColormap
-import matplotlib as mpl
-colors = ['#ff7f0e', 'white', '#1f77b4']  # blue, white, orange
-n_bins = 100  # Use a large number of bins for smooth color transitions
-
-# Create a colormap object
-cmap_name = 'blue_white_orange'
-cmap_in = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
-# cmap_in = 'magma'
-
-norm1 = mpl.colors.Normalize(vmin=-5, vmax=5)
-norm2 = mpl.colors.Normalize(vmin=-1, vmax=1)
-
-# pallete for barplot inset
-# palette_in = 'tab20c_r'
-# palette_in = 'tab20b'
-palette_in = 'cividis'
-
-# temp_cmap = ListedColormap(['purple', 'cyan', 'gray'])
-# try: 
-#     pal_in_str = mpl.colormaps.register(cmap=temp_cmap)
-# except:
-#     print('cmap already registered')
-
-# palette_in = 'palette_in'
-
-# read in results from independent catchments
-
+save_fig = False
 
 # mean annual
 # training
@@ -280,12 +243,24 @@ df_indres = df_indres.query("clust_method in @clust_meths")
 df_indres = df_indres[
     ~df_indres['model'].str.contains('PCA')
 ]
- 
 
+# read in mean discharge for mean_annual, so can normlize residuals
+df_maQ = pd.read_csv(
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work/'
+    f'data_work/USGS_discharge/annual/WY_Ann_{part_wrk[0]}.csv',
+    dtype={'site_no': str}
+)
+df_maQ = df_maQ.rename({'site_no': 'STAID'}, axis=1)
+# get mean by STAID
+df_maQ = df_maQ.groupby('STAID')['Ann_WY_cm'].mean().reset_index()
+
+# join df_maQ to df_indres and then calculate percent area (normalized residuals)
+df_indres = pd.merge(df_indres, df_maQ, on='STAID')
+df_indres['residuals'] = df_indres['residuals']/df_indres['Ann_WY_cm']
 
 # valnit
 df_indresvalnit = df_indres[df_indres['train_val'].isin(part_wrk)]
-df_indresvalnit =df_indresvalnit[df_indresvalnit['model'].isin(models_in)]
+df_indresvalnit = df_indresvalnit[df_indresvalnit['model'].isin(models_in)]
 
 # define empty lists to hold output
 
@@ -466,9 +441,37 @@ geo_df_valnit_monthly = gpd.GeoDataFrame(geometry = points_valnit)
 geo_df_valnit_monthly['STAID'] = df_ID_monthly['STAID']
 geo_df_valnit_monthly = geo_df_valnit_monthly.merge(df_ID_monthly, on = 'STAID')
 
-## %%
+# %%
 # Map
 ##################
+
+# colormap
+# cmap_in = 'Spectral'
+# cmap_in = 'BrBG'
+# cmap_in = 'PuOr'
+# cmap_in = 'gnuplot'
+# cmap_in = 'cividis'
+# Define the colors for the colormap
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import ListedColormap
+import matplotlib as mpl
+colors = ['#ff7f0e', 'white', '#1f77b4']  # blue, white, orange
+n_bins = 100  # Use a large number of bins for smooth color transitions
+
+# Create a colormap object
+cmap_name = 'blue_white_orange'
+cmap_in = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bins)
+# cmap_in = 'magma'
+
+ma_min = -0.5  #  -5 # min for color ramp
+ma_max = 0.5  # 5 # max for color ramp
+norm1 = mpl.colors.Normalize(vmin=ma_min, vmax=ma_max)
+norm2 = mpl.colors.Normalize(vmin=-1, vmax=1)
+
+# pallete for barplot inset
+# palette_in = 'tab20c_r'
+# palette_in = 'tab20b'
+palette_in = 'cividis'
 
 # markersize
 ms = 50
@@ -531,8 +534,8 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'AggEcoregion'].plot(
     marker = 'v',
     legend = False,
     cmap = cmap_in,
-    vmin = -5,
-    vmax = 5,
+    vmin = ma_min, # -5,
+    vmax = ma_max, # 5,
     edgecolor = 'k',
     linewidth = 0.5,
     zorder = 5)# ,
@@ -547,8 +550,8 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'None'].plot(
     marker = 'o',
     legend = False,
     cmap = cmap_in,
-    vmin = -5,
-    vmax = 5,
+    vmin = ma_min, # -5,
+    vmax = ma_max, # 5,
     edgecolor = 'k',
     linewidth = 0.5,
     zorder = 5)# ,
@@ -561,8 +564,8 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'Class'].plot(
     marker = '^',
     legend = False,
     cmap = cmap_in,
-    vmin = -5,
-    vmax = 5,
+    vmin = ma_min,  # -5,
+    vmax = ma_max,  # 5,
     edgecolor = 'k',
     linewidth = 0.5,
     zorder = 5)# ,
@@ -574,8 +577,8 @@ geo_df_valnit_mannual[geo_df_valnit_mannual['Region'] == 'Class'].plot(
 # AggEco
 geo_df_valnit_annual[geo_df_valnit_annual['Region'] == 'AggEcoregion'].plot(
     ax = ax2,
-    column = 'temp_best', 
-    markersize = ms, 
+    column = 'temp_best',
+    markersize = ms,
     marker = 'v',
     legend = False,
     cmap = cmap_in,
@@ -846,8 +849,6 @@ ax2.annotate('Grouping Method', xy = (-79.5, 30.4)) # (-125.5, 30.4))
 # ax3.annotate('NSE', xy = (-52, 36.5), rotation = 90, annotation_clip = False)
 # ax1.annotate('Residuals [cm]', xy = (-52, 35.1), rotation = 90, annotation_clip = False)
 
-
-
 # modify the colorbars
 # Create a ScalarMappable object
 sm1 = plt.cm.ScalarMappable(cmap=cmap_in, norm=norm1)
@@ -858,13 +859,19 @@ sm2._A = [] # ensure scalarmappable is properly initialized
 
 # Add colorbars with extended arrow tips to each subplot
 cbar1 = fig.colorbar(sm1, ax=ax1, extend='both')
-cbar1.set_label('Residuals (cm)')
+cbar1.set_label('Relative Error (cm/cm)')
 
 cbar2 = fig.colorbar(sm2, ax=ax2, extend='min')
 cbar2.set_label('NSE')
 
 cbar3 = fig.colorbar(sm2, ax=ax3, extend='min')
 cbar3.set_label('NSE')
+
+# add a, b, c annotations
+pos_in = [-127, 49]  # annotation location
+ax1.annotate('(a)', pos_in)
+ax2.annotate('(b)', pos_in)
+ax3.annotate('(c)', pos_in)
 
 # ax2.get_legend().set_label('Grouping Method')
 
@@ -882,3 +889,22 @@ if save_fig:
         )
 
 # %%
+
+# calculate some basic stats
+
+# df_in = geo_df_valnit_monthly.copy()
+# df_in = geo_df_valnit_annual.copy()
+df_in = geo_df_valnit_mannual.copy()
+
+print(f'max: {df_in.temp_best.max()}')
+print(f'min: {df_in.temp_best.min()}')
+print(f'2.5: {np.percentile(df_in.temp_best, 2.5)}')
+print(f'97.5: {np.percentile(df_in.temp_best, 97.5)}')
+print(f'1: {np.percentile(df_in.temp_best, 1)}')
+print(f'99: {np.percentile(df_in.temp_best, 99)}')
+
+# %% print counts as percentage
+#####################################
+
+df_in = monthly_count/monthly_count.sum()
+print(df_in)

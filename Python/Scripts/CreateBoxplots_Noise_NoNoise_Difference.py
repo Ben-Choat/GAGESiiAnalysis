@@ -90,10 +90,10 @@ large_schemes = ['All_1', 'Nat_3', 'Anth_0']
 
 # define properties for boxplots
 props_in = {
-    'boxprops':{'facecolor':'none', 'edgecolor':'black'},
-    'medianprops':{'color':'black'},
-    'whiskerprops':{'color':'black'},
-    'capprops':{'color':'black'}
+    'boxprops': {'facecolor':'none', 'edgecolor':'black'},
+    'medianprops': {'color':'black'},
+    'whiskerprops': {'color':'black'},
+    'capprops': {'color':'black'}
 }
 
 # define order for legend
