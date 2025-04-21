@@ -623,7 +623,7 @@ for timescale in time_scale:
                     shap_dirxn.append(dirxn_temp)
 
 
-                # take mean of shap values, and give direction by 
+                # take mean of shap values, and give direction by
                 # multiplying by shap_coef
                 df_shapmean = pd.DataFrame(
                     df_shap_valout.abs().mean() * np.array(shap_dirxn),

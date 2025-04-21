@@ -35,7 +35,7 @@ dir_shap = ('C:/Users/bench/OneDrive/ML_DriversOfWY/'
             'GAGESii_ANNstuff/Data_Out/SHAP_OUT')
 
 # save figs (True of False?)
-save_figs = True
+save_figs = False
 # directory where to write figs
 dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/Figures/Manuscript'
 if not os.path.exists(dir_figs): os.mkdir(dir_figs)
@@ -248,7 +248,7 @@ custom_pallete = [color_dict[key] for key in color_dict]
 cmap_str = custom_pallete
 
 # mean annual
-data_in_mannual = df_resind_mannual.copy() #[
+data_in_mannual = df_resind_mannual.copy()  #[
 #     df_resind_mannual['train_val'] == part_in
 # ]
 
@@ -463,7 +463,7 @@ ax1, ax2, ax3, ax4, ax5, ax6 = axs.flatten()
 
 # training
 ax1.set_xlim(0, 3)
-ax1.annotate('(a)', xy = (5, 0.2)) #(80, 0.02))
+ax1.annotate('(a)', xy = (0.3, 0.2)) #(80, 0.02))
 ax1.grid()
 ax1.title.set_text('Mean Annual')
 sns.ecdfplot(
@@ -517,7 +517,7 @@ ax3.set(xlabel = '') # metric_in)
 ax4.set(xlabel = '|Relative Error| [cm/cm]', 
         ylabel = 'Non-Exceedence Probability (Testing Data)')
 ax4.set_xlim(0, 3)
-ax4.annotate('(d)', xy = (5, 0.2)) #(80, 0.02))
+ax4.annotate('(d)', xy = (0.3, 0.2)) #(80, 0.02))
 ax4.grid()
 ax4.title.set_text('') # Mean Annual')
 sns.ecdfplot(
@@ -581,9 +581,28 @@ else:
 
 
 
+# %% print some stats from each scenario
+#########################
+df_best_mannual.groupby(['train_val', 'Region'])['|residuals|'].median()
 
+med_an = df_best_annual.groupby(
+    ['train_val', 'Region']
+    )['NSE'].median().reset_index()
 
+med_mo = df_best_monthly.groupby(
+    ['train_val', 'Region']
+    )['NSE'].median().reset_index()
 
+med_both = pd.merge(med_mo, med_an, on=['train_val', 'Region'])
+med_both = med_both.rename(
+    {'NSE_x': 'NSE_monthly', 'NSE_y': 'NSE_annual'},
+    axis=1
+    )
+
+med_both['MoMinusAn'] = med_both['NSE_monthly'] - med_both['NSE_annual']
+
+med_both.sort_values(by=['train_val', 'MoMinusAn'])
+med_both.sort_values(by=['train_val', 'NSE_monthly'])
 
 # %%
 # heatmap of shap values using all variables

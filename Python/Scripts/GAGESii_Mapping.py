@@ -895,6 +895,7 @@ if save_fig:
 # df_in = geo_df_valnit_monthly.copy()
 # df_in = geo_df_valnit_annual.copy()
 df_in = geo_df_valnit_mannual.copy()
+df_in['temp_best'] = df_in['temp_best'].abs()
 
 print(f'max: {df_in.temp_best.max()}')
 print(f'min: {df_in.temp_best.min()}')
@@ -903,8 +904,11 @@ print(f'97.5: {np.percentile(df_in.temp_best, 97.5)}')
 print(f'1: {np.percentile(df_in.temp_best, 1)}')
 print(f'99: {np.percentile(df_in.temp_best, 99)}')
 
+print(df_in.groupby('AggEcoregion')['temp_best'].median().sort_values())
+print(df_in.groupby('Class')['temp_best'].median())
+print(df_in['temp_best'].median())
 # %% print counts as percentage
 #####################################
 
-df_in = monthly_count/monthly_count.sum()
-print(df_in)
+# df_in = monthly_count/monthly_count.sum()
+# print(df_in)

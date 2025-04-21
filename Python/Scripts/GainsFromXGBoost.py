@@ -607,10 +607,120 @@ if __name__ == '__main__':
 
     part_name = '_'.join(part_in)
 
-    plt.savefig(
-    #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_{part_name}.png',
-    #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest.png',
-        # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_Boxplot_trainAndtest_AllScales.png',
-        'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_Boxplot_trainAndtest_AllScales.png',
-        dpi = 300, bbox_inches = 'tight'
-    )
+    # plt.savefig(
+    # #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_{part_name}.png',
+    # #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest.png',
+    #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_Boxplot_trainAndtest_AllScales.png',
+    #     'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_Boxplot_trainAndtest_AllScales.png',
+    #     dpi = 300, bbox_inches = 'tight'
+    # )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # Enable LaTeX rendering
+    # plt.rcParams['text.usetex'] = True
+    # plt.rc('text', usetex=True)
+    xaxis_order = ['CntlPlains', 'EastHghlnds', 
+                'MxWdShld', 'NorthEast',
+                'SECstPlain', 'SEPlains',
+                'WestMnts', 'WestPlains',
+                'WestXeric', 'Non-ref',
+                'Ref', 'All']
+    annots = ['(a)', '(b)', '(c)', '(d)', '(e)', '(f)']
+    fig, axs = plt.subplots(3, 2, figsize = (8, 8), sharex = True)
+
+    for i, ax in enumerate(axs.flatten()):
+        # print(i)
+        # print(ax)
+        if i in [0, 1]:
+            ylim_in = (-55, 25)
+            annot_loc = [0.2, -50]
+            ytick_in = [-45, -30, -15, 0, 15]
+        else:
+            ylim_in = (-0.5, 1)
+            annot_loc = [0.2, -0.45]
+            ytick_in = [-0.5, 0, 0.5, 1]
+        # if i in [1, 3, 5]:
+        #     ytick_in = []
+
+        if i == 0:
+            ylab_in = 'Mean Annual\nGains from XGBoost\n(cm)'
+        elif i == 2:
+            ylab_in = 'Annual\nGains from XGBoost\n(NNSE)'
+        elif i == 4:
+            ylab_in = 'Monthly\nGains From XGBoost\n(NNSE)'
+        else:
+            ylab_in = ''
+        
+        if i == 0:
+            title_in = 'Training'
+        elif i == 1:
+            title_in = 'Testing'
+        else:
+            ax.title.set_visible(False) # set on or off
+
+        sns.boxplot(
+            data = dfs_plot[list(dfs_plot.keys())[i]],
+            x = 'Region',
+            y = f'Gain', # r'Gain in $NSE_m$',
+            hue = 'model',
+            ax = ax, # axsf[0],
+            showfliers = False,
+            zorder = 2
+            # order = xaxis_order
+        )
+
+        ax.set(ylabel = ylabs_in[i], ylim=ylim_in)
+
+        # plt.xticks(rotation = 45, ha = 'right', rotation_mode = 'anchor')
+        ax.annotate(annots[i], annot_loc)
+        ax.set(xlabel='', ylabel=ylab_in,
+                    title = title_in)
+        ax.set_yticks(ytick_in)
+        # ax.set_yticklabels(ylabs_in)
+        ax.grid(True, axis='both')
+        ax.axhline(0, ls='-', linewidth=0.9, color='red', zorder=3)
+        ax.legend().set_visible(False)
+
+        if i == (len(axs.flatten())-1):
+            # add legend 
+            # ax.legend(loc='lower center', ncol = 3)
+            # Add legend outside of the subplots
+            handles, labels = ax.get_legend_handles_labels()
+            fig.legend(handles, labels, loc='lower center', ncol=3, bbox_to_anchor = [0.5, -0.02])
+
+            # Adjust the layout to make space for the legend
+            plt.subplots_adjust(bottom=0.15)
+
+        if i in [4, 5]:
+            plt.sca(ax)  # Set current axis to ax
+            plt.xticks(rotation=45, ha='right', rotation_mode='anchor')
+            ax.set(xlabel = "Region")
+        
+        if i in [1, 3, 5]:
+            ax.set_yticklabels([])
+            
+        
+
+    fig.subplots_adjust(hspace=0.09, wspace=0.1) 
+
+    part_name = '_'.join(part_in)
+
+    # plt.savefig(
+    # #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_{part_name}.png',
+    # #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_trainAndtest.png',
+    #     # f'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_Boxplot_trainAndtest_AllScales.png',
+    #     'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures/GainsFromXGBoostVsModel_Boxplot_trainAndtest_AllScales.png',
+    #     dpi = 300, bbox_inches = 'tight'
+    # )

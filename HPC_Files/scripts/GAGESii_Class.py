@@ -487,7 +487,7 @@ class Clusterer:
         #             rug = True)
 
         # get 90th quantile of outlier scores
-        # pd.Series(clusterer.outlier_scores_).quantile(0.9)
+        # pd.Series(clusterer.outlier_scores_).)
 
 
         # histogram of cluster probabilities (how strongly staid fits into cluster)
