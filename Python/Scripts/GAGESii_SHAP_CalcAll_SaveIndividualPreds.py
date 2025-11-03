@@ -503,26 +503,20 @@ for timescale in time_scale[1:2]:
             #     X_in.columns
             # )
 
-
-
-            # take mean of shap values, and give direction by 
-            # multiplying by shap_coef
-            df_shapmean = pd.DataFrame(df_shap_valout)
-            #     df_shap_valout.abs() # .mean() * np.array(shap_dirxn),
-            # ).T
-            
-            df_shapmean = df_shapmean/df_WY_in.mean()
+            # add mean WY to output df
+            df_shap_valout['WY_cm'] = df_WY_in
 
             # swe_1 instead of swe appeard in some mean annual models
             # so correct column name to swe
-            df_shapmean.columns = df_shapmean.columns.str.replace('swe_1', 'swe')
+            df_shap_valout.columns = df_shap_valout.columns.str.replace('swe_1', 'swe')
 
 
 
         # # add current df_shapmean to df_shap_out
         df_shapmean = pd.concat(
-            [df_shap_out, df_shapmean], 
-            ignore_index = True
+            [df_shap_out, df_shap_valout], 
+            axis=0
+            # ignore_index=True
         )
        
 
