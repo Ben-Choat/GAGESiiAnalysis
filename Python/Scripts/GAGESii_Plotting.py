@@ -7,7 +7,7 @@ to do:
 ...
 '''
 
-# %%
+# %%shap
 # Import libraries
 ################
 
@@ -45,7 +45,7 @@ if not os.path.exists(dir_figs): os.mkdir(dir_figs)
 use_best = False
 
 # which partition to use "train" or  "valnit"
-part_in = 'valnit'
+part_in = 'train'
 
 # read in mean discharge for mean_annual, so can normlize residuals
 df_maQ_train = pd.read_csv(
@@ -1275,7 +1275,7 @@ anhyd_feats = anhyd_feats.str.replace('TS_', '')
 anland_feats = feat_cats.loc[
     feat_cats['Coarse_Cat'] == 'Anthro_Land', 'Features'
 ].reset_index(drop = True)
-anland_feats = anhyd_feats.str.replace('TS_', '')
+anland_feats = anland_feats.str.replace('TS_', '')
 
 # mean annual
 
