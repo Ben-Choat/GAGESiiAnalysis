@@ -404,58 +404,96 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
     if not cat_cols:
         return
 
-    cat_labels = [col.replace("abs_shap_", "").replace("_", " ").title() for col in cat_cols]
-    palette = sns.color_palette("pastel", n_colors=len(cat_cols))
+    # Fixed order/color mapping for manuscript styling.
+    ordered_cols = [
+        "abs_shap_climate",
+        "abs_shap_physio",
+        "abs_shap_anthro_hydro",
+        "abs_shap_anthro_land",
+    ]
+    cat_cols = [col for col in ordered_cols if col in cat_cols]
+    if not cat_cols:
+        return
+    cat_labels = ["Climate", "Physiographic", "AnthroHydro", "AnthroLand"]
+    color = ["blue", "saddlebrown", "red", "black"]
+    color_map = {col: color[i] for i, col in enumerate(cat_cols)}
+    label_map = {col: cat_labels[i] for i, col in enumerate(cat_cols)}
+
     default_part_order = ["train", "valnit", "test", "all"]
+    time_order = ["mean_annual", "annual", "monthly"]
 
-    for (time_scale, basin_class), df_ts in df_summary.groupby(["time_scale", "Class"]):
-        df_ts = df_ts.copy()
-        class_order = [cls for cls in P_PET_LABELS if cls in df_ts["P_PET_Class"].unique()]
-        class_order += [
-            cls
-            for cls in df_ts["P_PET_Class"].unique()
-            if cls not in class_order
-        ]
-        part_order = [p for p in default_part_order if p in df_ts["partition"].unique()]
-        part_order += [
-            p for p in df_ts["partition"].unique() if p not in part_order
-        ]
+    for basin_class, df_bc in df_summary.groupby("Class"):
+        fig, axes = plt.subplots(1, 3, figsize=(12, 4), sharey=True)
+        for idx, time_scale in enumerate(time_order):
+            ax = axes[idx]
+            df_ts = df_bc[df_bc["time_scale"] == time_scale].copy()
+            if df_ts.empty:
+                ax.set_visible(False)
+                continue
 
-        combos: List[Tuple[str, str]] = []
-        for cls in class_order:
-            for part in part_order:
-                mask = (
-                    (df_ts["P_PET_Class"] == cls)
-                    & (df_ts["partition"] == part)
+            class_order = [
+                cls for cls in P_PET_LABELS if cls in df_ts["P_PET_Class"].unique()
+            ]
+            class_order += [
+                cls
+                for cls in df_ts["P_PET_Class"].unique()
+                if cls not in class_order
+            ]
+            part_order = [
+                p for p in default_part_order if p in df_ts["partition"].unique()
+            ]
+            part_order += [
+                p for p in df_ts["partition"].unique() if p not in part_order
+            ]
+
+            combos: List[Tuple[str, str]] = []
+            for cls in class_order:
+                for part in part_order:
+                    mask = (
+                        (df_ts["P_PET_Class"] == cls)
+                        & (df_ts["partition"] == part)
+                    )
+                    if mask.any():
+                        combos.append((cls, part))
+            if not combos:
+                ax.set_visible(False)
+                continue
+
+            x = np.arange(len(combos))
+            bottoms = np.zeros(len(combos))
+            for col in cat_cols:
+                heights = []
+                for cls, part in combos:
+                    mask = (
+                        (df_ts["P_PET_Class"] == cls)
+                        & (df_ts["partition"] == part)
+                    )
+                    heights.append(df_ts.loc[mask, col].iloc[0] if mask.any() else 0)
+                heights = np.array(heights)
+                ax.bar(
+                    x,
+                    heights,
+                    bottom=bottoms,
+                    color=color_map[col],
+                    label=label_map[col],
+                    width=0.8,
                 )
-                if mask.any():
-                    combos.append((cls, part))
-        if not combos:
-            continue
+                bottoms += heights
 
-        x = np.arange(len(combos))
-        bottoms = np.zeros(len(combos))
-        fig, ax = plt.subplots(figsize=(10, 6))
+            x_labels = [f"{part}\n{cls}" for cls, part in combos]
+            ax.set_xticks(x)
+            ax.set_xticklabels(x_labels)
+            ax.set_title(time_scale.replace("_", " ").title())
+            ax.set_ylim(0, 1.05)
+            ax.annotate(f"({chr(97 + idx)})", xy=(len(combos) + 0.51, 1.01))
 
-        for col, color, label in zip(cat_cols, palette, cat_labels):
-            heights = []
-            for cls, part in combos:
-                mask = (
-                    (df_ts["P_PET_Class"] == cls)
-                    & (df_ts["partition"] == part)
-                )
-                heights.append(df_ts.loc[mask, col].iloc[0] if mask.any() else 0)
-            heights = np.array(heights)
-            ax.bar(x, heights, bottom=bottoms, color=color, label=label)
-            bottoms += heights
+            if idx == 0:
+                ax.set_ylabel("Relative contribution of each variable type")
+            else:
+                ax.legend_.remove() if ax.legend_ else None
 
-        x_labels = [f"{part}\n{cls}" for cls, part in combos]
-        ax.set_xticks(x)
-        ax.set_xticklabels(x_labels)
-        ax.set_ylabel("Normalized |SHAP| sum")
-        ax.set_ylim(0, 1.05)
-        ax.set_title(f"{time_scale.capitalize()} SHAP contributions ({basin_class})")
-        ax.legend(title="Feature group", bbox_to_anchor=(1.02, 1), loc="upper left")
+        axes[0].legend(title="Feature group", loc="upper left")
+        fig.suptitle(f"{basin_class} basins")
         plt.tight_layout()
         plt.show()
 
