@@ -423,7 +423,7 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
     time_order = ["mean_annual", "annual", "monthly"]
 
     for basin_class, df_bc in df_summary.groupby("Class"):
-        fig, axes = plt.subplots(1, 3, figsize=(12, 4), sharey=True)
+        fig, axes = plt.subplots(1, 3, figsize=(12, 6), sharey=True)
         for idx, time_scale in enumerate(time_order):
             ax = axes[idx]
             df_ts = df_bc[df_bc["time_scale"] == time_scale].copy()
@@ -477,6 +477,8 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
                     color=color_map[col],
                     label=label_map[col],
                     width=0.8,
+                    edgecolor="none",
+                    linewidth=0,
                 )
                 bottoms += heights
 
@@ -485,15 +487,25 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
             ax.set_xticklabels(x_labels)
             ax.set_title(time_scale.replace("_", " ").title())
             ax.set_ylim(0, 1.05)
-            ax.annotate(f"({chr(97 + idx)})", xy=(len(combos) + 0.51, 1.01))
+            ax.annotate(
+                f"({chr(97 + idx)})",
+                xy=(1.02, 1.01),
+                xycoords="axes fraction",
+                ha="right",
+                va="top",
+                clip_on=False,
+            )
 
             if idx == 0:
                 ax.set_ylabel("Relative contribution of each variable type")
             else:
                 ax.legend_.remove() if ax.legend_ else None
 
-        axes[0].legend(title="Feature group", loc="upper left")
-        fig.suptitle(f"{basin_class} basins")
+        axes[0].legend(
+            title="Feature group",
+            loc="lower left",
+            bbox_to_anchor=(0.02, 0.02),
+        )
         plt.tight_layout()
         plt.show()
 
