@@ -46,8 +46,9 @@ PLOT_ECDFS = True
 SAVE_ECDF_PLOT_DEFAULT = False
 WRITE_UPDATED_IDS = False
 WRITE_SHAP_SUMMARY = False
-# SHAP_FILE_PATTERN = "MeanShap_{partition}_{suffix}_normQ.csv"
-SHAP_FILE_PATTERN = "MeanShap_BestGrouping_All_{suffix}_normQ.csv"
+USE_PARTITIONED_SHAP = False
+SHAP_FILE_PATTERN = "MeanShap_{partition}_{suffix}_normQ.csv"
+SHAP_FILE_PATTERN_ALL = "MeanShap_BestGrouping_All_{suffix}_normQ.csv"
 sns.set_theme(style="whitegrid", context="talk")
 
 
@@ -259,14 +260,35 @@ def load_shap_frames() -> Dict[str, pd.DataFrame]:
         "annual": "annual",
         "monthly": "monthly",
     }
-    partitions = ("train", "valnit")
     for scale_key, suffix in scale_suffix.items():
         stacked: List[pd.DataFrame] = []
-        for part in partitions:
-            fn = Path(
-                SHAP_DIR,
-                SHAP_FILE_PATTERN.format(partition=part, suffix=suffix),
-            )
+        if USE_PARTITIONED_SHAP:
+            partitions = ("train", "valnit")
+            for part in partitions:
+                fn = Path(
+                    SHAP_DIR,
+                    SHAP_FILE_PATTERN.format(partition=part, suffix=suffix),
+                )
+                try:
+                    df = _read_csv(
+                        fn,
+                        dtype={
+                            "STAID": str,
+                            "site_no": str,
+                            "siteid": str,
+                            "SiteID": str,
+                        },
+                    )
+                except FileNotFoundError:
+                    continue
+                df = df.copy()
+                # Normalize partition naming for downstream merges.
+                if "train_val" in df.columns:
+                    df = df.rename(columns={"train_val": "partition"})
+                df["partition"] = part
+                stacked.append(df)
+        else:
+            fn = Path(SHAP_DIR, SHAP_FILE_PATTERN_ALL.format(suffix=suffix))
             try:
                 df = _read_csv(
                     fn,
@@ -280,10 +302,10 @@ def load_shap_frames() -> Dict[str, pd.DataFrame]:
             except FileNotFoundError:
                 continue
             df = df.copy()
-            # Normalize partition naming for downstream merges.
             if "train_val" in df.columns:
                 df = df.rename(columns={"train_val": "partition"})
-            df["partition"] = part
+            if "partition" not in df.columns:
+                df["partition"] = "all"
             stacked.append(df)
         if stacked:
             shap_frames[scale_key] = pd.concat(stacked, ignore_index=True)
@@ -400,10 +422,6 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
     if df_summary.empty:
         return
 
-    cat_cols = [col for col in df_summary.columns if col.startswith("abs_shap_")]
-    if not cat_cols:
-        return
-
     # Fixed order/color mapping for manuscript styling.
     ordered_cols = [
         "abs_shap_climate",
@@ -411,7 +429,7 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
         "abs_shap_anthro_hydro",
         "abs_shap_anthro_land",
     ]
-    cat_cols = [col for col in ordered_cols if col in cat_cols]
+    cat_cols = [col for col in ordered_cols if col in df_summary.columns]
     if not cat_cols:
         return
     cat_labels = ["Climate", "Physiographic", "AnthroHydro", "AnthroLand"]
@@ -419,7 +437,8 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
     color_map = {col: color[i] for i, col in enumerate(cat_cols)}
     label_map = {col: cat_labels[i] for i, col in enumerate(cat_cols)}
 
-    default_part_order = ["train", "valnit", "test", "all"]
+    # default_part_order = ["train", "valnit", "test", "all"]
+    default_part_order = ["train", "valnit"]
     time_order = ["mean_annual", "annual", "monthly"]
 
     for basin_class, df_bc in df_summary.groupby("Class"):
@@ -446,50 +465,38 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
                 p for p in df_ts["partition"].unique() if p not in part_order
             ]
 
-            combos: List[Tuple[str, str]] = []
-            for cls in class_order:
-                for part in part_order:
-                    mask = (
-                        (df_ts["P_PET_Class"] == cls)
-                        & (df_ts["partition"] == part)
-                    )
-                    if mask.any():
-                        combos.append((cls, part))
+            combos = [
+                (cls, part)
+                for cls in class_order
+                for part in part_order
+                if ((df_ts["P_PET_Class"] == cls) & (df_ts["partition"] == part)).any()
+            ]
             if not combos:
                 ax.set_visible(False)
                 continue
 
-            x = np.arange(len(combos))
-            bottoms = np.zeros(len(combos))
-            for col in cat_cols:
-                heights = []
-                for cls, part in combos:
-                    mask = (
-                        (df_ts["P_PET_Class"] == cls)
-                        & (df_ts["partition"] == part)
-                    )
-                    heights.append(df_ts.loc[mask, col].iloc[0] if mask.any() else 0)
-                heights = np.array(heights)
-                ax.bar(
-                    x,
-                    heights,
-                    bottom=bottoms,
-                    color=color_map[col],
-                    label=label_map[col],
-                    width=0.8,
-                    edgecolor="none",
-                    linewidth=0,
-                )
-                bottoms += heights
-
-            x_labels = [f"{part}\n{cls}" for cls, part in combos]
-            ax.set_xticks(x)
-            ax.set_xticklabels(x_labels)
+            df_plot = (
+                df_ts.set_index(["P_PET_Class", "partition"])[cat_cols]
+                .reindex(combos)
+                .fillna(0)
+            )
+            df_plot.index = [f"{part}\n{cls}" for cls, part in combos]
+            df_plot.plot(
+                kind="bar",
+                stacked=True,
+                ax=ax,
+                color=[color_map[col] for col in cat_cols],
+                width=0.8,
+                legend=(idx == 0),
+                edgecolor="none",
+                linewidth=0,
+            )
+            ax.set_xticklabels(df_plot.index, rotation=0)
             ax.set_title(time_scale.replace("_", " ").title())
             ax.set_ylim(0, 1.05)
             ax.annotate(
                 f"({chr(97 + idx)})",
-                xy=(1.02, 1.01),
+                xy=(1.02, 1.04),
                 xycoords="axes fraction",
                 ha="right",
                 va="top",
@@ -508,6 +515,68 @@ def plot_shap_category_bars(df_summary: pd.DataFrame) -> None:
         )
         plt.tight_layout()
         plt.show()
+
+
+def print_shap_diagnostics(
+    df_summary: pd.DataFrame, df_shap_raw: pd.DataFrame, df_classes: pd.DataFrame
+) -> None:
+    """Print basic counts and SHAP sums to validate grouping logic."""
+    if df_summary.empty:
+        print("Diagnostics skipped: SHAP summary is empty.")
+        return
+
+    print("\nDiagnostics: group counts in df_summary")
+    print(
+        df_summary.groupby(["Class", "partition", "P_PET_Class", "time_scale"])
+        .size()
+        .reset_index(name="n_rows")
+        .sort_values(["Class", "partition", "P_PET_Class", "time_scale"])
+    )
+
+    cat_cols = [col for col in df_summary.columns if col.startswith("abs_shap_")]
+    if cat_cols:
+        print("\nDiagnostics: normalized SHAP sums (should be ~1)")
+        sums = df_summary[cat_cols].sum(axis=1)
+        print(sums.describe())
+        print(
+            df_summary.assign(shap_sum=sums)
+            .groupby(["Class", "partition", "P_PET_Class", "time_scale"])["shap_sum"]
+            .mean()
+            .reset_index()
+            .sort_values(["Class", "partition", "P_PET_Class", "time_scale"])
+        )
+
+    if df_shap_raw.empty:
+        print("\nDiagnostics: raw SHAP frames are empty.")
+        return
+
+    id_cols = [c for c in ("STAID", "site_no", "siteid", "SiteID") if c in df_shap_raw]
+    if not id_cols:
+        print("\nDiagnostics: no STAID-like column in raw SHAP frames.")
+        return
+
+    id_col = id_cols[0]
+    df_shap = df_shap_raw.copy()
+    if id_col != "STAID":
+        df_shap = df_shap.rename(columns={id_col: "STAID"})
+
+    if "partition" not in df_shap.columns and "train_val" in df_shap.columns:
+        df_shap = df_shap.rename(columns={"train_val": "partition"})
+    if "partition" not in df_shap.columns:
+        df_shap["partition"] = "all"
+
+    df_merge = df_shap.merge(
+        df_classes[["STAID", "partition", "P_PET_Class", "Class"]],
+        on=["STAID", "partition"],
+        how="left",
+    )
+    print("\nDiagnostics: raw SHAP rows with missing class labels")
+    print(
+        df_merge["Class"]
+        .isna()
+        .value_counts()
+        .rename(index={True: "missing_Class", False: "has_Class"})
+    )
 
 
 # %% orchestration ---------------------------------------------------------------
@@ -532,6 +601,8 @@ else:
     if all(col in df_summary for col in cols):
         assert np.isclose(df_summary[cols].sum(axis=1), 1).all(), "not all rows sum to 1"
     print("Generated SHAP summary table with shape:", df_summary.shape)
+    shap_raw_all = pd.concat(shap_frames.values(), ignore_index=True) if shap_frames else pd.DataFrame()
+    print_shap_diagnostics(df_summary, shap_raw_all, df_id)
     plot_shap_category_bars(df_summary)
 
 
