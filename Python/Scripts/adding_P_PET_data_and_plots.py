@@ -126,8 +126,8 @@ def update_id_tables(df_ppet: pd.DataFrame) -> pd.DataFrame:
     df_id_train, df_id_val = load_id_tables()
     df_id = pd.concat([df_id_train, df_id_val], ignore_index=True)
 
-    if "P_to_PET" not in df_id.columns:
-        df_id = df_id.merge(df_ppet, on=["STAID", "partition"], how="left")
+    df_id = df_id.drop(columns=["P_to_PET", "P_PET_Class"], errors="ignore")
+    df_id = df_id.merge(df_ppet, on=["STAID", "partition"], how="left")
 
     if WRITE_UPDATED_IDS:
         for part, path in (("train", "ID_train.csv"), ("valnit", "ID_valnit.csv")):
@@ -220,11 +220,10 @@ def plot_metric_ecdf(
         )
     ax.axvline(0, color="gray", linestyle=":", linewidth=1)
     plt.tight_layout()
-    plt.show()
-
     if save_plot:
         fig_path = FIG_DIR / f"ECDF_{metric}_{time_scale}.png"
         fig.savefig(fig_path, dpi=300)
+    plt.show()
     plt.close(fig)
 
 
@@ -351,9 +350,16 @@ def summarize_shap_by_category(
             id_col = candidate
             break
     if id_col is None:
-        print(
-            f"Skipping SHAP summary for {scale_key}: no STAID-like column present."
-        )
+        available_id_context = [
+            col for col in ("clust_meth", "region", "Class") if col in df_shap.columns
+        ]
+        print(f"Skipping SHAP summary for {scale_key}: no STAID-like column present.")
+        if available_id_context:
+            print(
+                "  This SHAP file appears to be grouped by "
+                f"{available_id_context}, so it cannot be split by basin-level "
+                "P:PET class."
+            )
         return pd.DataFrame()
     if id_col != "STAID":
         df_shap = df_shap.rename(columns={id_col: "STAID"})
@@ -364,6 +370,10 @@ def summarize_shap_by_category(
     if "partition" not in df_shap.columns:
         df_shap = df_shap.copy()
         df_shap["partition"] = "all"
+        df_classes = df_classes.copy()
+        df_classes["partition"] = "all"
+
+    if (df_shap["partition"] == "all").all():
         df_classes = df_classes.copy()
         df_classes["partition"] = "all"
 
