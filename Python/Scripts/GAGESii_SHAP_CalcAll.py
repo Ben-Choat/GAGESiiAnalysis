@@ -101,6 +101,9 @@ dir_shapout = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
 # directory where to place PCA outputs
 dir_pcaout = 'D:/Projects/GAGESii_ANNstuff/Data_Out/PCA_OUT'
 
+# append to output files created by this modified script version
+OUT_TAG = '_202605'
+
 # initialize dataframe to hold pca info
 df_pca95 = pd.DataFrame(
     columns = ['ClusterMethod', 'Region', 'PCA95']
@@ -217,8 +220,6 @@ for timescale in time_scale:
         metric_temp = '|residuals|'
     else:
         metric_temp = metric_in
-    df_summTemp = q_metr(results_summAll, metric_temp)
-
     # read in results w/PCA and model parameter info
     resultsPCAparams = pd.read_pickle(
         f'{dir_workHPC}/{timescale}/'\
@@ -314,6 +315,14 @@ for timescale in time_scale:
             results_summ = results_summ[
                 ~results_summ['model'].str.contains('PCA')
                 ].reset_index(drop = True)
+
+            if results_summ.empty:
+                print(f'No results for {timescale}-{method}-{cluster}; skipping.')
+                methods_out.pop()
+                regions_out.pop()
+                continue
+
+            df_summTemp = q_metr(results_summ, metric_temp)
             
             temp_df = pd.DataFrame({
                 'ClusterMethod': [method],
@@ -528,11 +537,6 @@ for timescale in time_scale:
                     columns = ['prcp']
                 )
 
-                df_shap_out = pd.concat(
-                    [df_shap_out, df_shapmean],
-                    ignore_index = True
-                )
-
             # lasso and stepwise regression
             if best_model.values in ['strd_lasso', 'strd_mlr']:
 
@@ -568,12 +572,6 @@ for timescale in time_scale:
                 df_shapmean = pd.DataFrame(
                     df_shap_valout.abs().mean() * temp_coef,
                 ).T
-
-                # add current df_shapmean to df_shap_out
-                df_shap_out = pd.concat(
-                    [df_shap_out, df_shapmean],
-                    ignore_index = True
-                )
 
 
 
@@ -654,14 +652,14 @@ for timescale in time_scale:
 
     # write df_shap_out to csv
     df_shap_out.to_csv(
-        f'{dir_shapout}/MeanShap_{part_in}_{timescale}_normQ.csv',
+        f'{dir_shapout}/MeanShap_{part_in}_{timescale}_normQ{OUT_TAG}.csv',
         index = False,
         mode = 'a'
     )
 
     # write pcas to csv
     df_pca95.to_csv(
-        f'{dir_pcaout}/PCA95_{part_in}_{timescale}.csv',
+        f'{dir_pcaout}/PCA95_{part_in}_{timescale}{OUT_TAG}.csv',
         index = False,
         mode = 'a'
     )

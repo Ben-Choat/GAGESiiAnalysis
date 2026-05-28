@@ -114,6 +114,9 @@ dir_workHPC = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/'\
 dir_shapout = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/'\
                     'Data_Out/SHAP_OUT'\
 
+# append to output files created by this modified script version
+OUT_TAG = '_202605'
+
 
 # name list of column names to drop when defining output dataframe of shap values
 names_drop = ['STAID', 'year', 'month', 'day', 'date']
@@ -134,7 +137,7 @@ for cl in clust_meths:
         df_regions[cl] = np.sort(df_ID[cl].unique())
 
 
-for timescale in time_scale[1:2]:
+for timescale in time_scale:
     print(timescale)
     # load results file to get best model
     # read in results for the time_scale being worked with
@@ -510,6 +513,19 @@ for timescale in time_scale[1:2]:
             # so correct column name to swe
             df_shap_valout.columns = df_shap_valout.columns.str.replace('swe_1', 'swe')
 
+            time_id_cols = [
+                col for col in ['year', 'month', 'date'] if col in STAID.columns
+            ]
+            if time_id_cols:
+                df_time_ids = (
+                    STAID.loc[STAID['STAID'] == row['STAID'], time_id_cols]
+                    .reset_index(drop=True)
+                )
+                df_shap_valout = pd.concat(
+                    [df_time_ids, df_shap_valout.reset_index(drop=True)],
+                    axis=1,
+                )
+
 
 
         # # add current df_shapmean to df_shap_out
@@ -524,17 +540,26 @@ for timescale in time_scale[1:2]:
         # df_out = pd.concat([results_summAll, df_shap_out])
 
         # results_summAll.reset_index(drop=True, inplace=True)
-        results_out = row.to_frame().T.reset_index(drop=True)
+        results_out = pd.concat(
+            [row.to_frame().T] * df_shapmean.shape[0],
+            ignore_index=True,
+        )
         # df_shap_out.reset_index(drop=True, inplace=True)
 
         # df_out = pd.concat([results_summAll, df_shap_out], axis = 1)
         # df_out = pd.concat([results_out, df_shap_out], axis = 1)
-        df_out = pd.concat([results_out, df_shapmean], axis = 1)
+        df_out = pd.concat(
+            [results_out, df_shapmean.reset_index(drop=True)],
+            axis=1,
+        )
 
         print(df_out['prcp'])
 
         # write df_shap_out to csv
-        file_out = f'{dir_shapout}/MeanShap_BestGrouping_All_{timescale}_normQ.csv'
+        file_out = (
+            f'{dir_shapout}/MeanShap_BestGrouping_All_'
+            f'{timescale}_normQ{OUT_TAG}.csv'
+        )
 
         if os.path.exists(file_out):
             header_in = False
