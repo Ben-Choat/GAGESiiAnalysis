@@ -7,7 +7,7 @@ SHAP values for downstream visualization.
 """
 
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -46,8 +46,9 @@ PLOT_ECDFS = True
 SAVE_ECDF_PLOT_DEFAULT = False
 WRITE_UPDATED_IDS = False
 WRITE_SHAP_SUMMARY = False
-USE_PARTITIONED_SHAP = False
-SHAP_FILE_PATTERN = "MeanShap_{partition}_{suffix}_normQ.csv"
+USE_PARTITIONED_SHAP = True
+OUT_TAG = '_202605'  # append to output files created by this modified script version
+SHAP_FILE_PATTERN = "MeanShap_{partition}_{suffix}_normQ{OUT_TAG}.csv"
 SHAP_FILE_PATTERN_ALL = "MeanShap_BestGrouping_All_{suffix}_normQ.csv"
 sns.set_theme(style="whitegrid", context="talk")
 
@@ -57,6 +58,25 @@ def _read_csv(path: Path, **kwargs) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(path)
     return pd.read_csv(path, **kwargs)
+
+
+def _read_shap_csv(path: Path) -> Optional[pd.DataFrame]:
+    """Read a SHAP CSV if present and report missing files explicitly."""
+    try:
+        df = _read_csv(
+            path,
+            dtype={
+                "STAID": str,
+                "site_no": str,
+                "siteid": str,
+                "SiteID": str,
+            },
+        )
+    except FileNotFoundError:
+        print(f"Missing SHAP file: {path}", flush=True)
+        return None
+    print(f"Loaded SHAP file: {path}", flush=True)
+    return df
 
 
 # %% load and prep data ----------------------------------------------------------
@@ -253,6 +273,11 @@ def drive_ecdf_plots(
 # %% aggregate shap values -------------------------------------------------------
 def load_shap_frames() -> Dict[str, pd.DataFrame]:
     """Read train/val SHAP data for each time scale and concatenate."""
+    print(
+        "Loading SHAP frames "
+        f"(USE_PARTITIONED_SHAP={USE_PARTITIONED_SHAP}, OUT_TAG='{OUT_TAG}')",
+        flush=True,
+    )
     shap_frames: Dict[str, pd.DataFrame] = {}
     scale_suffix = {
         "mean_annual": "mean_annual",
@@ -266,19 +291,10 @@ def load_shap_frames() -> Dict[str, pd.DataFrame]:
             for part in partitions:
                 fn = Path(
                     SHAP_DIR,
-                    SHAP_FILE_PATTERN.format(partition=part, suffix=suffix),
+                    SHAP_FILE_PATTERN.format(partition=part, suffix=suffix, OUT_TAG=OUT_TAG),
                 )
-                try:
-                    df = _read_csv(
-                        fn,
-                        dtype={
-                            "STAID": str,
-                            "site_no": str,
-                            "siteid": str,
-                            "SiteID": str,
-                        },
-                    )
-                except FileNotFoundError:
+                df = _read_shap_csv(fn)
+                if df is None:
                     continue
                 df = df.copy()
                 # Normalize partition naming for downstream merges.
@@ -287,18 +303,9 @@ def load_shap_frames() -> Dict[str, pd.DataFrame]:
                 df["partition"] = part
                 stacked.append(df)
         else:
-            fn = Path(SHAP_DIR, SHAP_FILE_PATTERN_ALL.format(suffix=suffix))
-            try:
-                df = _read_csv(
-                    fn,
-                    dtype={
-                        "STAID": str,
-                        "site_no": str,
-                        "siteid": str,
-                        "SiteID": str,
-                    },
-                )
-            except FileNotFoundError:
+            fn = Path(SHAP_DIR, SHAP_FILE_PATTERN_ALL.format(suffix=suffix, OUT_TAG=OUT_TAG))
+            df = _read_shap_csv(fn)
+            if df is None:
                 continue
             df = df.copy()
             if "train_val" in df.columns:
@@ -308,6 +315,14 @@ def load_shap_frames() -> Dict[str, pd.DataFrame]:
             stacked.append(df)
         if stacked:
             shap_frames[scale_key] = pd.concat(stacked, ignore_index=True)
+            print(
+                f"Prepared SHAP frame for {scale_key}: "
+                f"{shap_frames[scale_key].shape}",
+                flush=True,
+            )
+        else:
+            print(f"No SHAP frame prepared for {scale_key}.", flush=True)
+    print(f"Loaded SHAP frame keys: {list(shap_frames.keys())}", flush=True)
     return shap_frames
 
 

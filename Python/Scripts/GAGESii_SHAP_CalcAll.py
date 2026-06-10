@@ -6,6 +6,18 @@ After being calculated shap values are appended to a dataframe,
 which is eventually written to a csv. 
 
 
+NOTE: based on kge this script identified the following two scenarios
+where water yield, on average, was not best predicted by xgboost
+
+time scale: mean_annual
+ Cluster: MxWdShld
+Best model for mean_annual-AggEcoregion-MxWdShld-valnit: regr_precip (|residuals|_qmean=3.114687510203122)
+-=-=
+time scale: mean_annual
+ Cluster: SECstPlain
+Best model for mean_annual-AggEcoregion-SECstPlain-valnit: strd_mlr (|residuals|_qmean=6.529258386224794)
+ 
+
 '''
 
 
@@ -47,7 +59,8 @@ clust_meths = ['None', 'Class', 'AggEcoregion']
 
 # read in ID.csv file to get unique clusters under each method
 df_ID = pd.read_csv(
-    'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/' \
+    # 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/' \
+    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_work/' \
         'GAGESiiVariables/ID_train.csv'
 )
 
@@ -61,15 +74,19 @@ part_in = 'valnit'
 # use 'NSE' or 'KGE'? '|residuals| always used for mean_annual
 metric_in = 'KGE'
 
+# how to summarize catchment-level metrics when selecting the best regional model
+# options: 'mean', 'median', 'qmean'
+metric_summary = 'median'
+
 # drop noise? True or False
 dropNoise = False
 
 # Define directory variables
 # directory with data to work with
-dir_work = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results' 
+dir_work = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Results' 
 
 # another main location with output from HPC runs.
-dir_workHPC = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/'
+dir_workHPC = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/'
 # # read in any data needed
 # dir_in = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results'
 # # mean annual
@@ -96,10 +113,10 @@ dir_workHPC = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/'
 
 
 # directory where to place SHAP outputs
-dir_shapout = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
+dir_shapout = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
 
 # directory where to place PCA outputs
-dir_pcaout = 'D:/Projects/GAGESii_ANNstuff/Data_Out/PCA_OUT'
+dir_pcaout = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/PCA_OUT'
 
 # append to output files created by this modified script version
 OUT_TAG = '_202605'
@@ -139,7 +156,7 @@ def q_metr(df_work, perf_metric):
     #     df_work = df_work[df_work['region'] != '-1']
 
     for q in qnts_in:
-        print(f'q: {q}')
+        # print(f'q: {q}')
         if df_qntls is None:
             # if first q, then create new dataframe
             df_qntls = df_work.groupby(
@@ -160,6 +177,46 @@ def q_metr(df_work, perf_metric):
     df_qntlmean[f'{perf_metric}_qmean'] = meanqntls
             
     return(df_qntlmean)
+
+
+def summarize_model_metric(df_work, perf_metric, summary_type):
+    """
+    Summarize a catchment-level performance metric by model for best-model
+    selection within the current clust_method/region subset.
+
+    summary_type options:
+        'mean'   - arithmetic mean
+        'median' - median
+        'qmean'  - mean of 0.05, 0.10, ..., 0.95 quantiles
+    """
+    group_cols = ['clust_method', 'model', 'train_val', 'time_scale']
+
+    if summary_type == 'qmean':
+        df_summary = q_metr(df_work, perf_metric)
+        score_col = f'{perf_metric}_qmean'
+    elif summary_type == 'mean':
+        score_col = f'{perf_metric}_mean'
+        df_summary = (
+            df_work
+            .groupby(group_cols, as_index=False)[perf_metric]
+            .mean()
+            .rename(columns={perf_metric: score_col})
+        )
+    elif summary_type == 'median':
+        score_col = f'{perf_metric}_median'
+        df_summary = (
+            df_work
+            .groupby(group_cols, as_index=False)[perf_metric]
+            .median()
+            .rename(columns={perf_metric: score_col})
+        )
+    else:
+        raise ValueError(
+            "metric_summary must be one of 'mean', 'median', or 'qmean'. "
+            f"Got: {summary_type}"
+        )
+
+    return df_summary, score_col
 
 
 # %%
@@ -191,13 +248,14 @@ for timescale in time_scale:
                 dtype = {'STAID': 'string',
                          'region': 'string'}
             )
-        
+
+        results_summAll = results_summAll.copy()
         results_summAll['|residuals|'] = results_summAll.residuals.abs()
 
         results_summAll = results_summAll[[
                 'STAID', 'residuals', '|residuals|', 'clust_method', 'region',\
                             'model', 'time_scale', 'train_val'
-            ]]
+            ]].copy()
         
         
 
@@ -210,11 +268,11 @@ for timescale in time_scale:
         
         results_summAll = results_summAll[
             results_summAll['time_scale'] == timescale
-            ]
+            ].copy()
         
     results_summAll = results_summAll[
         results_summAll['train_val'] == part_in
-        ]
+        ].copy()
     
     if timescale == 'mean_annual':
         metric_temp = '|residuals|'
@@ -226,6 +284,7 @@ for timescale in time_scale:
             f'combined/All_SummaryResults_{timescale}.pkl'
     )
 
+    resultsPCAparams = resultsPCAparams.copy()
     resultsPCAparams['region'] = resultsPCAparams['region'].astype(str)
 
     # load data to get colnames for output dataframe (all expl vars)
@@ -262,6 +321,7 @@ for timescale in time_scale:
     regions_out = []
     best_models = []
     best_scores = []
+    metric_summaries = []
 
     for method in clust_meths:
 
@@ -287,7 +347,7 @@ for timescale in time_scale:
             results_summ = results_summAll[
                 (results_summAll['clust_method'] == method) & 
                 (results_summAll['region'] == cluster)
-                ]
+                ].copy()
             
             # subset to rows of interest in PCA and params dataframe
             temp = resultsPCAparams[
@@ -322,7 +382,11 @@ for timescale in time_scale:
                 regions_out.pop()
                 continue
 
-            df_summTemp = q_metr(results_summ, metric_temp)
+            df_summTemp, score_col = summarize_model_metric(
+                results_summ,
+                metric_temp,
+                metric_summary,
+            )
             
             temp_df = pd.DataFrame({
                 'ClusterMethod': [method],
@@ -341,19 +405,24 @@ for timescale in time_scale:
            
             if timescale == 'mean_annual':
                 best_score = np.min(df_summTemp.loc[
-                    df_summTemp['train_val'] == part_in, f'{metric_temp}_qmean'
+                    df_summTemp['train_val'] == part_in, score_col
                 ])
             else:
                 best_score = np.max(df_summTemp.loc[
-                    df_summTemp['train_val'] == part_in, f'{metric_temp}_qmean'
+                    df_summTemp['train_val'] == part_in, score_col
                 ])
 
             # subset to best model based on max valnit NSE    
             best_model = df_summTemp.loc[
                 (df_summTemp['train_val'] == part_in) &
-                (df_summTemp[f'{metric_temp}_qmean'] == best_score),
+                (df_summTemp[score_col] == best_score),
                 'model'
             ].reset_index(drop = True)
+            print(
+                f'Best model for {timescale}-{method}-{cluster}-'
+                f'{part_in}: {best_model[0]} '
+                f'({score_col}={best_score})'
+            )
             # subset to best parameters based on max valnit metric
             best_params = resultsPCAparams.loc[
                 resultsPCAparams['model'] == best_model[0], 'parameters'
@@ -387,6 +456,7 @@ for timescale in time_scale:
             # and best score to list of best scores
             best_models.append(best_model)
             best_scores.append(best_score)
+            metric_summaries.append(metric_summary)
 
             
 
@@ -418,21 +488,21 @@ for timescale in time_scale:
             # subset WY to version desired (ft)
             # store staid's and date/year/month
             if(timescale == 'mean_annual'):
-                STAID = df_expl['STAID']  
-                df_expl.drop('STAID', axis = 1, inplace = True)
-                df_WY = df_WY['Ann_WY_cm']
+                STAID = df_expl['STAID'].copy()
+                df_expl = df_expl.drop('STAID', axis = 1)
+                df_WY = df_WY['Ann_WY_cm'].copy()
             if(timescale == 'annual'):
-                STAID = df_expl[['STAID', 'year']]  
-                df_expl.drop(['STAID', 'year'], axis = 1, inplace = True)
-                df_WY = df_WY['Ann_WY_cm']
+                STAID = df_expl[['STAID', 'year']].copy()
+                df_expl = df_expl.drop(['STAID', 'year'], axis = 1)
+                df_WY = df_WY['Ann_WY_cm'].copy()
             if(timescale == 'monthly'):
-                STAID = df_expl[['STAID', 'year', 'month']]   
-                df_expl.drop(['STAID', 'year', 'month'], axis = 1, inplace =True)
-                df_WY = df_WY['Mnth_WY_cm']
+                STAID = df_expl[['STAID', 'year', 'month']].copy()
+                df_expl = df_expl.drop(['STAID', 'year', 'month'], axis = 1)
+                df_WY = df_WY['Mnth_WY_cm'].copy()
             if(timescale == 'daily'):
-                STAID = df_expl[['STAID', 'date']] 
-                df_expl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1, inplace =True)
-                df_WY = df_WY['dlyWY_cm']
+                STAID = df_expl[['STAID', 'date']].copy()
+                df_expl = df_expl.drop(['STAID', 'year', 'month', 'day', 'date'], axis = 1)
+                df_WY = df_WY['dlyWY_cm'].copy()
 
         
             # read in columns that were previously removed due to high VIF
@@ -457,7 +527,7 @@ for timescale in time_scale:
             # vif_removed = [x in vif_removed.values if x in df_expl.columns] # vif_removed.intersection(df_expl.columns)
 
             # drop columns that were removed due to high VIF
-            df_expl.drop(vif_removed, axis = 1, inplace = True)
+            df_expl = df_expl.drop(vif_removed, axis = 1)
 
 
 
@@ -482,9 +552,16 @@ for timescale in time_scale:
             # read in regression variables for mlr if best_model is strd_mlr
             if best_model.values == 'strd_mlr':
                 # MLR
-                file = glob.glob(
-                    f'{dir_work}/data_out/{timescale}/VIF_dfs/'
-                    f'{method}_{cluster}_strd_mlr*.csv')[0]
+                files = glob.glob(
+                    f'{dir_workHPC}/{timescale}/VIF_dfs/'
+                    f'{method}_{cluster}_strd_mlr*.csv')
+                if not files:
+                    raise FileNotFoundError(
+                        'No VIF_dfs file found for '
+                        f'{timescale}-{method}-{cluster}-strd_mlr in '
+                        f'{dir_workHPC}/{timescale}/VIF_dfs/'
+                    )
+                file = files[0]
                 # get variables appearing in final model
                 vars_keep = pd.read_csv(
                     file
@@ -516,7 +593,7 @@ for timescale in time_scale:
 
                 # reload model into object
                 model.load_model(
-                    f'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{timescale}'
+                    f'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out/{timescale}'
                     f'/Models/XGBoost_{temp_time}_{method}_{cluster}_model.json'
                     )
                 X_in = df_expl
@@ -647,6 +724,7 @@ for timescale in time_scale:
     df_shap_out['region'] = regions_out
     df_shap_out['best_model'] = best_models
     df_shap_out['best_score'] = best_scores
+    df_shap_out['metric_summary'] = metric_summaries
 
     df_shap_out = df_shap_out.drop_duplicates().reset_index(drop = True)
 
