@@ -1,0 +1,18 @@
+# Requires Python 3.10.6
+cython
+geopandas
+matplotlib
+numpy
+pandas
+plotly
+pydaymet
+pynhd
+ipykernel
+scikit-fuzzy==0.4.2
+scikit-learn==1.1.2
+scikit-learn-extra==0.2.0
+scipy==1.9.1
+seaborn==0.11.2
+shap==0.41.0
+statsmodels==0.13.2
+xgboost==1.6.1
