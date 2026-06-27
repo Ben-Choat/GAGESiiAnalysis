@@ -31,17 +31,17 @@ from functools import reduce
 # directory with data to work with
 # dir_work = 'D:/Projects/GAGESii_ANNstuff/HPC_Files/GAGES_Work/data_out' 
 # dir_work = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Results' 
-dir_work = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Results'
+# dir_work = '/mnt/c/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Results'
 
 # directory where SHAP values are located
 # dir_shap = 'D:/Projects/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
-dir_shap = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
+dir_shap = '/mnt/c/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/SHAP_OUT'
 
 # save figs (True of False?)
 save_figs = False
 # directory where to write figs
 # dir_figs = 'D:/Projects/GAGESii_ANNstuff/Data_Out/Figures/SHAP'
-dir_figs = 'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures/SHAP'
+dir_figs = '/mnt/c/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/Figures/SHAP'
 
 
 # directory where to place outputs
@@ -155,7 +155,7 @@ df_shap_monthly = pd.read_csv(
 # into cats of interest
 feat_cats = pd.read_csv(
     # 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories.csv'
-    'C:/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories.csv'
+    '/mnt/c/Users/bench/OneDrive/ML_DriversOfWY/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories.csv'
     # 'D:/Projects/GAGESii_ANNstuff/Data_Out/UMAP_HDBSCAN/FeatureCategories_wUnits.csv'
     
     )
@@ -1627,3 +1627,4 @@ if save_figs:
 else:
     plt.show()
 # %%
+
