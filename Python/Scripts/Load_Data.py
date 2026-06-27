@@ -316,11 +316,13 @@ def load_data_fun(
     # otherwise, subset the data to region/cluster of interest
     else:
         # working data
-        cid_in = df_ID[df_ID[clust_meth].astype(str) == str(region)]
+        cid_in = df_ID[df_ID[clust_meth].astype(str) == str(region)].copy()
 
         cid_in.drop('DRAIN_SQKM', axis = 1, inplace = True)
         # training data
-        cidtrain_in = df_trainID[df_trainID[clust_meth].astype(str) == str(region)]
+        cidtrain_in = df_trainID[
+            df_trainID[clust_meth].astype(str) == str(region)
+        ].copy()
 
         cidtrain_in.drop('DRAIN_SQKM', axis = 1, inplace = True)
 
